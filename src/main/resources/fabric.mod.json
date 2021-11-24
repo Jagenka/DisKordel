@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "hackfleisch-diskurs-mod",
+  "version": "${version}",
+  "name": "Hackfleisch Diskurs Mod",
+  "description": "Hackfleisch Diskurs Integration",
+  "authors": [
+    "Jagenka"
+  ],
+  "contact": {
+    "homepage": "",
+    "issues": "",
+    "sources": ""
+  },
+  "license": "GNU Lesser General Public License version 3 (LGPLv3)",
+  "icon": "assets/hackfleisch-diskurs-mod/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "de.jagenka.HackfleischDiskursMod"
+      }
+    ]
+  },
+  "mixins": [
+    "hackfleisch-diskurs-mod.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.12.5",
+    "fabric": "*",
+    "fabric-language-kotlin": ">=1.7.0+kotlin.1.6.0",
+    "minecraft": "1.17.1",
+    "java": ">=17"
+  }
+}
