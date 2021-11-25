@@ -12,13 +12,9 @@ object HackfleischDiskursMod : ModInitializer
     {
         println("hackfleisch-diskurs-mod has been initialized.")
 
+        //register commands
         CommandRegistrationCallback.EVENT.register { dispatcher, dedicated ->
-            val jayCommand = CommandManager.literal("jay").executes {
-                println("jay!")
-                return@executes 0
-            }
-
-            dispatcher.register(jayCommand)
+            JayCommand.register(dispatcher)
         }
     }
 }
