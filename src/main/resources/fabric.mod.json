@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "hackfleisch-diskurs-mod",
+  "id": "hackfleisch_diskurs_mod",
   "version": "${version}",
   "name": "Hackfleisch Diskurs Mod",
   "description": "Hackfleisch Diskurs Integration",
@@ -13,7 +13,7 @@
     "sources": ""
   },
   "license": "GNU Lesser General Public License version 3 (LGPLv3)",
-  "icon": "assets/hackfleisch-diskurs-mod/icon.png",
+  "icon": "assets/hackfleisch_diskurs_mod/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
@@ -24,7 +24,7 @@
     ]
   },
   "mixins": [
-    "hackfleisch-diskurs-mod.mixins.json"
+    "hackfleisch_diskurs_mod.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.12.5",

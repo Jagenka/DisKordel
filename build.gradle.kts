@@ -12,7 +12,9 @@ version = modVersion
 val mavenGroup: String by project
 group = mavenGroup
 minecraft {}
-repositories {}
+repositories {
+    mavenCentral()
+}
 dependencies {
     val minecraftVersion: String by project
     minecraft("com.mojang:minecraft:$minecraftVersion")
@@ -24,9 +26,18 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricVersion")
     val fabricKotlinVersion: String by project
     modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
+
+    //for config files
+    implementation("org.spongepowered:configurate-yaml:4.1.2")
+
+    //discord4j
+    implementation("com.discord4j:discord4j-core:3.2.1")
+    implementation("io.netty:netty-all:4.1.70.Final")
+
+    //annotationProcessor("org.spongepowered:mixin:0.8.4:processor")
 }
 tasks {
-    val javaVersion = JavaVersion.VERSION_17
+    val javaVersion = JavaVersion.VERSION_16
     withType<JavaCompile> {
         options.encoding = "UTF-8"
         sourceCompatibility = javaVersion.toString()

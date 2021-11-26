@@ -4,8 +4,7 @@
   "package": "de.jagenka.mixins",
   "compatibilityLevel": "JAVA_16",
   "mixins": [
-    "ExampleMixin",
-    "MinecraftServerMixin"
+    "ExampleMixin"
   ],
   "client": [],
   "server": [],
