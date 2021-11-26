@@ -1,4 +1,4 @@
-package de.jagenka.mixins;
+package de.jagenka.mixin;
 
 import net.minecraft.client.gui.screen.TitleScreen;
 import org.spongepowered.asm.mixin.Mixin;

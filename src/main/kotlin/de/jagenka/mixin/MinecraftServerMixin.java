@@ -1,4 +1,4 @@
-package de.jagenka.mixins;
+package de.jagenka.mixin;
 
 import de.jagenka.HackfleischDiskursMod;
 import net.minecraft.server.MinecraftServer;
