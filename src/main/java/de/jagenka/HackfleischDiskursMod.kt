@@ -7,12 +7,9 @@ import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
 import net.minecraft.network.MessageType
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.dedicated.MinecraftDedicatedServer
 import net.minecraft.text.LiteralText
 import net.minecraft.util.Formatting
 import java.util.*
-import kotlin.math.min
 
 @Suppress("UNUSED")
 object HackfleischDiskursMod : ModInitializer
@@ -42,7 +39,7 @@ object HackfleischDiskursMod : ModInitializer
     }
 
     @JvmStatic
-    fun broadcastMessage(source: ServerCommandSource, formatting: Formatting, message: String, sender: UUID)
+    fun broadcastMessage(message: String, formatting: Formatting, sender: UUID)
     {
         val text = LiteralText(message).formatted(formatting)
         minecraftServer.playerManager.broadcastChatMessage(text, MessageType.CHAT, sender)

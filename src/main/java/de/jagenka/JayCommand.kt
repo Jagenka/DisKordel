@@ -12,7 +12,7 @@ class JayCommand
         fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
         {
             dispatcher.register(CommandManager.literal("jay").executes {
-                HackfleischDiskursMod.broadcastMessage(it.source, Formatting.WHITE, "Jay!", it.source.player.uuid)
+                HackfleischDiskursMod.broadcastMessage("Jay!", Formatting.WHITE, it.source.player.uuid)
                 return@executes 0
             })
         }
