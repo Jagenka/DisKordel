@@ -15,7 +15,7 @@ import java.util.*
 object HackfleischDiskursMod : ModInitializer
 {
     //TODO: hide!
-    private const val TOKEN = ""
+    private const val TOKEN = "MzgzMjQ3MjE3MjQwMDQ3NjE2.WhbMyA.uzc2_46OToiElqPZ0ZzUm6Ajf_g"
     private const val MOD_ID = "hackfleisch-diskurs-mod"
 
     private lateinit var minecraftServer: MinecraftServer
@@ -27,7 +27,7 @@ object HackfleischDiskursMod : ModInitializer
             JayCommand.register(dispatcher)
         }
 
-        //startDiscordBot()
+        startDiscordBot()
 
         println("hackfleisch-diskurs-mod has been initialized.")
     }
@@ -64,6 +64,6 @@ object HackfleischDiskursMod : ModInitializer
 
     private fun processDiscordMessage(message: Message)
     {
-        println("A Message from Discord: ${message.author.get().username} said \"${message.content}\"")
+        broadcastMessage("[Discord] ${message.author.get().username} said \"${message.content}\"", Formatting.WHITE, UUID.randomUUID())
     }
 }
