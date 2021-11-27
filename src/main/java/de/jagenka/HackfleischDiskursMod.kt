@@ -5,17 +5,17 @@ import discord4j.core.`object`.entity.Message
 import discord4j.core.event.domain.message.MessageCreateEvent
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
+import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.network.MessageType
 import net.minecraft.server.MinecraftServer
 import net.minecraft.text.LiteralText
 import net.minecraft.util.Formatting
+import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.util.*
 
 @Suppress("UNUSED")
 object HackfleischDiskursMod : ModInitializer
 {
-    //TODO: hide!
-    private const val TOKEN = "MzgzMjQ3MjE3MjQwMDQ3NjE2.WhbMyA.uzc2_46OToiElqPZ0ZzUm6Ajf_g"
     private const val MOD_ID = "hackfleisch-diskurs-mod"
 
     private lateinit var minecraftServer: MinecraftServer
@@ -27,15 +27,20 @@ object HackfleischDiskursMod : ModInitializer
             JayCommand.register(dispatcher)
         }
 
-        startDiscordBot()
+        val path = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs.yaml")
+        val confLoader = YamlConfigurationLoader.builder().path(path).build()
+        val root = confLoader.load()
+        val token = root.node("bot-token").get(String::class.java)
+
+        if (token != null) startDiscordBot(token)
+        else
+        { //TODO: centralize config creation
+            root.node("bot-token").set("INSERT_TOKEN_HERE")
+            confLoader.save(root)
+            println("Bot Token missing!")
+        }
 
         println("hackfleisch-diskurs-mod has been initialized.")
-    }
-
-    @JvmStatic
-    fun onServerLoaded(minecraftServer: MinecraftServer)
-    {
-        this.minecraftServer = minecraftServer
     }
 
     @JvmStatic
@@ -45,10 +50,10 @@ object HackfleischDiskursMod : ModInitializer
         minecraftServer.playerManager.broadcastChatMessage(text, MessageType.CHAT, sender)
     }
 
-    private fun startDiscordBot()
+    private fun startDiscordBot(token: String)
     {
         //init DiscordClient
-        val client = DiscordClient.create(TOKEN)
+        val client = DiscordClient.create(token)
         //init GatewayDiscordClient
         val gateway = client.login().block()!!
         //init RestClient
@@ -64,6 +69,17 @@ object HackfleischDiskursMod : ModInitializer
 
     private fun processDiscordMessage(message: Message)
     {
-        broadcastMessage("[Discord] ${message.author.get().username} said \"${message.content}\"", Formatting.WHITE, UUID.randomUUID())
+        broadcastMessage(
+            "[Discord] ${message.author.get().username} said \"${message.content}\"",
+            Formatting.WHITE,
+            UUID.randomUUID()
+        )
+    }
+
+    //to set MinecraftServer instance coming from Mixin
+    @JvmStatic
+    fun onServerLoaded(minecraftServer: MinecraftServer)
+    {
+        this.minecraftServer = minecraftServer
     }
 }
