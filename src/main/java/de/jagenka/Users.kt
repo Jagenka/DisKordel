@@ -9,7 +9,7 @@ class Users : BiMap<Snowflake, String>()
     {
         keys().forEach {
             val member = gateway.getMemberById(guildId, it).block()
-            if(member != null) if (member.displayName == displayName) return it
+            if (member != null) if (member.displayName == displayName) return it
         }
         return null
     }
@@ -19,5 +19,12 @@ class Users : BiMap<Snowflake, String>()
         val discordMember = getDiscordMember(displayName, gateway, guildId)
         return discordMember != null
 
+    }
+
+    fun getConfigList(): List<UsersConfigEntry>
+    {
+        val arrayList = ArrayList<UsersConfigEntry>()
+        keys().forEach { arrayList.add(UsersConfigEntry(it.asLong(), getValueForKey(it).orEmpty())) }
+        return arrayList
     }
 }

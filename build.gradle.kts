@@ -29,6 +29,7 @@ dependencies {
 
     //for config files
     implementation("org.spongepowered:configurate-yaml:4.1.2")
+    implementation("org.spongepowered:configurate-extra-kotlin:4.1.2")
 
     //discord4j
     implementation("com.discord4j:discord4j-core:3.2.1")

@@ -8,12 +8,18 @@ import discord4j.core.`object`.entity.User
 import discord4j.core.`object`.entity.channel.Channel
 import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.rest.RestClient
+import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.util.Formatting
+import org.spongepowered.configurate.kotlin.extensions.get
+import org.spongepowered.configurate.objectmapping.ConfigSerializable
+import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.util.regex.Pattern
 
 object DiscordBot
 {
     var initialized = false
+
+    private val usersFilePath = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs-users.yaml")
 
     private lateinit var token: String
     private lateinit var guildId: Snowflake
@@ -45,6 +51,8 @@ object DiscordBot
 
         this.guildId = Snowflake.of(guildId)
         channel = gateway.getChannelById(Snowflake.of(channelId)).block()!!
+
+        loadUsersFromFile()
 
         initialized = true
     }
@@ -78,6 +86,29 @@ object DiscordBot
     private fun registerUser(snowflake: Snowflake, minecraftName: String)
     {
         users.put(snowflake, minecraftName)
+        saveUsersToFile()
+    }
+
+    private fun loadUsersFromFile()
+    {
+        val confLoader = YamlConfigurationLoader.builder().path(usersFilePath).build()
+        val root = confLoader.load()
+        repeat(root.childrenList().size) {
+            val discordId = root.node(it, "discordId").getLong(0)
+            val minecraftName = root.node(it, "minecraftName").getString("")
+            users.put(Snowflake.of(discordId), minecraftName)
+        }
+    }
+
+    private fun saveUsersToFile()
+    {
+        val confLoader = YamlConfigurationLoader.builder().path(usersFilePath).build()
+        val root = confLoader.load()
+        users.getConfigList().forEachIndexed { index, entry ->
+            root.node(index, "discordId").set(entry.discordId)
+            root.node(index, "minecraftName").set(entry.minecraftName)
+        }
+        confLoader.save(root)
     }
 
     private fun sendMinecraftMessage(sender: String, text: String)
@@ -145,3 +176,6 @@ object DiscordBot
         return user.id == Snowflake.of(174579897795084288)
     }
 }
+
+@ConfigSerializable
+data class UsersConfigEntry(val discordId: Long, val minecraftName: String)
