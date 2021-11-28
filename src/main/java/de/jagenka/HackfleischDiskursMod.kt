@@ -29,6 +29,7 @@ object HackfleischDiskursMod : ModInitializer
         val root = confLoader.load()
 
         val token = root.node("bot-token").get(String::class.java)
+        val guildId = root.node("bot-guild").get(Long::class.java)
         val channelId = root.node("bot-channel").get(Long::class.java)
 
         if (token == null)
@@ -37,13 +38,19 @@ object HackfleischDiskursMod : ModInitializer
             confLoader.save(root)
             println("bot-token missing!")
         }
+        if (guildId == null)
+        {
+            root.node("bot-guild").set("INSERT_GUILD_ID_HERE")
+            confLoader.save(root)
+            println("bot-guild missing!")
+        }
         if (channelId == null)
         {
             root.node("bot-channel").set("INSERT_CHANNEL_ID_HERE")
             confLoader.save(root)
             println("bot-channel missing!")
         }
-        if (token != null && channelId != null) DiscordBot.initialize(token, channelId)
+        if (token != null && guildId != null && channelId != null) DiscordBot.initialize(token, guildId, channelId)
 
         println("hackfleisch-diskurs-mod has been initialized.")
     }

@@ -1,6 +1,6 @@
 package de.jagenka
 
-class BiMap<K, V>
+abstract class BiMap<K, V> //TODO abstract weg
 {
     private val map = HashMap<K, V>()
     private val inv = HashMap<V, K>()
@@ -13,6 +13,16 @@ class BiMap<K, V>
         inv[value] = key
     }
 
+    fun containsKey(key: K): Boolean
+    {
+        return map.containsKey(key)
+    }
+
+    fun containsValue(value: V): Boolean
+    {
+        return inv.containsKey(value)
+    }
+
     fun getValueForKey(key: K): V?
     {
         return map[key]
@@ -21,6 +31,16 @@ class BiMap<K, V>
     fun getKeyForValue(value: V): K?
     {
         return inv[value]
+    }
+
+    fun keys(): Set<K>
+    {
+        return map.keys
+    }
+
+    fun values(): Set<V>
+    {
+        return inv.keys
     }
 
     fun getAsSet(): Set<Pair<K, V>>

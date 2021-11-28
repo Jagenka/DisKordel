@@ -19,6 +19,8 @@ public class PlayerManagerMixin
     @Inject(method = "broadcast(Lnet/minecraft/text/Text;Ljava/util/function/Function;Lnet/minecraft/network/MessageType;Ljava/util/UUID;)V", at = @At("HEAD"))
     public void broadcast(Text text, Function<ServerPlayerEntity, Text> playerMessageFactory, MessageType playerMessageType, UUID sender, CallbackInfo info)
     {
-        DiscordBot.sendMessage(text.getString()); //get player and message separately
+        String message = text.getString();
+        String[] split = message.split(">");
+        DiscordBot.sendMessageFromMinecraft(split[0].substring(1), split[1].trim());
     }
 }
