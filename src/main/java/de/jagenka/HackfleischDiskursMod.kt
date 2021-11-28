@@ -1,8 +1,5 @@
 package de.jagenka
 
-import discord4j.core.DiscordClient
-import discord4j.core.`object`.entity.Message
-import discord4j.core.event.domain.message.MessageCreateEvent
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
 import net.fabricmc.loader.api.FabricLoader
@@ -18,7 +15,6 @@ object HackfleischDiskursMod : ModInitializer
 {
     private const val MOD_ID = "hackfleisch-diskurs-mod"
 
-    //TODO catch usage before init
     private lateinit var minecraftServer: MinecraftServer
 
     override fun onInitialize()
@@ -31,50 +27,60 @@ object HackfleischDiskursMod : ModInitializer
         val path = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs.yaml")
         val confLoader = YamlConfigurationLoader.builder().path(path).build()
         val root = confLoader.load()
-        val token = root.node("bot-token").get(String::class.java)
 
-        if (token != null) startDiscordBot(token)
-        else
-        { //TODO: centralize config creation
+        val token = root.node("bot-token").get(String::class.java)
+        val channelId = root.node("bot-channel").get(Long::class.java)
+
+        if (token == null)
+        {
             root.node("bot-token").set("INSERT_TOKEN_HERE")
             confLoader.save(root)
-            println("Bot Token missing!")
+            println("bot-token missing!")
         }
+        if (channelId == null)
+        {
+            root.node("bot-channel").set("INSERT_CHANNEL_ID_HERE")
+            confLoader.save(root)
+            println("bot-channel missing!")
+        }
+        if (token != null && channelId != null) DiscordBot.initialize(token, channelId)
 
         println("hackfleisch-diskurs-mod has been initialized.")
     }
 
     @JvmStatic
-    fun broadcastMessage(message: String, formatting: Formatting, sender: UUID)
+    fun broadcastMessage(message: String, formatting: Formatting = Formatting.WHITE, sender: UUID = UUID.randomUUID()) //TODO: change UUID
     {
+        if (!checkMinecraftServer()) return
         val text = LiteralText(message).formatted(formatting)
         minecraftServer.playerManager.broadcastChatMessage(text, MessageType.CHAT, sender)
     }
 
-    private fun startDiscordBot(token: String)
+    fun doThing()
     {
-        //init DiscordClient
-        val client = DiscordClient.create(token)
-        //init GatewayDiscordClient
-        val gateway = client.login().block()!!
-        //init RestClient
-        val restClient = gateway.restClient
-        //get RestClient AppID
-        val appId = restClient.applicationId.block()!!
-
-        //handle received Messages
-        gateway.on(MessageCreateEvent::class.java)
-            .filter { event -> !event.message.author.get().isBot }
-            .subscribe { event -> processDiscordMessage(event.message) }
+        if (!checkMinecraftServer()) return
+        //minecraftServer.commandManager.execute(minecraftServer.commandSource, "say helö") //cmd coming from MinecraftServer
     }
 
-    private fun processDiscordMessage(message: Message)
+    fun runCommand(cmd: String)
     {
-        broadcastMessage(
-            "[Discord] ${message.author.get().username} said \"${message.content}\"",
-            Formatting.WHITE,
-            UUID.randomUUID()
-        )
+        if (!checkMinecraftServer()) return
+        minecraftServer.commandManager.execute(minecraftServer.commandSource, cmd)
+    }
+
+    fun runWhitelistAdd(player: String)
+    {
+        runCommand("whitelist add $player")
+    }
+
+    fun runWhitelistRemove(player: String)
+    {
+        runCommand("whitelist remove $player")
+    }
+
+    private fun checkMinecraftServer(): Boolean
+    {
+        return HackfleischDiskursMod::minecraftServer.isInitialized
     }
 
     //to set MinecraftServer instance coming from Mixin
