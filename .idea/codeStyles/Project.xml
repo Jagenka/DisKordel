@@ -1,5 +1,6 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
+    <option name="RIGHT_MARGIN" value="180" />
     <JSCodeStyleSettings version="0">
       <option name="FUNCTION_EXPRESSION_BRACE_STYLE" value="2" />
     </JSCodeStyleSettings>
