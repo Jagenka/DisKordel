@@ -69,7 +69,7 @@ object HackfleischDiskursMod : ModInitializer
     {
         if (!checkMinecraftServer()) return
         val text = LiteralText(message).formatted(formatting)
-        minecraftServer.playerManager.broadcastChatMessage(text, MessageType.CHAT, sender)
+        minecraftServer.playerManager.broadcast(text, MessageType.CHAT, sender)
     }
 
     fun doThing()
