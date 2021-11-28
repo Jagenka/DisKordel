@@ -5,11 +5,15 @@ import discord4j.core.GatewayDiscordClient
 
 class Users : BiMap<Snowflake, String>()
 {
-    fun getDiscordMember(displayName: String, gateway: GatewayDiscordClient, guildId: Snowflake): Snowflake?
+    fun getDiscordMember(inputName: String, gateway: GatewayDiscordClient, guildId: Snowflake): Snowflake?
     {
         keys().forEach {
             val member = gateway.getMemberById(guildId, it).block()
-            if (member != null) if (member.displayName == displayName) return it
+            if (member != null)
+            {
+                if (member.username == inputName) return it
+                if (member.displayName == inputName) return it
+            }
         }
         return null
     }

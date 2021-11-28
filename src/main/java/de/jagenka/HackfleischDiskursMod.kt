@@ -9,6 +9,7 @@ import net.minecraft.text.LiteralText
 import net.minecraft.util.Formatting
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.util.*
+import kotlin.collections.ArrayList
 
 @Suppress("UNUSED")
 object HackfleischDiskursMod : ModInitializer
@@ -20,7 +21,7 @@ object HackfleischDiskursMod : ModInitializer
     override fun onInitialize()
     {
         //register commands
-        CommandRegistrationCallback.EVENT.register { dispatcher, dedicated ->
+        CommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             JayCommand.register(dispatcher)
         }
 
@@ -55,8 +56,16 @@ object HackfleischDiskursMod : ModInitializer
         println("hackfleisch-diskurs-mod has been initialized.")
     }
 
+    fun getOnlinePlayers(): List<String>
+    {
+        if (!checkMinecraftServer()) ArrayList<String>()
+        val list = ArrayList<String>()
+        minecraftServer.playerManager.playerList.forEach { list.add(it.name.asString()) }
+        return list
+    }
+
     @JvmStatic
-    fun broadcastMessage(message: String, formatting: Formatting = Formatting.WHITE, sender: UUID = UUID.randomUUID()) //TODO: change UUID
+    fun broadcastMessage(message: String, formatting: Formatting = Formatting.WHITE, sender: UUID = UUID.randomUUID())
     {
         if (!checkMinecraftServer()) return
         val text = LiteralText(message).formatted(formatting)

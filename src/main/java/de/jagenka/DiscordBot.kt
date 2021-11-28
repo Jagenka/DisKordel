@@ -119,15 +119,25 @@ object DiscordBot
     private fun String.convertMentions(): String
     {
         var newString = this
-        val matcher = Pattern.compile("@\\S*").matcher(this)
+        val matcher = Pattern.compile("@.*@").matcher(this)
         while (matcher.find())
         {
-            val mention = matcher.group().drop(1)
+            val mention = matcher.group().substring(1, length-1)
             val memberId = users.getDiscordMember(mention, gateway, guildId)
             if (memberId != null) newString = newString.replaceRange(matcher.start(), matcher.end(), "<@!${memberId.asLong()}>")
         }
 
         return newString
+    }
+
+    private fun printOnlinePlayers()
+    {
+        val onlinePlayers = HackfleischDiskursMod.getOnlinePlayers()
+        val sb = StringBuilder("Currently online: ")
+        if (onlinePlayers.isEmpty()) sb.append("~nobody~, ")
+        else onlinePlayers.forEach { sb.append("$it, ") }
+        sb.deleteRange(sb.length - 2, sb.length)
+        sendMessage(sb.toString())
     }
 
     private fun processMessage(message: Message)
@@ -136,6 +146,10 @@ object DiscordBot
         {
             when
             {
+                equals("!list") ->
+                {
+                    printOnlinePlayers()
+                }
                 startsWith("!register") ->
                 {
                     registerUser(message.author.get().id, this.removePrefix("!register").trim())
