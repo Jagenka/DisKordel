@@ -86,11 +86,13 @@ object HackfleischDiskursMod : ModInitializer
 
     fun runWhitelistAdd(player: String)
     {
+        if (player.isEmpty()) return
         runCommand("whitelist add $player")
     }
 
     fun runWhitelistRemove(player: String)
     {
+        if (player.isEmpty()) return
         runCommand("whitelist remove $player")
     }
 

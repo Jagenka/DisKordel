@@ -5,6 +5,15 @@ import discord4j.core.GatewayDiscordClient
 
 class Users : BiMap<Snowflake, String>()
 {
+    fun registerUser(userId: Snowflake, minecraftName: String): Boolean
+    {
+        if (this.containsValue(minecraftName)) return false
+
+        this.put(userId, minecraftName)
+
+        return true
+    }
+
     fun getDiscordMember(inputName: String, gateway: GatewayDiscordClient, guildId: Snowflake): Snowflake?
     {
         keys().forEach {
@@ -30,5 +39,12 @@ class Users : BiMap<Snowflake, String>()
         val arrayList = ArrayList<UsersConfigEntry>()
         keys().forEach { arrayList.add(UsersConfigEntry(it.asLong(), getValueForKey(it).orEmpty())) }
         return arrayList
+    }
+
+    fun getAsUserConfigSet(): Set<UsersConfigEntry>
+    {
+        val set = HashSet<UsersConfigEntry>()
+        keys().forEach { set.add(UsersConfigEntry(it.asLong(), getValueForKey(it).orEmpty())) }
+        return set
     }
 }
