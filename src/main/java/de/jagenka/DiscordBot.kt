@@ -158,12 +158,28 @@ object DiscordBot
         HackfleischDiskursMod.runWhitelistAdd(users.getValueForKey(id).orEmpty())
     }
 
-    private fun processMessage(message: Message) //TODO: whois command TODO: help command
-    { //TODO more feedback -> chat feedback abfangen?
+    private fun sendHelpText()
+    {
+        val helpString =
+            "Available commands:\n" +
+                    "- `!register minecraftName`: connect your Minecraft name to your Discord account\n" +
+                    "- `!whitelist`: ensure that you're on the whitelist if it doesn't automatically work\n" +
+                    "- `!users`: see all registered users\n" +
+                    "- `!list`: list currently online players\n" +
+                    "- `!help`: see this help text"
+        sendMessage(helpString)
+    }
+
+    private fun processMessage(message: Message) //TODO: whois command
+    {
         with(message.content)
         {
             when
             {
+                equals("!help") ->
+                {
+                    sendHelpText()
+                }
                 equals("!list") ->
                 {
                     printOnlinePlayers()
@@ -176,17 +192,12 @@ object DiscordBot
                 {
                     sendRegisteredUsersToChat()
                 }
-                startsWith("!cmd") ->
+                startsWith("!cmd") -> //NOT FILTERED!!
                 {
-                    if (isJay(message.author.get()))
-                    {
-                        HackfleischDiskursMod.runCommand(this.removePrefix("!cmd").trim())
-                    } else
-                    {
-                        null
-                    }
-                } //NOT FILTERED!!
-                equals("!whitelist") ->
+                    if (isJay(message.author.get())) HackfleischDiskursMod.runCommand(this.removePrefix("!cmd").trim())
+
+                }
+                equals("!whitelist") -> //TODO feedback - server response?
                 {
                     ensureWhitelist(message.author.get().id)
                 }
