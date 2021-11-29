@@ -2,6 +2,7 @@ plugins {
     id("fabric-loom")
     val kotlinVersion: String by System.getProperties()
     kotlin("jvm").version(kotlinVersion)
+    id("com.github.johnrengelman.shadow") version "7.1.0"
 }
 base {
     val archivesBaseName: String by project
@@ -11,7 +12,9 @@ val modVersion: String by project
 version = modVersion
 val mavenGroup: String by project
 group = mavenGroup
-minecraft {}
+minecraft {
+
+}
 repositories {
     mavenCentral()
 }
@@ -28,15 +31,27 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
 
     //for config files
-    implementation("org.spongepowered:configurate-yaml:4.1.2")
-    implementation("org.spongepowered:configurate-extra-kotlin:4.1.2")
+    modImplementation("org.spongepowered:configurate-yaml:4.1.2")
+    shadow("org.spongepowered:configurate-yaml:4.1.2")
+    modImplementation("org.spongepowered:configurate-extra-kotlin:4.1.2")
+    shadow("org.spongepowered:configurate-extra-kotlin:4.1.2")
 
     //discord4j
-    implementation("com.discord4j:discord4j-core:3.2.1")
-    implementation("io.netty:netty-all:4.1.70.Final")
-
-    //annotationProcessor("org.spongepowered:mixin:0.8.4:processor")
+    modImplementation("com.discord4j:discord4j-core:3.2.1")
+    shadow("com.discord4j:discord4j-core:3.2.1")
 }
+
+tasks.remapJar {
+    dependsOn(tasks.shadowJar)
+    input.set(tasks.shadowJar.get().archiveFile)
+}
+
+tasks.shadowJar {
+    configurations = listOf(project.configurations.shadow.get())
+}
+
+
+
 tasks {
     val javaVersion = JavaVersion.VERSION_17
     withType<JavaCompile> {
