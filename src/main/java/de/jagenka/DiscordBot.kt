@@ -155,7 +155,7 @@ object DiscordBot
 
     private fun ensureWhitelist(id: Snowflake)
     {
-        HackfleischDiskursMod.runWhitelistAdd(users.getValueForKey(id).orEmpty())
+        HackfleischDiskursMod.runWhitelistAdd(users.getValueForKey(id).orEmpty()) //TODO see if registered
     }
 
     private fun sendHelpText()
@@ -164,13 +164,39 @@ object DiscordBot
             "Available commands:\n" +
                     "- `!register minecraftName`: connect your Minecraft name to your Discord account\n" +
                     "- `!whitelist`: ensure that you're on the whitelist if it doesn't automatically work\n" +
+                    "\n" +
                     "- `!users`: see all registered users\n" +
+                    "- `!whois username`: look for a user\n" +
+                    "\n" +
                     "- `!list`: list currently online players\n" +
+                    "\n" +
                     "- `!help`: see this help text"
         sendMessage(helpString)
     }
 
-    private fun processMessage(message: Message) //TODO: whois command
+    private fun whoIsUser(name: String)
+    {
+        val result = users.find(name, gateway, guildId)
+        if (result.isEmpty())
+        {
+            sendMessage("No users found!")
+        } else
+        {
+            val sb = StringBuilder("")
+            result.forEach {
+                sb.append(getPrettyComboName(it))
+                sb.appendLine()
+            }
+            sendMessage(sb.toString())
+        }
+    }
+
+    private fun getPrettyComboName(user: UsersConfigEntry): String
+    {
+        return "${getPrettyMemberNameById(Snowflake.of(user.discordId))} aka ${user.minecraftName}"
+    }
+
+    private fun processMessage(message: Message)
     {
         with(message.content)
         {
@@ -179,6 +205,11 @@ object DiscordBot
                 equals("!help") ->
                 {
                     sendHelpText()
+                }
+                startsWith("!whois") ->
+                {
+                    val input = this.removePrefix("!whois").trim()
+                    whoIsUser(input)
                 }
                 equals("!list") ->
                 {

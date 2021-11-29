@@ -47,4 +47,21 @@ class Users : BiMap<Snowflake, String>()
         keys().forEach { set.add(UsersConfigEntry(it.asLong(), getValueForKey(it).orEmpty())) }
         return set
     }
+
+    fun find(name: String, gateway: GatewayDiscordClient, guildId: Snowflake): Set<UsersConfigEntry>
+    {
+        val set = HashSet<UsersConfigEntry>()
+        keys().forEach {
+            val member = gateway.getMemberById(guildId, it).block()
+            if (member != null)
+            {
+                if (member.username.equals(name, ignoreCase = true) || member.displayName.equals(name, ignoreCase = true) || getValueForKey(it).equals(name, ignoreCase = true))
+                {
+                    set.add(UsersConfigEntry(it.asLong(), getValueForKey(it).orEmpty()))
+                }
+            }
+        }
+
+        return set
+    }
 }
