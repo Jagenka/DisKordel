@@ -155,7 +155,11 @@ object DiscordBot
 
     private fun ensureWhitelist(id: Snowflake)
     {
-        HackfleischDiskursMod.runWhitelistAdd(users.getValueForKey(id).orEmpty()) //TODO see if registered
+        if (!users.containsKey(id)) sendMessage("Please register first with `!register minecraftName`")
+        else
+        {
+            HackfleischDiskursMod.runWhitelistAdd(users.getValueForKey(id).orEmpty()) //TODO better feedback
+        }
     }
 
     private fun sendHelpText()
