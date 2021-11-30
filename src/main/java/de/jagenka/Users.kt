@@ -55,7 +55,9 @@ class Users : BiMap<Snowflake, String>()
             val member = gateway.getMemberById(guildId, it).block()
             if (member != null)
             {
-                if (member.username.equals(name, ignoreCase = true) || member.displayName.equals(name, ignoreCase = true) || getValueForKey(it).equals(name, ignoreCase = true))
+                if (member.username.contains(name, ignoreCase = true) || member.displayName.contains(name, ignoreCase = true) || getValueForKey(it).orEmpty()
+                        .contains(name, ignoreCase = true)
+                )
                 {
                     set.add(UsersConfigEntry(it.asLong(), getValueForKey(it).orEmpty()))
                 }
