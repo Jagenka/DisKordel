@@ -30,7 +30,7 @@ object DiscordBot
 
     private val users = Users()
 
-    fun initialize(token: String, guildId: Long, channelId: Long)
+    fun initialize(token: String, guildId: Long, channelId: Long) //TODO: catch errors
     {
         this.token = token
 
@@ -86,7 +86,9 @@ object DiscordBot
         {
             HackfleischDiskursMod.runWhitelistRemove(oldName)
             HackfleischDiskursMod.runWhitelistAdd(minecraftName)
-            sendMessage("$minecraftName now assigned to ${getPrettyMemberNameById(userId)}")
+            sendMessage("$minecraftName now assigned to ${getPrettyMemberNameById(userId)}\n" +
+                    "$minecraftName is now whitelisted\n" +
+                    "$oldName is no longer whitelisted")
         }
         saveUsersToFile()
     }
@@ -158,7 +160,9 @@ object DiscordBot
         if (!users.containsKey(id)) sendMessage("Please register first with `!register minecraftName`")
         else
         {
-            HackfleischDiskursMod.runWhitelistAdd(users.getValueForKey(id).orEmpty()) //TODO better feedback
+            val minecraftName = users.getValueForKey(id).orEmpty()
+            HackfleischDiskursMod.runWhitelistAdd(minecraftName)
+            sendMessage("ensured whitelist for $minecraftName") //TODO: reaction
         }
     }
 
@@ -230,9 +234,8 @@ object DiscordBot
                 startsWith("!cmd") -> //NOT FILTERED!!
                 {
                     if (isJay(message.author.get())) HackfleischDiskursMod.runCommand(this.removePrefix("!cmd").trim())
-
                 }
-                equals("!whitelist") -> //TODO feedback - server response?
+                startsWith("!whitelist") ->
                 {
                     ensureWhitelist(message.author.get().id)
                 }
