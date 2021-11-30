@@ -1,6 +1,7 @@
 package de.jagenka.mixin;
 
 import de.jagenka.DiscordBot;
+import net.minecraft.network.ClientConnection;
 import net.minecraft.network.MessageType;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -22,5 +23,17 @@ public class PlayerManagerMixin
         String message = text.getString();
         String[] split = message.split(">");
         DiscordBot.sendMessageFromMinecraft(split[0].substring(1), split[1].trim());
+    }
+
+    @Inject(method = "onPlayerConnect(Lnet/minecraft/network/ClientConnection;Lnet/minecraft/server/network/ServerPlayerEntity;)V", at = @At("TAIL"))
+    public void onPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo info)
+    {
+        DiscordBot.onPlayerLogin(player.getDisplayName().asString());
+    }
+
+    @Inject(method = "remove(Lnet/minecraft/server/network/ServerPlayerEntity;)V", at = @At("TAIL"))
+    public void onPlayerRemove(ServerPlayerEntity player, CallbackInfo info)
+    {
+        DiscordBot.onPlayerLeave(player.getDisplayName().asString());
     }
 }

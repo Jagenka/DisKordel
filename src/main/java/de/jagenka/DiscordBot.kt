@@ -63,6 +63,18 @@ object DiscordBot
         sendMessage("<$sender> ${text.convertMentions()}")
     }
 
+    @JvmStatic
+    fun onPlayerLogin(name: String)
+    {
+        sendMessage("$name joined the game")
+    }
+
+    @JvmStatic
+    fun onPlayerLeave(name: String)
+    {
+        sendMessage("$name left the game")
+    }
+
     private fun sendMessage(text: String)
     {
         if (!initialized) return
@@ -162,7 +174,7 @@ object DiscordBot
         {
             val minecraftName = users.getValueForKey(id).orEmpty()
             HackfleischDiskursMod.runWhitelistAdd(minecraftName)
-            sendMessage("ensured whitelist for $minecraftName") //TODO: reaction
+            sendMessage("Ensured whitelist for $minecraftName") //TODO: reaction
         }
     }
 
