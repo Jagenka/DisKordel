@@ -14,6 +14,7 @@ import org.spongepowered.configurate.objectmapping.ConfigSerializable
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.util.regex.Pattern
 
+//TODO: deaths command
 object DiscordBot
 {
     var initialized = false
@@ -64,15 +65,21 @@ object DiscordBot
     }
 
     @JvmStatic
-    fun onPlayerLogin(name: String)
+    fun handleSystemMessages(text: String)
     {
-        sendMessage("$name joined the game")
+        if (text.startsWith("<") || //TODO mentions?
+            text.contains("advancement") ||
+            text.contains("the game")
+        )
+        {
+            sendMessage(text)
+        }
     }
 
     @JvmStatic
-    fun onPlayerLeave(name: String)
+    fun handleDeathMessages(text: String)
     {
-        sendMessage("$name left the game")
+        sendMessage(text)
     }
 
     private fun sendMessage(text: String)
@@ -98,9 +105,11 @@ object DiscordBot
         {
             HackfleischDiskursMod.runWhitelistRemove(oldName)
             HackfleischDiskursMod.runWhitelistAdd(minecraftName)
-            sendMessage("$minecraftName now assigned to ${getPrettyMemberNameById(userId)}\n" +
-                    "$minecraftName is now whitelisted\n" +
-                    "$oldName is no longer whitelisted")
+            sendMessage(
+                "$minecraftName now assigned to ${getPrettyMemberNameById(userId)}\n" +
+                        "$minecraftName is now whitelisted\n" +
+                        "$oldName is no longer whitelisted"
+            ) //TODO if empty, don't show
         }
         saveUsersToFile()
     }
