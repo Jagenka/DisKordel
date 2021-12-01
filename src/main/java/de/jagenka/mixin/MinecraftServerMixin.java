@@ -23,6 +23,6 @@ public class MinecraftServerMixin
     @Inject(method = "sendSystemMessage", at = @At("TAIL"))
     public void sendSystemMessage(Text message, UUID sender, CallbackInfo info)
     {
-        DiscordBot.handleSystemMessages(message.getString());
+        DiscordBot.handleSystemMessages(message.getString(), sender);
     }
 }

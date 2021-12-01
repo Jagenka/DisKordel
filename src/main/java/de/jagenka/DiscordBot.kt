@@ -13,6 +13,7 @@ import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.util.Formatting
 import org.spongepowered.configurate.objectmapping.ConfigSerializable
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
+import java.util.*
 import java.util.regex.Pattern
 
 //TODO: deaths command
@@ -60,8 +61,9 @@ object DiscordBot
     }
 
     @JvmStatic
-    fun handleSystemMessages(text: String)
+    fun handleSystemMessages(text: String, sender: UUID)
     {
+        if (sender == HackfleischDiskursMod.uuid) return
         if (text.startsWith("<") || //TODO mentions?
             text.contains("advancement") ||
             text.contains("the game")
@@ -280,7 +282,7 @@ object DiscordBot
                 {
                     ensureWhitelist(message.author.get().id)
                 }
-                //equals("!thing") -> HackfleischDiskursMod.doThing()
+                equals("!thing") -> HackfleischDiskursMod.getScoreFromScoreboard()
                 else ->
                 {
                     val member = gateway.getMemberById(guildId, message.author.get().id).block()

@@ -16,6 +16,8 @@ object HackfleischDiskursMod : ModInitializer
 {
     private const val MOD_ID = "hackfleisch-diskurs-mod"
 
+    var uuid: UUID = UUID.randomUUID()
+
     private lateinit var minecraftServer: MinecraftServer
 
     override fun onInitialize()
@@ -56,6 +58,11 @@ object HackfleischDiskursMod : ModInitializer
         println("hackfleisch-diskurs-mod has been initialized.")
     }
 
+    fun getScoreFromScoreboard() //TODO
+    {
+        minecraftServer.scoreboard.getAllPlayerScores(minecraftServer.scoreboard.getObjective("deaths")).forEach { println("${it.playerName}: ${it.score}") }
+    }
+
     fun getOnlinePlayers(): List<String>
     {
         if (!checkMinecraftServer()) ArrayList<String>()
@@ -65,7 +72,7 @@ object HackfleischDiskursMod : ModInitializer
     }
 
     @JvmStatic
-    fun broadcastMessage(message: String, formatting: Formatting = Formatting.WHITE, sender: UUID = Util.NIL_UUID)
+    fun broadcastMessage(message: String, formatting: Formatting = Formatting.WHITE, sender: UUID = uuid)
     {
         if (!checkMinecraftServer()) return
         val text = LiteralText(message).formatted(formatting)
