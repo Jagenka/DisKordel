@@ -7,9 +7,9 @@ import net.minecraft.network.MessageType
 import net.minecraft.server.MinecraftServer
 import net.minecraft.text.LiteralText
 import net.minecraft.util.Formatting
+import net.minecraft.util.Util
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.util.*
-import kotlin.collections.ArrayList
 
 @Suppress("UNUSED")
 object HackfleischDiskursMod : ModInitializer
@@ -22,7 +22,7 @@ object HackfleischDiskursMod : ModInitializer
     {
         //register commands
         CommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-            JayCommand.register(dispatcher)
+            WhoisCommand.register(dispatcher)
         }
 
         val path = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs.yaml")
@@ -65,7 +65,7 @@ object HackfleischDiskursMod : ModInitializer
     }
 
     @JvmStatic
-    fun broadcastMessage(message: String, formatting: Formatting = Formatting.WHITE, sender: UUID = UUID.randomUUID())
+    fun broadcastMessage(message: String, formatting: Formatting = Formatting.WHITE, sender: UUID = Util.NIL_UUID)
     {
         if (!checkMinecraftServer()) return
         val text = LiteralText(message).formatted(formatting)

@@ -203,12 +203,12 @@ object DiscordBot
         sendMessage(helpString)
     }
 
-    private fun whoIsUser(name: String)
+    fun whoIsUser(name: String): String
     {
         val result = users.find(name, gateway, guildId)
-        if (result.isEmpty())
+        return if (result.isEmpty())
         {
-            sendMessage("No users found!")
+            "No users found!"
         } else
         {
             val sb = StringBuilder("")
@@ -216,7 +216,8 @@ object DiscordBot
                 sb.append(getPrettyComboName(it))
                 sb.appendLine()
             }
-            sendMessage(sb.toString())
+            sb.setLength(sb.length - 1)
+            sb.toString()
         }
     }
 
@@ -238,7 +239,7 @@ object DiscordBot
                 startsWith("!whois") ->
                 {
                     val input = this.removePrefix("!whois").trim()
-                    whoIsUser(input)
+                    sendMessage(whoIsUser(input))
                 }
                 equals("!list") ->
                 {
