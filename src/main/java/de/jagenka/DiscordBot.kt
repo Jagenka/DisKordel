@@ -3,6 +3,7 @@ package de.jagenka
 import discord4j.common.util.Snowflake
 import discord4j.core.DiscordClient
 import discord4j.core.GatewayDiscordClient
+import discord4j.core.`object`.entity.Member
 import discord4j.core.`object`.entity.Message
 import discord4j.core.`object`.entity.User
 import discord4j.core.`object`.entity.channel.Channel
@@ -59,12 +60,6 @@ object DiscordBot
     }
 
     @JvmStatic
-    fun sendMessageFromMinecraft(sender: String, text: String)
-    {
-        sendMessage("<$sender> ${text.convertMentions()}")
-    }
-
-    @JvmStatic
     fun handleSystemMessages(text: String)
     {
         if (text.startsWith("<") || //TODO mentions?
@@ -89,39 +84,53 @@ object DiscordBot
         channel.restChannel.createMessage(text).block()
     }
 
-    private fun getPrettyMemberNameById(id: Snowflake): String
+    private fun getPrettyMemberName(member: Member): String
     {
-        val member = gateway.getMemberById(guildId, id).block()
-        return if (member != null) "@${member.username} (${member.displayName})" else ""
+        return "@${member.username} (${member.displayName})"
+    }
+
+    private fun handleNotAMember(id: Snowflake)
+    {
+        sendMessage("ERROR: user with id ${id.asLong()} is not a member of configured guild!")
     }
 
     private fun registerUser(userId: Snowflake, minecraftName: String)
     {
-        val oldName = users.getValueForKey(userId).orEmpty()
-        if (!users.registerUser(userId, minecraftName))
+        val member = gateway.getMemberById(guildId, userId).block()
+        if (member == null)
         {
-            sendMessage("$minecraftName is already assigned to ${getPrettyMemberNameById(userId)}")
+            handleNotAMember(userId)
+            return
+        }
+        val oldName = users.getValueForKey(member).orEmpty()
+        if (!users.registerUser(member, minecraftName))
+        {
+            sendMessage("$minecraftName is already assigned to ${getPrettyMemberName(member)}")
         } else
         {
             HackfleischDiskursMod.runWhitelistRemove(oldName)
             HackfleischDiskursMod.runWhitelistAdd(minecraftName)
             sendMessage(
-                "$minecraftName now assigned to ${getPrettyMemberNameById(userId)}\n" +
-                        "$minecraftName is now whitelisted\n" +
-                        "$oldName is no longer whitelisted"
-            ) //TODO if empty, don't show
+                "$minecraftName now assigned to ${getPrettyMemberName(member)}\n" +
+                        "$minecraftName is now whitelisted" +
+                        if (oldName.isNotEmpty()) "\n$oldName is no longer whitelisted" else ""
+            )
         }
         saveUsersToFile()
     }
 
+    //TODO: load every so often
     private fun loadUsersFromFile()
     {
+        users.clear()
         val confLoader = YamlConfigurationLoader.builder().path(usersFilePath).build()
         val root = confLoader.load()
         repeat(root.childrenList().size) {
             val discordId = root.node(it, "discordId").getLong(0)
             val minecraftName = root.node(it, "minecraftName").getString("")
-            users.put(Snowflake.of(discordId), minecraftName)
+            val member = gateway.getMemberById(guildId, Snowflake.of(discordId)).block() //lag is jetzt nur noch hier
+            if (member != null) users.put(member, minecraftName)
+            else handleNotAMember(Snowflake.of(discordId))
         }
     }
 
@@ -129,14 +138,14 @@ object DiscordBot
     {
         val confLoader = YamlConfigurationLoader.builder().path(usersFilePath).build()
         val root = confLoader.load()
-        users.getConfigList().forEachIndexed { index, entry ->
+        users.getAsUsersConfigList().forEachIndexed { index, entry ->
             root.node(index, "discordId").set(entry.discordId)
             root.node(index, "minecraftName").set(entry.minecraftName)
         }
         confLoader.save(root)
     }
 
-    private fun sendMinecraftMessage(sender: String, text: String)
+    private fun sendMessageToMinecraft(sender: String, text: String)
     {
         HackfleischDiskursMod.broadcastMessage(">$sender< $text", Formatting.BLUE)
     }
@@ -148,10 +157,9 @@ object DiscordBot
         while (matcher.find())
         {
             val mention = matcher.group().substring(1, length - 1)
-            val memberId = users.getDiscordMember(mention, gateway, guildId)
-            if (memberId != null) newString = newString.replaceRange(matcher.start(), matcher.end(), "<@!${memberId.asLong()}>")
+            val member = users.getDiscordMember(mention)
+            if (member != null) newString = newString.replaceRange(matcher.start(), matcher.end(), "<@!${member.id.asLong()}>")
         }
-
         return newString
     }
 
@@ -168,20 +176,25 @@ object DiscordBot
     private fun sendRegisteredUsersToChat()
     {
         val sb = StringBuilder("Currently registered Users:")
-        for (it in users.getAsUserConfigSet())
-        {
+        users.getAsWhoIsOutputList().forEach {
             sb.appendLine()
-            sb.append("${getPrettyMemberNameById(Snowflake.of(it.discordId))} as ${it.minecraftName}")
+            sb.append(getPrettyComboName(it));
         }
         sendMessage(sb.toString())
     }
 
     private fun ensureWhitelist(id: Snowflake)
     {
-        if (!users.containsKey(id)) sendMessage("Please register first with `!register minecraftName`")
+        val member = gateway.getMemberById(guildId, id).block()
+        if (member == null)
+        {
+            handleNotAMember(id)
+            return
+        }
+        if (!users.containsKey(member)) sendMessage("Please register first with `!register minecraftName`")
         else
         {
-            val minecraftName = users.getValueForKey(id).orEmpty()
+            val minecraftName = users.getValueForKey(member).orEmpty()
             HackfleischDiskursMod.runWhitelistAdd(minecraftName)
             sendMessage("Ensured whitelist for $minecraftName") //TODO: reaction
         }
@@ -196,6 +209,7 @@ object DiscordBot
                     "\n" +
                     "- `!users`: see all registered users\n" +
                     "- `!whois username`: look for a user\n" +
+                    "- `!updatenames`: update discord display names in database\n" +
                     "\n" +
                     "- `!list`: list currently online players\n" +
                     "\n" +
@@ -205,14 +219,14 @@ object DiscordBot
 
     fun whoIsUser(name: String): String
     {
-        val result = users.find(name, gateway, guildId)
-        return if (result.isEmpty())
+        val members = users.find(name)
+        return if (members.isEmpty())
         {
             "No users found!"
         } else
         {
             val sb = StringBuilder("")
-            result.forEach {
+            members.forEach {
                 sb.append(getPrettyComboName(it))
                 sb.appendLine()
             }
@@ -221,9 +235,9 @@ object DiscordBot
         }
     }
 
-    private fun getPrettyComboName(user: UsersConfigEntry): String
+    private fun getPrettyComboName(user: WhoIsOutput): String
     {
-        return "${getPrettyMemberNameById(Snowflake.of(user.discordId))} aka ${user.minecraftName}"
+        return "${user.username} (${user.displayName}) aka ${user.minecraftName}"
     }
 
     private fun processMessage(message: Message)
@@ -235,11 +249,6 @@ object DiscordBot
                 equals("!help") ->
                 {
                     sendHelpText()
-                }
-                startsWith("!whois") ->
-                {
-                    val input = this.removePrefix("!whois").trim()
-                    sendMessage(whoIsUser(input))
                 }
                 equals("!list") ->
                 {
@@ -253,6 +262,16 @@ object DiscordBot
                 {
                     sendRegisteredUsersToChat()
                 }
+                startsWith("!whois") ->
+                {
+                    val input = this.removePrefix("!whois").trim()
+                    sendMessage(whoIsUser(input))
+                }
+                equals("!updatenames") ->
+                {
+                    loadUsersFromFile()
+                    //TODO: add reaction
+                }
                 startsWith("!cmd") -> //NOT FILTERED!!
                 {
                     if (isJay(message.author.get())) HackfleischDiskursMod.runCommand(this.removePrefix("!cmd").trim())
@@ -265,7 +284,7 @@ object DiscordBot
                 else ->
                 {
                     val member = gateway.getMemberById(guildId, message.author.get().id).block()
-                    sendMinecraftMessage(if (member != null) member.displayName else message.author.get().username, message.content)
+                    sendMessageToMinecraft(if (member != null) member.displayName else message.author.get().username, message.content)
                 }
             }
         }

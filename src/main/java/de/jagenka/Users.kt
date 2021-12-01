@@ -1,69 +1,69 @@
 package de.jagenka
 
-import discord4j.common.util.Snowflake
-import discord4j.core.GatewayDiscordClient
+import discord4j.core.`object`.entity.Member
 
-class Users : BiMap<Snowflake, String>()
+class Users : BiMap<Member, String>()
 {
-    fun registerUser(userId: Snowflake, minecraftName: String): Boolean
+    fun registerUser(member: Member, minecraftName: String): Boolean
     {
         if (this.containsValue(minecraftName)) return false
 
-        this.put(userId, minecraftName)
+        this.put(member, minecraftName)
 
         return true
     }
 
-    fun getDiscordMember(inputName: String, gateway: GatewayDiscordClient, guildId: Snowflake): Snowflake?
+    fun getDiscordMember(inputName: String): Member?
     {
         keys().forEach {
-            val member = gateway.getMemberById(guildId, it).block()
-            if (member != null)
-            {
-                if (member.username == inputName) return it
-                if (member.displayName == inputName) return it
-            }
+            if (it.username == inputName) return it
+            if (it.displayName == inputName) return it
         }
         return null
     }
 
-    fun containsDiscordMember(displayName: String, gateway: GatewayDiscordClient, guildId: Snowflake): Boolean
+    fun containsDiscordMember(inputName: String): Boolean
     {
-        val discordMember = getDiscordMember(displayName, gateway, guildId)
+        val discordMember = getDiscordMember(inputName)
         return discordMember != null
-
     }
 
-    fun getConfigList(): List<UsersConfigEntry>
+    fun getAsUsersConfigList(): List<UsersConfigEntry>
     {
         val arrayList = ArrayList<UsersConfigEntry>()
-        keys().forEach { arrayList.add(UsersConfigEntry(it.asLong(), getValueForKey(it).orEmpty())) }
+        keys().forEach { arrayList.add(UsersConfigEntry(it.id.asLong(), getValueForKey(it).orEmpty())) }
         return arrayList
+    }
+
+    fun getAsWhoIsOutputList(): List<WhoIsOutput>
+    {
+        val list = ArrayList<WhoIsOutput>()
+        keys().forEach { list.add(WhoIsOutput(it.username, it.displayName, getValueForKey(it).orEmpty())) }
+        return list
     }
 
     fun getAsUserConfigSet(): Set<UsersConfigEntry>
     {
         val set = HashSet<UsersConfigEntry>()
-        keys().forEach { set.add(UsersConfigEntry(it.asLong(), getValueForKey(it).orEmpty())) }
+        keys().forEach { set.add(UsersConfigEntry(it.id.asLong(), getValueForKey(it).orEmpty())) }
         return set
     }
 
-    fun find(name: String, gateway: GatewayDiscordClient, guildId: Snowflake): Set<UsersConfigEntry>
+    fun find(name: String): List<WhoIsOutput>
     {
-        val set = HashSet<UsersConfigEntry>()
+        val list = ArrayList<WhoIsOutput>()
         keys().forEach {
-            val member = gateway.getMemberById(guildId, it).block()
-            if (member != null)
+            val username = it.username
+            val displayName = it.displayName
+            val minecraftName = getValueForKey(it).orEmpty()
+
+            if (username.contains(name, ignoreCase = true) || displayName.contains(name, ignoreCase = true) || minecraftName.contains(name, ignoreCase = true))
             {
-                if (member.username.contains(name, ignoreCase = true) || member.displayName.contains(name, ignoreCase = true) || getValueForKey(it).orEmpty()
-                        .contains(name, ignoreCase = true)
-                )
-                {
-                    set.add(UsersConfigEntry(it.asLong(), getValueForKey(it).orEmpty()))
-                }
+                list.add(WhoIsOutput(username, displayName, minecraftName))
             }
         }
-
-        return set
+        return list
     }
 }
+
+data class WhoIsOutput(val username: String, val displayName: String, val minecraftName: String)

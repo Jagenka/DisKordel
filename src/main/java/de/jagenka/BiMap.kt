@@ -2,8 +2,14 @@ package de.jagenka
 
 abstract class BiMap<K, V> //TODO abstract weg
 {
-    private val map = HashMap<K, V>()
-    private val inv = HashMap<V, K>()
+    private var map = HashMap<K, V>()
+    private var inv = HashMap<V, K>()
+
+    fun clear()
+    {
+        map = HashMap<K, V>()
+        inv = HashMap<V, K>()
+    }
 
     fun put(key: K, value: V)
     {
