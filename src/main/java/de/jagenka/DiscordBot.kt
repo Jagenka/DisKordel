@@ -66,7 +66,8 @@ object DiscordBot
         if (sender == HackfleischDiskursMod.uuid) return
         if (text.startsWith("<") || //TODO mentions?
             text.contains("advancement") ||
-            text.contains("the game")
+            text.contains("joined the game") ||
+            text.contains("left the game")
         )
         {
             sendMessage(text)
