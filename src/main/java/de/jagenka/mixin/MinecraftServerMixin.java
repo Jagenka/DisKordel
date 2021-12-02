@@ -10,10 +10,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Mixin(MinecraftServer.class)
 public class MinecraftServerMixin
 {
+    ExecutorService discordExecutor = Executors.newSingleThreadExecutor();
+
     @Inject(method = "loadWorld", at = @At("HEAD"))
     private void serverLoaded(CallbackInfo ci)
     {
@@ -23,6 +27,6 @@ public class MinecraftServerMixin
     @Inject(method = "sendSystemMessage", at = @At("TAIL"))
     public void sendSystemMessage(Text message, UUID sender, CallbackInfo info)
     {
-        DiscordBot.handleSystemMessages(message.getString(), sender);
+        discordExecutor.submit(() -> DiscordBot.handleSystemMessages(message.getString(), sender));
     }
 }
