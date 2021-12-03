@@ -25,6 +25,6 @@ object WhoisCommand
 
     private fun handleWhoisCommand(context: CommandContext<ServerCommandSource>, name: String)
     {
-        context.source.player.sendMessage(Text.of(DiscordBot.whoIsUser(name)), MessageType.CHAT, Util.NIL_UUID)
+        context.source.player.sendMessage(Text.of(DiscordBot.whoIsUser(name)), MessageType.CHAT, HackfleischDiskursMod.uuid)
     }
 }
