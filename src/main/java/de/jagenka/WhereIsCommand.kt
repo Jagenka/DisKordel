@@ -21,7 +21,7 @@ object WhereIsCommand
                     }
                     .executes {
                         handleWhereIsCommand(it, StringArgumentType.getString(it, "player"))
-                        return@executes 0;
+                        return@executes 0
                     })
         )
     }

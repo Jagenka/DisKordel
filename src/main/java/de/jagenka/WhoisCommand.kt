@@ -15,7 +15,7 @@ object WhoisCommand
             CommandManager.literal("whois").then(CommandManager.argument("name", StringArgumentType.greedyString()).executes
             {
                 handleWhoIsCommand(it, StringArgumentType.getString(it, "name"))
-                return@executes 0;
+                return@executes 0
             })
         )
     }
