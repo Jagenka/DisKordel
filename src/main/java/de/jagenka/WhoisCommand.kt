@@ -3,11 +3,8 @@ package de.jagenka
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.network.MessageType
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
-import net.minecraft.util.Util
 
 
 object WhoisCommand
@@ -25,6 +22,6 @@ object WhoisCommand
 
     private fun handleWhoIsCommand(context: CommandContext<ServerCommandSource>, name: String)
     {
-        context.source.player.sendMessage(Text.of(DiscordBot.whoIsUser(name)), MessageType.CHAT, HackfleischDiskursMod.uuid)
+        HackfleischDiskursMod.sendMessageToPlayer(context.source.player, DiscordBot.whoIsUser(name))
     }
 }
