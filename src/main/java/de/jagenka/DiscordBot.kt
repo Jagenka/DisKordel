@@ -1,5 +1,6 @@
 package de.jagenka
 
+import de.jagenka.Util.trim
 import discord4j.common.util.Snowflake
 import discord4j.core.DiscordClient
 import discord4j.core.GatewayDiscordClient
@@ -181,7 +182,7 @@ object DiscordBot
         val sb = StringBuilder("Currently registered Users:")
         users.getAsWhoIsOutputList().forEach {
             sb.appendLine()
-            sb.append(getPrettyComboName(it));
+            sb.append(getPrettyComboName(it))
         }
         sendMessage(sb.toString())
     }
@@ -243,6 +244,12 @@ object DiscordBot
         return "${user.username} (${user.displayName}) aka ${user.minecraftName}"
     }
 
+    private fun handlePerfCommand()
+    {
+        val performanceMetrics = HackfleischDiskursMod.getPerformanceMetrics()
+        sendMessage("TPS: ${performanceMetrics.tps.trim(1)} MSPT: ${performanceMetrics.mspt.trim(1)}")
+    }
+
     private fun processMessage(message: Message)
     {
         with(message.content)
@@ -282,6 +289,10 @@ object DiscordBot
                 startsWith("!whitelist") ->
                 {
                     ensureWhitelist(message.author.get().id)
+                }
+                equals("!perf") ->
+                {
+                    handlePerfCommand()
                 }
                 equals("!thing") -> HackfleischDiskursMod.getScoreFromScoreboard()
                 else ->
