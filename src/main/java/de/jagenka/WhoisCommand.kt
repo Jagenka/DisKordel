@@ -17,13 +17,13 @@ object WhoisCommand
         dispatcher.register(
             CommandManager.literal("whois").then(CommandManager.argument("name", StringArgumentType.greedyString()).executes
             {
-                handleWhoisCommand(it, StringArgumentType.getString(it, "name"))
+                handleWhoIsCommand(it, StringArgumentType.getString(it, "name"))
                 return@executes 0;
             })
         )
     }
 
-    private fun handleWhoisCommand(context: CommandContext<ServerCommandSource>, name: String)
+    private fun handleWhoIsCommand(context: CommandContext<ServerCommandSource>, name: String)
     {
         context.source.player.sendMessage(Text.of(DiscordBot.whoIsUser(name)), MessageType.CHAT, HackfleischDiskursMod.uuid)
     }
