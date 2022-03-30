@@ -6,12 +6,14 @@ import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.network.MessageType
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.stat.Stats
 import net.minecraft.text.LiteralText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Position
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
+import java.time.Duration
 import java.util.*
 import kotlin.math.min
 
@@ -78,6 +80,23 @@ object HackfleischDiskursMod : ModInitializer
         return null
     }
 
+    /**
+     * @return Pair of playerName and playtime in ticks
+     */
+    fun getPlaytime(playerName: String): Pair<String, Int>?
+    {
+        if (!checkMinecraftServer()) return null
+        minecraftServer.playerManager.playerList.forEach { //TODO: this only works for online player -> browse MinecraftServer class. Maybe look for World save
+            if (it.name.asString().equals(playerName, ignoreCase = true))
+            {
+                val playtime = it.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
+                return Pair(it.name.asString(), playtime)
+            }
+        }
+
+        return null
+    }
+
     fun getScoreFromScoreboard() //TODO
     {
         minecraftServer.scoreboard.getAllPlayerScores(minecraftServer.scoreboard.getObjective("deaths")).forEach { println("${it.playerName}: ${it.score}") }
@@ -103,6 +122,11 @@ object HackfleischDiskursMod : ModInitializer
     {
         if (!checkMinecraftServer()) return
         //minecraftServer.commandManager.execute(minecraftServer.commandSource, "say helö") //cmd coming from MinecraftServer
+        //minecraftServer.playerManager.playerList.get(0).dataTracker ??  Stats.PLAY_TIME
+//        minecraftServer.playerManager.playerList.forEach {
+//            val playtime = it.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
+//            println("${it.name.asString()} has played for $playtime ticks")
+//        }
     }
 
     fun runCommand(cmd: String)

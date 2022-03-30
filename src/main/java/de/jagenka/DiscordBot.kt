@@ -231,6 +231,7 @@ object DiscordBot
                     "\n" +
                     "- `!list`: list currently online players\n" +
                     "- `!deaths minecraftName`: shows how often a player has died\n" +
+                    "- `!playtime minecraftName`: shows a players playtime\n" +
                     "\n" +
                     "- `!help`: see this help text"
         sendMessage(helpString)
@@ -316,6 +317,16 @@ object DiscordBot
                     if (deathScore == null) sendMessage("$input has no death count stored")
                     else sendMessage("${deathScore.first} has died ${deathScore.second} time" + if (deathScore.second != 1) "s" else "")
                 }
+                startsWith("!playtime") ->
+                {
+                    val input = this.removePrefix("!playtime").trim()
+                    val playtime = HackfleischDiskursMod.getPlaytime(input)
+                    if (playtime == null) sendMessage("$input has no playtime tracked")
+                    else
+                    {
+                        sendMessage("${playtime.first} has played for ${ticksToPrettyString(playtime.second)}")
+                    }
+                }
                 equals("!thing") -> HackfleischDiskursMod.doThing()
                 else ->
                 {
@@ -324,6 +335,21 @@ object DiscordBot
                 }
             }
         }
+    }
+
+    private fun ticksToPrettyString(ticks: Int): String
+    {
+        val seconds = ticks / 20
+        val minutes = seconds / 60
+        val hours = minutes / 60
+
+        val sb = StringBuilder()
+        if (hours > 0) sb.append("${hours}h")
+        if (hours > 0 || minutes > 0) sb.append(" ${minutes - hours * 60}min")
+        if (hours > 0 || minutes > 0 || seconds > 0) sb.append(" ${seconds - minutes * 60}s")
+        else sb.append("0h 0min 0s")
+
+        return sb.toString()
     }
 
     private fun isJay(user: User): Boolean
