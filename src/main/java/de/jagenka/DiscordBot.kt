@@ -73,8 +73,20 @@ object DiscordBot
             text.contains("left the game")
         )
         {
-            sendMessage(text)
+            sendMessage(text.makeDiscordMarkdownSafe())
         }
+    }
+
+    private fun String.makeDiscordMarkdownSafe(): String
+    {
+        return this
+            .replace("\\", "\\\\")
+            .replace("*", "\\*")
+            .replace("_", "\\_")
+            .replace("~", "\\~")
+            .replace("`", "\\`")
+            .replace("|", "\\|")
+            .replace(">", "\\>")
     }
 
     @JvmStatic
