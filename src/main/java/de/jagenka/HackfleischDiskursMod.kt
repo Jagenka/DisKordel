@@ -15,7 +15,6 @@ import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.util.*
 import kotlin.math.min
 
-//TODO whereis command
 //TODO playtime command
 //TODO command interface
 
@@ -28,7 +27,7 @@ object HackfleischDiskursMod : ModInitializer
 
     private lateinit var minecraftServer: MinecraftServer
 
-    override fun onInitialize()
+    override fun onInitialize() //TODO: schedule for later?
     {
         //register commands
         CommandRegistrationCallback.EVENT.register { dispatcher, _ ->
