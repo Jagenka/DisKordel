@@ -230,6 +230,7 @@ object DiscordBot
                     "- `!updatenames`: update discord display names in database\n" +
                     "\n" +
                     "- `!list`: list currently online players\n" +
+                    "- `!deaths minecraftName`: shows how often a player has died\n" +
                     "\n" +
                     "- `!help`: see this help text"
         sendMessage(helpString)
@@ -308,7 +309,14 @@ object DiscordBot
                 {
                     handlePerfCommand()
                 }
-                equals("!thing") -> HackfleischDiskursMod.getScoreFromScoreboard()
+                startsWith("!deaths") ->
+                {
+                    val input = this.removePrefix("!deaths").trim()
+                    val deathScore = HackfleischDiskursMod.getDeathScore(input)
+                    if (deathScore == null) sendMessage("$input has no death count stored")
+                    else sendMessage("${deathScore.first} has died ${deathScore.second} time" + if (deathScore.second != 1) "s" else "")
+                }
+                equals("!thing") -> HackfleischDiskursMod.doThing()
                 else ->
                 {
                     val member = gateway.getMemberById(guildId, message.author.get().id).block()

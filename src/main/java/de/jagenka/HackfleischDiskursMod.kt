@@ -66,6 +66,18 @@ object HackfleischDiskursMod : ModInitializer
         println("hackfleisch-diskurs-mod has been initialized.")
     }
 
+    /**
+     * @return Pair of playerName and deathCount
+     */
+    fun getDeathScore(playerName: String): Pair<String, Int>?
+    {
+        if (!checkMinecraftServer()) return null
+        minecraftServer.scoreboard.getAllPlayerScores(minecraftServer.scoreboard.getObjective("deaths"))
+            .forEach { if (it.playerName.equals(playerName, ignoreCase = true)) return Pair(it.playerName, it.score) }
+
+        return null
+    }
+
     fun getScoreFromScoreboard() //TODO
     {
         minecraftServer.scoreboard.getAllPlayerScores(minecraftServer.scoreboard.getObjective("deaths")).forEach { println("${it.playerName}: ${it.score}") }
@@ -73,7 +85,7 @@ object HackfleischDiskursMod : ModInitializer
 
     fun getOnlinePlayers(): List<String>
     {
-        if (!checkMinecraftServer()) ArrayList<String>()
+        if (!checkMinecraftServer()) return emptyList()
         val list = ArrayList<String>()
         minecraftServer.playerManager.playerList.forEach { list.add(it.name.asString()) }
         return list
@@ -113,6 +125,7 @@ object HackfleischDiskursMod : ModInitializer
 
     fun getPerformanceMetrics(): PerformanceMetrics
     {
+        if (!checkMinecraftServer()) return PerformanceMetrics(0.0, 0.0)
         val mspt = MathHelper.average(minecraftServer.lastTickLengths) * 1.0E-6
         val tps = min(1000.0 / mspt, 20.0)
 
@@ -121,6 +134,7 @@ object HackfleischDiskursMod : ModInitializer
 
     fun getPlayerPosition(playerString: String): Position?
     {
+        if (!checkMinecraftServer()) return null
         val player = minecraftServer.playerManager.getPlayer(playerString) ?: return null
         return player.pos
     }
