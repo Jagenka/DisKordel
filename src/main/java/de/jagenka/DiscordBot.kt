@@ -22,7 +22,7 @@ object DiscordBot
 {
     var initialized = false
 
-    private val usersFilePath = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs-users.yaml")
+    private val usersFilePath = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs-Users.yaml")
 
     private lateinit var token: String
     private lateinit var guildId: Snowflake
@@ -31,8 +31,6 @@ object DiscordBot
     private lateinit var client: DiscordClient
     private lateinit var gateway: GatewayDiscordClient
     private lateinit var restClient: RestClient
-
-    private val users = Users()
 
     fun initialize(token: String, guildId: Long, channelId: Long) //TODO: catch errors
     {
@@ -120,8 +118,8 @@ object DiscordBot
             handleNotAMember(userId)
             return
         }
-        val oldName = users.getValueForKey(member).orEmpty()
-        if (!users.registerUser(member, minecraftName))
+        val oldName = Users.getValueForKey(member).orEmpty()
+        if (!Users.registerUser(member, minecraftName))
         {
             sendMessage("$minecraftName is already assigned to ${getPrettyMemberName(member)}")
         } else
@@ -140,14 +138,14 @@ object DiscordBot
     //TODO: load every so often
     private fun loadUsersFromFile()
     {
-        users.clear()
+        Users.clear()
         val confLoader = YamlConfigurationLoader.builder().path(usersFilePath).build()
         val root = confLoader.load()
         repeat(root.childrenList().size) {
             val discordId = root.node(it, "discordId").getLong(0)
             val minecraftName = root.node(it, "minecraftName").getString("")
             val member = gateway.getMemberById(guildId, Snowflake.of(discordId)).block() //lag is jetzt nur noch hier
-            if (member != null) users.put(member, minecraftName)
+            if (member != null) Users.put(member, minecraftName)
             else handleNotAMember(Snowflake.of(discordId))
         }
     }
@@ -156,7 +154,7 @@ object DiscordBot
     {
         val confLoader = YamlConfigurationLoader.builder().path(usersFilePath).build()
         val root = confLoader.load()
-        users.getAsUsersConfigList().forEachIndexed { index, entry ->
+        Users.getAsUsersConfigList().forEachIndexed { index, entry ->
             root.node(index, "discordId").set(entry.discordId)
             root.node(index, "minecraftName").set(entry.minecraftName)
         }
@@ -175,7 +173,7 @@ object DiscordBot
         while (matcher.find())
         {
             val mention = matcher.group().substring(1, length - 1)
-            val member = users.getDiscordMember(mention)
+            val member = Users.getDiscordMember(mention)
             if (member != null) newString = newString.replaceRange(matcher.start(), matcher.end(), "<@!${member.id.asLong()}>")
         }
         return newString
@@ -194,7 +192,7 @@ object DiscordBot
     private fun sendRegisteredUsersToChat()
     {
         val sb = StringBuilder("Currently registered Users:")
-        users.getAsWhoIsOutputList().forEach {
+        Users.getAsWhoIsOutputList().forEach {
             sb.appendLine()
             sb.append(getPrettyComboName(it))
         }
@@ -209,10 +207,10 @@ object DiscordBot
             handleNotAMember(id)
             return
         }
-        if (!users.containsKey(member)) sendMessage("Please register first with `!register minecraftName`")
+        if (!Users.containsKey(member)) sendMessage("Please register first with `!register minecraftName`")
         else
         {
-            val minecraftName = users.getValueForKey(member).orEmpty()
+            val minecraftName = Users.getValueForKey(member).orEmpty()
             HackfleischDiskursMod.runWhitelistAdd(minecraftName)
             sendMessage("Ensured whitelist for $minecraftName") //TODO: reaction
         }
@@ -225,7 +223,7 @@ object DiscordBot
                     "- `!register minecraftName`: connect your Minecraft name to your Discord account\n" +
                     "- `!whitelist`: ensure that you're on the whitelist if it doesn't automatically work\n" +
                     "\n" +
-                    "- `!users`: see all registered users\n" +
+                    "- `!users`: see all registered Users\n" +
                     "- `!whois username`: look for a user\n" +
                     "- `!updatenames`: update discord display names in database\n" +
                     "\n" +
@@ -239,7 +237,7 @@ object DiscordBot
 
     fun whoIsUser(name: String): String
     {
-        val members = users.find(name)
+        val members = Users.find(name)
         return if (members.isEmpty())
         {
             "No users found!"
@@ -313,18 +311,31 @@ object DiscordBot
                 startsWith("!deaths") ->
                 {
                     val input = this.removePrefix("!deaths").trim()
-                    val deathScore = HackfleischDiskursMod.getDeathScore(input)
-                    if (deathScore == null) sendMessage("$input has no death count stored")
-                    else sendMessage("${deathScore.first} has died ${deathScore.second} time" + if (deathScore.second != 1) "s" else "")
+                    val results = HackfleischDiskursMod.getDeathScore(input)
+                    if (results.isEmpty()) sendMessage("$input has no death count stored")
+                    else
+                    {
+                        val stringBuilder = StringBuilder()
+                        results.forEach { deathScore ->
+                            stringBuilder.append("${deathScore.first} has died ${deathScore.second} time" + if (deathScore.second != 1) "s" else "")
+                            stringBuilder.appendLine()
+                        }
+                        sendMessage(stringBuilder.trim().toString())
+                    }
                 }
                 startsWith("!playtime") ->
                 {
                     val input = this.removePrefix("!playtime").trim()
-                    val playtime = HackfleischDiskursMod.getPlaytime(input)
-                    if (playtime == null) sendMessage("$input has no playtime tracked")
+                    val results = HackfleischDiskursMod.getPlaytime(input)
+                    if (results.isEmpty()) sendMessage("$input has no playtime tracked")
                     else
                     {
-                        sendMessage("${playtime.first} has played for ${ticksToPrettyString(playtime.second)}")
+                        val stringBuilder = StringBuilder()
+                        results.forEach { playtime ->
+                            stringBuilder.append("${playtime.first} has played for ${ticksToPrettyString(playtime.second)}")
+                            stringBuilder.appendLine()
+                        }
+                        sendMessage(stringBuilder.trim().toString())
                     }
                 }
                 equals("!thing") -> HackfleischDiskursMod.doThing()

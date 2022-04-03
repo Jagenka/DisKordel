@@ -13,11 +13,10 @@ import net.minecraft.util.Formatting
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Position
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
-import java.time.Duration
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.math.min
 
-//TODO playtime command
 //TODO command interface
 
 @Suppress("UNUSED")
@@ -69,32 +68,54 @@ object HackfleischDiskursMod : ModInitializer
     }
 
     /**
-     * @return Pair of playerName and deathCount
+     * @return List of Pair of real playerName and deathCount
      */
-    fun getDeathScore(playerName: String): Pair<String, Int>?
+    fun getDeathScore(playerName: String): List<Pair<String, Int>>
     {
-        if (!checkMinecraftServer()) return null
-        minecraftServer.scoreboard.getAllPlayerScores(minecraftServer.scoreboard.getObjective("deaths"))
-            .forEach { if (it.playerName.equals(playerName, ignoreCase = true)) return Pair(it.playerName, it.score) }
+        if (!checkMinecraftServer()) return emptyList()
 
-        return null
+        val result = ArrayList<Pair<String, Int>>()
+
+        val possiblePlayers = Users.find(playerName)
+
+        minecraftServer.scoreboard.getAllPlayerScores(minecraftServer.scoreboard.getObjective("deaths"))
+            .forEach {
+                possiblePlayers.forEach { player ->
+                    if (it.playerName.equals(player.minecraftName, ignoreCase = true)) result.add(Pair(it.playerName, it.score))
+                }
+                if (it.playerName.equals(playerName, ignoreCase = true)) result.add(Pair(it.playerName, it.score))
+            }
+
+        return result
     }
 
     /**
-     * @return Pair of playerName and playtime in ticks
+     * @return List of Pair of real playerName and playtime in ticks
      */
-    fun getPlaytime(playerName: String): Pair<String, Int>?
+    fun getPlaytime(playerName: String): List<Pair<String, Int>>
     {
-        if (!checkMinecraftServer()) return null
+        if (!checkMinecraftServer()) return emptyList()
+
+        val result = ArrayList<Pair<String, Int>>()
+
+        val possiblePlayers = Users.find(playerName)
+
         minecraftServer.playerManager.playerList.forEach { //TODO: this only works for online player -> browse MinecraftServer class. Maybe look for World save
+            possiblePlayers.forEach { player ->
+                if (it.name.asString().equals(player.minecraftName, ignoreCase = true))
+                {
+                    val playtime = it.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
+                    result.add(Pair(it.name.asString(), playtime))
+                }
+            }
             if (it.name.asString().equals(playerName, ignoreCase = true))
             {
                 val playtime = it.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
-                return Pair(it.name.asString(), playtime)
+                result.add(Pair(it.name.asString(), playtime))
             }
         }
 
-        return null
+        return result
     }
 
     fun getScoreFromScoreboard() //TODO
@@ -121,6 +142,10 @@ object HackfleischDiskursMod : ModInitializer
     fun doThing()
     {
         if (!checkMinecraftServer()) return
+
+        val hideo = minecraftServer.userCache.findByName("HideoTurismo").get().id
+        minecraftServer
+
         //minecraftServer.commandManager.execute(minecraftServer.commandSource, "say helö") //cmd coming from MinecraftServer
         //minecraftServer.playerManager.playerList.get(0).dataTracker ??  Stats.PLAY_TIME
 //        minecraftServer.playerManager.playerList.forEach {
