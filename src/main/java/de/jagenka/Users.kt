@@ -2,7 +2,7 @@ package de.jagenka
 
 import discord4j.core.`object`.entity.Member
 
-class Users : BiMap<Member, String>()
+object Users : BiMap<Member, String>()
 {
     fun registerUser(member: Member, minecraftName: String): Boolean
     {
@@ -35,7 +35,7 @@ class Users : BiMap<Member, String>()
         return arrayList
     }
 
-    fun getAsWhoIsOutputList(): List<WhoIsOutput>
+    fun getAsWhoIsOutputList(): List<WhoIsOutput> //TODO: rename
     {
         val list = ArrayList<WhoIsOutput>()
         keys().forEach { list.add(WhoIsOutput(it.username, it.displayName, getValueForKey(it).orEmpty())) }
