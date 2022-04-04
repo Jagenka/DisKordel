@@ -21,7 +21,7 @@ object DiscordBot
 {
     var initialized = false
 
-    private val usersFilePath = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs-Users.yaml")
+    private val usersFilePath = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs-users.yaml")
 
     private lateinit var token: String
     private lateinit var guildId: Snowflake
