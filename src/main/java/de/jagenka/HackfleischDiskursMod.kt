@@ -1,5 +1,8 @@
 package de.jagenka
 
+import com.google.gson.internal.Streams
+import com.google.gson.stream.JsonReader
+import de.jagenka.Util.unwrap
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
 import net.fabricmc.loader.api.FabricLoader
@@ -10,11 +13,15 @@ import net.minecraft.stat.Stats
 import net.minecraft.text.LiteralText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import net.minecraft.util.WorldSavePath
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Position
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
+import java.io.StringReader
+import java.nio.file.Files
 import java.util.*
-import kotlin.collections.ArrayList
+import kotlin.io.path.name
+import kotlin.io.path.readText
 import kotlin.math.min
 
 //TODO command interface
@@ -98,20 +105,55 @@ object HackfleischDiskursMod : ModInitializer
 
         val result = ArrayList<Pair<String, Int>>()
 
-        val possiblePlayers = Users.find(playerName)
+        val possibleUsers = Users.find(playerName).toMutableList()
+        if (possibleUsers.find { user -> user.minecraftName.equals(playerName, ignoreCase = true) } == null)
+            possibleUsers.add(User("", "", playerName)) // if someone is not registered
 
-        minecraftServer.playerManager.playerList.forEach { //TODO: this only works for online player -> browse MinecraftServer class. Maybe look for World save
-            possiblePlayers.forEach { player ->
-                if (it.name.asString().equals(player.minecraftName, ignoreCase = true))
+        val onlinePlayers = minecraftServer.playerManager.playerList
+        val statsPath = minecraftServer.getSavePath(WorldSavePath.STATS)
+        var foundSomeoneOnline = false
+
+        possibleUsers.forEach { possibleUser ->
+            onlinePlayers.forEach { onlinePlayer ->
+                if (possibleUser.minecraftName.equals(onlinePlayer.name.asString(), ignoreCase = true))
                 {
-                    val playtime = it.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
-                    result.add(Pair(it.name.asString(), playtime))
+                    val playtime = onlinePlayer.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
+                    result.add(Pair(onlinePlayer.name.asString(), playtime))
+                    foundSomeoneOnline = true
                 }
             }
-            if (it.name.asString().equals(playerName, ignoreCase = true))
-            {
-                val playtime = it.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
-                result.add(Pair(it.name.asString(), playtime))
+        }
+        if (!foundSomeoneOnline)
+        {
+            val statsOnDiskMap = HashMap<String, Int>() // key: minecraftName, value: playtime
+
+            Files.list(statsPath).forEach { statFile ->
+                val jsonReader = JsonReader(StringReader(statFile.readText()))
+                val jsonElement = Streams.parse(jsonReader)
+                val jsonObject = jsonElement.asJsonObject
+
+                jsonObject.entrySet().find { it.key == "stats" }
+                    ?.let {
+                        it.value.asJsonObject.entrySet().find { it.key == "minecraft:custom" }
+                            ?.let {
+                                it.value.asJsonObject.entrySet().find { it.key == "minecraft:play_time" }
+                                    ?.let { playtimeEntry ->
+                                        val playerUUID = statFile.fileName.name.dropLast(5)
+                                        statsOnDiskMap[minecraftServer.userCache.getByUuid(UUID.fromString(playerUUID)).unwrap()?.name.toString()] = playtimeEntry.value.asInt
+                                    }
+                            }
+
+                    }
+            }
+
+            possibleUsers.forEach { possibleUser ->
+                val offlinePlayer = minecraftServer.userCache.findByName(possibleUser.minecraftName).unwrap()
+                statsOnDiskMap.forEach { (name, playtime) ->
+                    if (name.equals(offlinePlayer?.name.toString(), ignoreCase = true))
+                    {
+                        result.add(Pair(name, playtime))
+                    }
+                }
             }
         }
 
@@ -143,8 +185,26 @@ object HackfleischDiskursMod : ModInitializer
     {
         if (!checkMinecraftServer()) return
 
-        val hideo = minecraftServer.userCache.findByName("HideoTurismo").get().id
-        minecraftServer
+        val hideo = minecraftServer.userCache.findByName("HideoTurismo").unwrap()?.id.toString()
+        val statsPath = minecraftServer.getSavePath(WorldSavePath.STATS)
+        Files.list(statsPath).forEach { statFile ->
+            if (statFile.toString().contains(hideo))
+            {
+                val jsonReader = JsonReader(StringReader(statFile.readText()))
+                val jsonElement = Streams.parse(jsonReader)
+                val jsonObject = jsonElement.asJsonObject
+
+                jsonObject.entrySet().find { it.key == "stats" }
+                    ?.let {
+                        it.value.asJsonObject.entrySet().find { it.key == "minecraft:custom" }
+                            ?.let {
+                                it.value.asJsonObject.entrySet().find { it.key == "minecraft:play_time" }
+                                    ?.let { println(it.value) }
+                            }
+                    }
+            }
+        }
+
 
         //minecraftServer.commandManager.execute(minecraftServer.commandSource, "say helö") //cmd coming from MinecraftServer
         //minecraftServer.playerManager.playerList.get(0).dataTracker ??  Stats.PLAY_TIME
