@@ -17,7 +17,6 @@ import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.util.*
 import java.util.regex.Pattern
 
-//TODO: deaths command
 object DiscordBot
 {
     var initialized = false
