@@ -53,7 +53,7 @@ object DiscordBot
         this.guildId = Snowflake.of(guildId)
         channel = gateway.getChannelById(Snowflake.of(channelId)).block()!!
 
-        loadUsersFromFile()
+        loadUsersFromFile() //TODO: investigate, why this doesn't work sometimes
 
         initialized = true
     }
