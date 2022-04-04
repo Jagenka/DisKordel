@@ -35,10 +35,10 @@ object Users : BiMap<Member, String>()
         return arrayList
     }
 
-    fun getAsWhoIsOutputList(): List<WhoIsOutput> //TODO: rename
+    fun getAsUserList(): List<User>
     {
-        val list = ArrayList<WhoIsOutput>()
-        keys().forEach { list.add(WhoIsOutput(it.username, it.displayName, getValueForKey(it).orEmpty())) }
+        val list = ArrayList<User>()
+        keys().forEach { list.add(User(it.username, it.displayName, getValueForKey(it).orEmpty())) }
         return list
     }
 
@@ -49,9 +49,9 @@ object Users : BiMap<Member, String>()
         return set
     }
 
-    fun find(name: String): List<WhoIsOutput>
+    fun find(name: String): List<User>
     {
-        val list = ArrayList<WhoIsOutput>()
+        val list = ArrayList<User>()
         keys().forEach {
             val username = it.username
             val displayName = it.displayName
@@ -59,11 +59,11 @@ object Users : BiMap<Member, String>()
 
             if (username.contains(name, ignoreCase = true) || displayName.contains(name, ignoreCase = true) || minecraftName.contains(name, ignoreCase = true))
             {
-                list.add(WhoIsOutput(username, displayName, minecraftName))
+                list.add(User(username, displayName, minecraftName))
             }
         }
         return list
     }
 }
 
-data class WhoIsOutput(val username: String, val displayName: String, val minecraftName: String)
+data class User(val username: String, val displayName: String, val minecraftName: String)

@@ -191,7 +191,7 @@ object DiscordBot
     private fun sendRegisteredUsersToChat()
     {
         val sb = StringBuilder("Currently registered Users:")
-        Users.getAsWhoIsOutputList().forEach {
+        Users.getAsUserList().forEach {
             sb.appendLine()
             sb.append(getPrettyComboName(it))
         }
@@ -252,7 +252,7 @@ object DiscordBot
         }
     }
 
-    private fun getPrettyComboName(user: WhoIsOutput): String
+    private fun getPrettyComboName(user: de.jagenka.User): String
     {
         return "${user.username} (${user.displayName}) aka ${user.minecraftName}"
     }
