@@ -146,7 +146,7 @@ object HackfleischDiskursMod : ModInitializer
                     }
             }
 
-            possibleUsers.forEach { possibleUser ->
+            possibleUsers.forEach { possibleUser -> // TODO: move to own method -> make playtime leaderboard
                 val offlinePlayer = minecraftServer.userCache.findByName(possibleUser.minecraftName).unwrap()
                 statsOnDiskMap.forEach { (name, playtime) ->
                     if (name.equals(offlinePlayer?.name.toString(), ignoreCase = true))
