@@ -110,7 +110,6 @@ object HackfleischDiskursMod : ModInitializer
             possibleUsers.add(User("", "", playerName)) // if someone is not registered
 
         val onlinePlayers = minecraftServer.playerManager.playerList
-        val statsPath = minecraftServer.getSavePath(WorldSavePath.STATS)
         var foundSomeoneOnline = false
 
         possibleUsers.forEach { possibleUser ->
@@ -125,28 +124,9 @@ object HackfleischDiskursMod : ModInitializer
         }
         if (!foundSomeoneOnline)
         {
-            val statsOnDiskMap = HashMap<String, Int>() // key: minecraftName, value: playtime
+            val statsOnDiskMap = readPlaytimeFromStatsFiles()
 
-            Files.list(statsPath).forEach { statFile ->
-                val jsonReader = JsonReader(StringReader(statFile.readText()))
-                val jsonElement = Streams.parse(jsonReader)
-                val jsonObject = jsonElement.asJsonObject
-
-                jsonObject.entrySet().find { it.key == "stats" }
-                    ?.let {
-                        it.value.asJsonObject.entrySet().find { it.key == "minecraft:custom" }
-                            ?.let {
-                                it.value.asJsonObject.entrySet().find { it.key == "minecraft:play_time" }
-                                    ?.let { playtimeEntry ->
-                                        val playerUUID = statFile.fileName.name.dropLast(5)
-                                        statsOnDiskMap[minecraftServer.userCache.getByUuid(UUID.fromString(playerUUID)).unwrap()?.name.toString()] = playtimeEntry.value.asInt
-                                    }
-                            }
-
-                    }
-            }
-
-            possibleUsers.forEach { possibleUser -> // TODO: move to own method -> make playtime leaderboard
+            possibleUsers.forEach { possibleUser ->
                 val offlinePlayer = minecraftServer.userCache.findByName(possibleUser.minecraftName).unwrap()
                 statsOnDiskMap.forEach { (name, playtime) ->
                     if (name.equals(offlinePlayer?.name.toString(), ignoreCase = true))
@@ -158,6 +138,56 @@ object HackfleischDiskursMod : ModInitializer
         }
 
         return result
+    }
+
+    private fun readPlaytimeFromStatsFiles(): Map<String, Int>
+    {
+        if (!checkMinecraftServer()) return emptyMap()
+
+        val statsPath = minecraftServer.getSavePath(WorldSavePath.STATS)
+
+        val statsOnDiskMap = HashMap<String, Int>() // key: minecraftName, value: playtime
+
+        Files.list(statsPath).forEach { statFile ->
+            val jsonReader = JsonReader(StringReader(statFile.readText()))
+            val jsonElement = Streams.parse(jsonReader)
+            val jsonObject = jsonElement.asJsonObject
+
+            jsonObject.entrySet().find { it.key == "stats" }
+                ?.let {
+                    it.value.asJsonObject.entrySet().find { it.key == "minecraft:custom" }
+                        ?.let {
+                            it.value.asJsonObject.entrySet().find { it.key == "minecraft:play_time" }
+                                ?.let { playtimeEntry ->
+                                    val playerUUID = statFile.fileName.name.dropLast(5)
+                                    statsOnDiskMap[minecraftServer.userCache.getByUuid(UUID.fromString(playerUUID)).unwrap()?.name.toString()] = //TODO: seems to return null sometimes -> try to get name from someplace else than userCache
+                                        playtimeEntry.value.asInt
+                                }
+                        }
+
+                }
+        }
+
+        return statsOnDiskMap
+    }
+
+    fun getPlaytimeLeaderboard(): List<Pair<String, Int>>
+    {
+        if (!checkMinecraftServer()) return emptyList()
+
+        val leaderboardMap = HashMap<String, Int>()
+        val statsFromFilesMap = readPlaytimeFromStatsFiles()
+
+        statsFromFilesMap.forEach { (name, playtime) ->
+            leaderboardMap[name] = playtime
+        }
+
+        minecraftServer.playerManager.playerList.forEach { onlinePlayer ->
+            val playtime = onlinePlayer.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
+            leaderboardMap[onlinePlayer.name.asString()] = playtime
+        }
+
+        return leaderboardMap.toList().sortedByDescending { it.second }
     }
 
     fun getScoreFromScoreboard() //TODO
@@ -183,27 +213,29 @@ object HackfleischDiskursMod : ModInitializer
 
     fun doThing()
     {
-        if (!checkMinecraftServer()) return
+        getPlaytimeLeaderboard().forEach { println(it) }
 
-        val hideo = minecraftServer.userCache.findByName("HideoTurismo").unwrap()?.id.toString()
-        val statsPath = minecraftServer.getSavePath(WorldSavePath.STATS)
-        Files.list(statsPath).forEach { statFile ->
-            if (statFile.toString().contains(hideo))
-            {
-                val jsonReader = JsonReader(StringReader(statFile.readText()))
-                val jsonElement = Streams.parse(jsonReader)
-                val jsonObject = jsonElement.asJsonObject
-
-                jsonObject.entrySet().find { it.key == "stats" }
-                    ?.let {
-                        it.value.asJsonObject.entrySet().find { it.key == "minecraft:custom" }
-                            ?.let {
-                                it.value.asJsonObject.entrySet().find { it.key == "minecraft:play_time" }
-                                    ?.let { println(it.value) }
-                            }
-                    }
-            }
-        }
+//        if (!checkMinecraftServer()) return
+//
+//        val hideo = minecraftServer.userCache.findByName("HideoTurismo").unwrap()?.id.toString()
+//        val statsPath = minecraftServer.getSavePath(WorldSavePath.STATS)
+//        Files.list(statsPath).forEach { statFile ->
+//            if (statFile.toString().contains(hideo))
+//            {
+//                val jsonReader = JsonReader(StringReader(statFile.readText()))
+//                val jsonElement = Streams.parse(jsonReader)
+//                val jsonObject = jsonElement.asJsonObject
+//
+//                jsonObject.entrySet().find { it.key == "stats" }
+//                    ?.let {
+//                        it.value.asJsonObject.entrySet().find { it.key == "minecraft:custom" }
+//                            ?.let {
+//                                it.value.asJsonObject.entrySet().find { it.key == "minecraft:play_time" }
+//                                    ?.let { println(it.value) }
+//                            }
+//                    }
+//            }
+//        }
 
 
         //minecraftServer.commandManager.execute(minecraftServer.commandSource, "say helö") //cmd coming from MinecraftServer

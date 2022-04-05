@@ -324,17 +324,31 @@ object DiscordBot
                 }
                 startsWith("!playtime") ->
                 {
-                    val input = this.removePrefix("!playtime").trim()
-                    val results = HackfleischDiskursMod.getPlaytime(input)
-                    if (results.isEmpty()) sendMessage("$input has no playtime tracked")
-                    else
+                    if(this == "!playtime")
                     {
+                        val leaderboard = HackfleischDiskursMod.getPlaytimeLeaderboard()
                         val stringBuilder = StringBuilder()
-                        results.forEach { playtime ->
+                        leaderboard.forEach { playtime ->
                             stringBuilder.append("${playtime.first} has played for ${ticksToPrettyString(playtime.second)}")
                             stringBuilder.appendLine()
                         }
                         sendMessage(stringBuilder.trim().toString())
+                    }
+                    else
+                    {
+                        val input = this.removePrefix("!playtime").trim()
+                        val results = HackfleischDiskursMod.getPlaytime(input)
+                        if (results.isEmpty()) sendMessage("$input has no playtime tracked")
+                        else
+                        {
+                            val stringBuilder = StringBuilder()
+                            results.forEach { playtime ->
+                                stringBuilder.append("${playtime.first} has played for ${ticksToPrettyString(playtime.second)}")
+                                stringBuilder.appendLine()
+                            }
+                            sendMessage(stringBuilder.trim().toString())
+                        }
+
                     }
                 }
                 equals("!thing") -> HackfleischDiskursMod.doThing()
