@@ -14,6 +14,7 @@ import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.util.Formatting
 import org.spongepowered.configurate.objectmapping.ConfigSerializable
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
+import java.lang.Exception
 import java.util.*
 import java.util.regex.Pattern
 
@@ -143,9 +144,13 @@ object DiscordBot
         repeat(root.childrenList().size) {
             val discordId = root.node(it, "discordId").getLong(0)
             val minecraftName = root.node(it, "minecraftName").getString("")
-            val member = gateway.getMemberById(guildId, Snowflake.of(discordId)).block() //lag is jetzt nur noch hier
-            if (member != null) Users.put(member, minecraftName)
-            else handleNotAMember(Snowflake.of(discordId))
+
+            try
+            {
+                val member = gateway.getMemberById(guildId, Snowflake.of(discordId)).block() //lag is jetzt nur noch hier
+                if (member != null) Users.put(member, minecraftName)
+                else handleNotAMember(Snowflake.of(discordId))
+            } catch (e: Exception) {}
         }
     }
 
