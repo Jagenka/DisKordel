@@ -64,6 +64,13 @@ object Users : BiMap<Member, String>()
         }
         return list
     }
+
+    fun List<User>.onlyMinecraftNames(): List<String>
+    {
+        val minecraftNames = ArrayList<String>()
+        this.forEach { minecraftNames.add(it.minecraftName) }
+        return minecraftNames
+    }
 }
 
 data class User(val username: String, val displayName: String, val minecraftName: String)

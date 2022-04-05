@@ -2,6 +2,7 @@ package de.jagenka
 
 import com.google.gson.internal.Streams
 import com.google.gson.stream.JsonReader
+import de.jagenka.Users.onlyMinecraftNames
 import de.jagenka.Util.unwrap
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
@@ -104,40 +105,11 @@ object HackfleischDiskursMod : ModInitializer
         if (!checkMinecraftServer()) return emptyList()
 
         val result = ArrayList<Pair<String, Int>>()
+        val possibleUsers = Users.find(playerName).onlyMinecraftNames().toMutableList()
+        possibleUsers.add(playerName) // if someone is not registered
+        getPlaytimeLeaderboard().forEach { pair -> possibleUsers.forEach { if (pair.first.lowercase().contains(it.lowercase())) result.add(pair) } }
 
-        val possibleUsers = Users.find(playerName).toMutableList()
-        if (possibleUsers.find { user -> user.minecraftName.equals(playerName, ignoreCase = true) } == null)
-            possibleUsers.add(User("", "", playerName)) // if someone is not registered
-
-        val onlinePlayers = minecraftServer.playerManager.playerList
-        var foundSomeoneOnline = false
-
-        possibleUsers.forEach { possibleUser ->
-            onlinePlayers.forEach { onlinePlayer ->
-                if (possibleUser.minecraftName.equals(onlinePlayer.name.asString(), ignoreCase = true))
-                {
-                    val playtime = onlinePlayer.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
-                    result.add(Pair(onlinePlayer.name.asString(), playtime))
-                    foundSomeoneOnline = true
-                }
-            }
-        }
-        if (!foundSomeoneOnline)
-        {
-            val statsOnDiskMap = readPlaytimeFromStatsFiles()
-
-            possibleUsers.forEach { possibleUser ->
-                val offlinePlayer = minecraftServer.userCache.findByName(possibleUser.minecraftName).unwrap()
-                statsOnDiskMap.forEach { (name, playtime) ->
-                    if (name.equals(offlinePlayer?.name.toString(), ignoreCase = true))
-                    {
-                        result.add(Pair(name, playtime))
-                    }
-                }
-            }
-        }
-
-        return result
+        return result.distinctBy { it.first.lowercase() }
     }
 
     private fun readPlaytimeFromStatsFiles(): Map<String, Int>
@@ -160,7 +132,8 @@ object HackfleischDiskursMod : ModInitializer
                             it.value.asJsonObject.entrySet().find { it.key == "minecraft:play_time" }
                                 ?.let { playtimeEntry ->
                                     val playerUUID = statFile.fileName.name.dropLast(5)
-                                    statsOnDiskMap[minecraftServer.userCache.getByUuid(UUID.fromString(playerUUID)).unwrap()?.name.toString()] = //TODO: seems to return null sometimes -> try to get name from someplace else than userCache
+                                    statsOnDiskMap[minecraftServer.userCache.getByUuid(UUID.fromString(playerUUID)).unwrap()?.name.toString()] =
+                                            //TODO: seems to return null sometimes -> try to get name from someplace else than userCache
                                         playtimeEntry.value.asInt
                                 }
                         }
