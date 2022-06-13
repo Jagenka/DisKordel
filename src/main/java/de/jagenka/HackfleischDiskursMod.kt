@@ -2,16 +2,19 @@ package de.jagenka
 
 import com.google.gson.internal.Streams
 import com.google.gson.stream.JsonReader
+import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.Users.onlyMinecraftNames
 import de.jagenka.Util.unwrap
 import net.fabricmc.api.ModInitializer
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.network.MessageType
+import net.minecraft.command.CommandRegistryAccess
+import net.minecraft.network.message.MessageType
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.command.CommandManager
+import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.stat.Stats
-import net.minecraft.text.LiteralText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.WorldSavePath
@@ -39,7 +42,7 @@ object HackfleischDiskursMod : ModInitializer
     override fun onInitialize() //TODO: schedule for later?
     {
         //register commands
-        CommandRegistrationCallback.EVENT.register { dispatcher, _ ->
+        CommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<ServerCommandSource>, _: CommandRegistryAccess, _: CommandManager.RegistrationEnvironment ->
             WhoisCommand.register(dispatcher)
             WhereIsCommand.register(dispatcher)
         }
@@ -157,7 +160,7 @@ object HackfleischDiskursMod : ModInitializer
 
         minecraftServer.playerManager.playerList.forEach { onlinePlayer ->
             val playtime = onlinePlayer.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
-            leaderboardMap[onlinePlayer.name.asString()] = playtime
+            leaderboardMap[onlinePlayer.name.string] = playtime
         }
 
         return leaderboardMap.toList().sortedByDescending { it.second }
@@ -172,7 +175,7 @@ object HackfleischDiskursMod : ModInitializer
     {
         if (!checkMinecraftServer()) return emptyList()
         val list = ArrayList<String>()
-        minecraftServer.playerManager.playerList.forEach { list.add(it.name.asString()) }
+        minecraftServer.playerManager.playerList.forEach { list.add(it.name.string) }
         return list
     }
 
@@ -180,8 +183,8 @@ object HackfleischDiskursMod : ModInitializer
     fun broadcastMessage(message: String, formatting: Formatting = Formatting.WHITE, sender: UUID = uuid)
     {
         if (!checkMinecraftServer()) return
-        val text = LiteralText(message).formatted(formatting)
-        minecraftServer.playerManager.broadcast(text, MessageType.CHAT, sender)
+        val text = Text.literal(message).formatted(formatting)
+        minecraftServer.playerManager.broadcast(text, MessageType.TELLRAW_COMMAND)
     }
 
     fun doThing()
@@ -260,7 +263,7 @@ object HackfleischDiskursMod : ModInitializer
 
     fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)
     {
-        player.sendMessage(Text.of(text), MessageType.CHAT, uuid)
+        player.sendMessage(Text.of(text))
     }
 
     //to set MinecraftServer instance coming from Mixin

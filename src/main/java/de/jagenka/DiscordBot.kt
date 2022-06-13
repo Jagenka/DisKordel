@@ -4,18 +4,17 @@ import de.jagenka.Util.trim
 import discord4j.common.util.Snowflake
 import discord4j.core.DiscordClient
 import discord4j.core.GatewayDiscordClient
+import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.core.`object`.entity.Member
 import discord4j.core.`object`.entity.Message
 import discord4j.core.`object`.entity.User
 import discord4j.core.`object`.entity.channel.Channel
-import discord4j.core.event.domain.message.MessageCreateEvent
 import discord4j.rest.RestClient
 import net.fabricmc.loader.api.FabricLoader
+import net.minecraft.network.message.MessageSender
 import net.minecraft.util.Formatting
 import org.spongepowered.configurate.objectmapping.ConfigSerializable
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader
-import java.lang.Exception
-import java.util.*
 import java.util.regex.Pattern
 
 object DiscordBot
@@ -60,18 +59,18 @@ object DiscordBot
     }
 
     @JvmStatic
-    fun handleSystemMessages(text: String, sender: UUID)
+    fun handleSystemMessages(message: String, sender: MessageSender)
     {
-        if (sender == HackfleischDiskursMod.uuid) return
-        if (text.startsWith("<") || //TODO mentions?
-            text.contains("has made the advancement") ||
-            text.contains("has reached the goal") ||
-            text.contains("has completed the challenge") ||
-            text.contains("joined the game") ||
-            text.contains("left the game")
+        if (sender.uuid == HackfleischDiskursMod.uuid) return
+        if (message.startsWith("<") || //TODO mentions?
+            message.contains("has made the advancement") ||
+            message.contains("has reached the goal") ||
+            message.contains("has completed the challenge") ||
+            message.contains("joined the game") ||
+            message.contains("left the game")
         )
         {
-            sendMessage(text.makeDiscordMarkdownSafe())
+            sendMessage(message.makeDiscordMarkdownSafe())
         }
     }
 
@@ -150,7 +149,9 @@ object DiscordBot
                 val member = gateway.getMemberById(guildId, Snowflake.of(discordId)).block() //lag is jetzt nur noch hier
                 if (member != null) Users.put(member, minecraftName)
                 else handleNotAMember(Snowflake.of(discordId))
-            } catch (e: Exception) {}
+            } catch (e: Exception)
+            {
+            }
         }
     }
 
@@ -329,7 +330,7 @@ object DiscordBot
                 }
                 startsWith("!playtime") ->
                 {
-                    if(this == "!playtime")
+                    if (this == "!playtime")
                     {
                         val leaderboard = HackfleischDiskursMod.getPlaytimeLeaderboard()
                         val stringBuilder = StringBuilder()
@@ -338,8 +339,7 @@ object DiscordBot
                             stringBuilder.appendLine()
                         }
                         sendMessage(stringBuilder.trim().toString())
-                    }
-                    else
+                    } else
                     {
                         val input = this.removePrefix("!playtime").trim()
                         val results = HackfleischDiskursMod.getPlaytime(input)

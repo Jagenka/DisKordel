@@ -22,6 +22,7 @@ object WhoisCommand
 
     private fun handleWhoIsCommand(context: CommandContext<ServerCommandSource>, name: String)
     {
-        HackfleischDiskursMod.sendMessageToPlayer(context.source.player, DiscordBot.whoIsUser(name))
+        val player = context.source.player ?: return
+        HackfleischDiskursMod.sendMessageToPlayer(player, DiscordBot.whoIsUser(name))
     }
 }
