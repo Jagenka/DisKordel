@@ -2,7 +2,8 @@ plugins {
     id("fabric-loom")
     val kotlinVersion: String by System.getProperties()
     kotlin("jvm").version(kotlinVersion)
-    id("com.github.johnrengelman.shadow") version "7.1.0"
+    kotlin("plugin.serialization").version(kotlinVersion)
+    id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 base {
     val archivesBaseName: String by project
@@ -12,9 +13,6 @@ val modVersion: String by project
 version = modVersion
 val mavenGroup: String by project
 group = mavenGroup
-minecraft {
-
-}
 repositories {
     mavenCentral()
 }
@@ -62,8 +60,8 @@ tasks {
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions { jvmTarget = javaVersion.toString() }
-        sourceCompatibility = javaVersion.toString()
-        targetCompatibility = javaVersion.toString()
+//        sourceCompatibility = javaVersion.toString()
+//        targetCompatibility = javaVersion.toString()
     }
     jar { from("LICENSE") { rename { "${it}_${base.archivesName}" } } }
     processResources {
