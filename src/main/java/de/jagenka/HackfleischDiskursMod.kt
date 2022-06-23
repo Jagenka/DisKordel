@@ -54,13 +54,7 @@ object HackfleischDiskursMod : ModInitializer
         val guildId = configEntry.discordSettings.guildId
         val channelId = configEntry.discordSettings.channelId
 
-        try
-        {
-            DiscordBot.initialize(token, guildId, channelId)
-        } catch (e: Exception)
-        {
-            throw HackfleischDiskursException("Error while initializing Discord Bot")
-        }
+        DiscordBot.initialize(token, guildId, channelId)
 
         println("hackfleisch-diskurs-mod has been initialized.")
     }
