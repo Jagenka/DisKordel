@@ -60,6 +60,7 @@ object DiscordBot
     @JvmStatic
     fun handleChatMessages(sender: MessageSender, message: Text)
     {
+        if (message.string.startsWith(">")) return
         sendMessage("<${sender.name.string}> ${message.string.asDiscordMarkdownSafe()}")
     }
 
