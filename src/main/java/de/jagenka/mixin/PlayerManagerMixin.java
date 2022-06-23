@@ -10,12 +10,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @Mixin(PlayerManager.class)
 public class PlayerManagerMixin
 {
-    @Inject(method = "broadcast(Lnet/minecraft/text/Text;Lnet/minecraft/util/registry/RegistryKey;)V", at = @At("HEAD"))
+    ExecutorService discordExecutor = Executors.newSingleThreadExecutor();
+
+    @Inject(method = "broadcast(Lnet/minecraft/text/Text;Lnet/minecraft/util/registry/RegistryKey;)V", at = @At("TAIL"))
     private void broadcast(Text message, RegistryKey<MessageType> typeKey, CallbackInfo ci)
     {
-        DiscordBot.handleSystemMessages(message);
+        discordExecutor.submit(() -> DiscordBot.handleSystemMessages(message));
     }
 }
