@@ -5,9 +5,11 @@ import com.google.gson.stream.JsonReader
 import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.Users.onlyMinecraftNames
 import de.jagenka.Util.unwrap
+import de.jagenka.config.Config
+import de.jagenka.config.Config.configEntry
+import de.jagenka.config.HackfleischDiskursException
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
-import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.network.message.MessageType
 import net.minecraft.server.MinecraftServer
@@ -20,7 +22,6 @@ import net.minecraft.util.Formatting
 import net.minecraft.util.WorldSavePath
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Position
-import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.io.StringReader
 import java.nio.file.Files
 import java.util.*
@@ -47,33 +48,19 @@ object HackfleischDiskursMod : ModInitializer
             WhereIsCommand.register(dispatcher)
         }
 
-        val path = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs.yaml")
-        val confLoader = YamlConfigurationLoader.builder().path(path).build()
-        val root = confLoader.load()
+        Config.loadConfig()
 
-        val token = root.node("bot-token").get(String::class.java)
-        val guildId = root.node("bot-guild").get(Long::class.java)
-        val channelId = root.node("bot-channel").get(Long::class.java)
+        val token = configEntry.discordSettings.botToken
+        val guildId = configEntry.discordSettings.guildId
+        val channelId = configEntry.discordSettings.channelId
 
-        if (token == null)
+        try
         {
-            root.node("bot-token").set("INSERT_TOKEN_HERE")
-            confLoader.save(root)
-            println("bot-token missing!")
-        }
-        if (guildId == null)
+            DiscordBot.initialize(token, guildId, channelId)
+        } catch (e: Exception)
         {
-            root.node("bot-guild").set("INSERT_GUILD_ID_HERE")
-            confLoader.save(root)
-            println("bot-guild missing!")
+            throw HackfleischDiskursException("Error while initializing Discord Bot")
         }
-        if (channelId == null)
-        {
-            root.node("bot-channel").set("INSERT_CHANNEL_ID_HERE")
-            confLoader.save(root)
-            println("bot-channel missing!")
-        }
-        if (token != null && guildId != null && channelId != null) DiscordBot.initialize(token, guildId, channelId)
 
         println("hackfleisch-diskurs-mod has been initialized.")
     }
@@ -271,6 +258,8 @@ object HackfleischDiskursMod : ModInitializer
     fun onServerLoaded(minecraftServer: MinecraftServer)
     {
         this.minecraftServer = minecraftServer
+
+        minecraftServer.playerManager.isWhitelistEnabled = true
     }
 }
 

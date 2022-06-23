@@ -1,6 +1,9 @@
 package de.jagenka
 
 import de.jagenka.Util.trim
+import de.jagenka.config.Config
+import de.jagenka.config.Config.configEntry
+import de.jagenka.config.HackfleischDiskursException
 import discord4j.common.util.Snowflake
 import discord4j.core.DiscordClient
 import discord4j.core.GatewayDiscordClient
@@ -10,18 +13,13 @@ import discord4j.core.`object`.entity.Message
 import discord4j.core.`object`.entity.User
 import discord4j.core.`object`.entity.channel.Channel
 import discord4j.rest.RestClient
-import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.network.message.MessageSender
 import net.minecraft.util.Formatting
-import org.spongepowered.configurate.objectmapping.ConfigSerializable
-import org.spongepowered.configurate.yaml.YamlConfigurationLoader
 import java.util.regex.Pattern
 
 object DiscordBot
 {
     var initialized = false
-
-    private val usersFilePath = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs-users.yaml")
 
     private lateinit var token: String
     private lateinit var guildId: Snowflake
@@ -138,12 +136,8 @@ object DiscordBot
     private fun loadUsersFromFile()
     {
         Users.clear()
-        val confLoader = YamlConfigurationLoader.builder().path(usersFilePath).build()
-        val root = confLoader.load()
-        repeat(root.childrenList().size) {
-            val discordId = root.node(it, "discordId").getLong(0)
-            val minecraftName = root.node(it, "minecraftName").getString("")
 
+        configEntry.users.forEach { (discordId, minecraftName) ->
             try
             {
                 val member = gateway.getMemberById(guildId, Snowflake.of(discordId)).block() //lag is jetzt nur noch hier
@@ -151,19 +145,15 @@ object DiscordBot
                 else handleNotAMember(Snowflake.of(discordId))
             } catch (e: Exception)
             {
+                throw HackfleischDiskursException("Error while loading Users from Config")
             }
         }
     }
 
     private fun saveUsersToFile()
     {
-        val confLoader = YamlConfigurationLoader.builder().path(usersFilePath).build()
-        val root = confLoader.load()
-        Users.getAsUsersConfigList().forEachIndexed { index, entry ->
-            root.node(index, "discordId").set(entry.discordId)
-            root.node(index, "minecraftName").set(entry.minecraftName)
-        }
-        confLoader.save(root)
+        configEntry.users = Users.getAsUserEntryList().toList()
+        Config.store()
     }
 
     private fun sendMessageToMinecraft(sender: String, text: String)
@@ -386,6 +376,3 @@ object DiscordBot
         return user.id == Snowflake.of(174579897795084288)
     }
 }
-
-@ConfigSerializable
-data class UsersConfigEntry(val discordId: Long, val minecraftName: String)

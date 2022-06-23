@@ -1,8 +1,8 @@
 plugins {
     id("fabric-loom")
     val kotlinVersion: String by System.getProperties()
-    kotlin("jvm").version(kotlinVersion)
-    kotlin("plugin.serialization").version(kotlinVersion)
+    kotlin("jvm") version kotlinVersion
+    kotlin("plugin.serialization") version kotlinVersion
     id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 base {
@@ -28,15 +28,9 @@ dependencies {
     val fabricKotlinVersion: String by project
     modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
 
-    //for config files
-    modImplementation("org.spongepowered:configurate-yaml:4.1.2")
-    shadow("org.spongepowered:configurate-yaml:4.1.2")
-    modImplementation("org.spongepowered:configurate-extra-kotlin:4.1.2")
-    shadow("org.spongepowered:configurate-extra-kotlin:4.1.2")
-
     //discord4j
-    modImplementation("com.discord4j:discord4j-core:3.2.1")
-    shadow("com.discord4j:discord4j-core:3.2.1")
+    modImplementation("com.discord4j:discord4j-core:3.2.2")
+    shadow("com.discord4j:discord4j-core:3.2.2")
 }
 
 tasks.remapJar {
@@ -48,8 +42,6 @@ tasks.shadowJar {
     configurations = listOf(project.configurations.shadow.get())
 }
 
-
-
 tasks {
     val javaVersion = JavaVersion.VERSION_17
     withType<JavaCompile> {
@@ -60,8 +52,8 @@ tasks {
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions { jvmTarget = javaVersion.toString() }
-//        sourceCompatibility = javaVersion.toString()
-//        targetCompatibility = javaVersion.toString()
+        sourceCompatibility = javaVersion.toString()
+        targetCompatibility = javaVersion.toString()
     }
     jar { from("LICENSE") { rename { "${it}_${base.archivesName}" } } }
     processResources {

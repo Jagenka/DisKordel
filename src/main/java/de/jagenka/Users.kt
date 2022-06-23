@@ -1,5 +1,6 @@
 package de.jagenka
 
+import de.jagenka.config.UserEntry
 import discord4j.core.`object`.entity.Member
 
 object Users : BiMap<Member, String>()
@@ -28,11 +29,11 @@ object Users : BiMap<Member, String>()
         return discordMember != null
     }
 
-    fun getAsUsersConfigList(): List<UsersConfigEntry>
+    fun getAsUserEntryList(): List<UserEntry>
     {
-        val arrayList = ArrayList<UsersConfigEntry>()
-        keys().forEach { arrayList.add(UsersConfigEntry(it.id.asLong(), getValueForKey(it).orEmpty())) }
-        return arrayList
+        val list = mutableListOf<UserEntry>()
+        keys().forEach { list.add(UserEntry(it.id.asLong(), getValueForKey(it).orEmpty())) }
+        return list
     }
 
     fun getAsUserList(): List<User>
@@ -42,10 +43,10 @@ object Users : BiMap<Member, String>()
         return list
     }
 
-    fun getAsUserConfigSet(): Set<UsersConfigEntry>
+    fun getAsUserEntrySet(): Set<UserEntry>
     {
-        val set = HashSet<UsersConfigEntry>()
-        keys().forEach { set.add(UsersConfigEntry(it.id.asLong(), getValueForKey(it).orEmpty())) }
+        val set = mutableSetOf<UserEntry>()
+        keys().forEach { set.add(UserEntry(it.id.asLong(), getValueForKey(it).orEmpty())) }
         return set
     }
 
