@@ -60,13 +60,13 @@ object DiscordBot
     @JvmStatic
     fun handleChatMessages(sender: MessageSender, message: Text)
     {
-        if (message.string.startsWith(">")) return
         sendMessage("<${sender.name.string}> ${message.string.asDiscordMarkdownSafe()}")
     }
 
     @JvmStatic
     fun handleSystemMessages(message: Text)
     {
+        if (message.string.startsWith(">")) return
         sendMessage(message.string.asDiscordMarkdownSafe())
     }
 
@@ -85,7 +85,7 @@ object DiscordBot
     @JvmStatic
     fun handleDeathMessages(text: String)
     {
-        sendMessage(text)
+        //sendMessage(text)
     }
 
     private fun sendMessage(text: String)
