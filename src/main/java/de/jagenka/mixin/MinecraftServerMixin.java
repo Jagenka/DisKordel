@@ -25,8 +25,8 @@ public class MinecraftServerMixin
     }
 
     @Inject(method = "logChatMessage", at = @At("TAIL"))
-    public void sendSystemMessage(MessageSender sender, Text message, CallbackInfo ci)
+    public void logChatMessage(MessageSender sender, Text message, CallbackInfo ci)
     {
-        discordExecutor.submit(() -> DiscordBot.handleSystemMessages(message.getString(), sender));
+        discordExecutor.submit(() -> DiscordBot.handleChatMessages(sender, message));
     }
 }

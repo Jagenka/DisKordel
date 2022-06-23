@@ -3,7 +3,6 @@ package de.jagenka
 import de.jagenka.Util.trim
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
-import de.jagenka.config.HackfleischDiskursException
 import discord4j.common.util.Snowflake
 import discord4j.core.DiscordClient
 import discord4j.core.GatewayDiscordClient
@@ -13,7 +12,9 @@ import discord4j.core.`object`.entity.Message
 import discord4j.core.`object`.entity.User
 import discord4j.core.`object`.entity.channel.Channel
 import discord4j.rest.RestClient
+import discord4j.rest.http.client.ClientException
 import net.minecraft.network.message.MessageSender
+import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import java.util.regex.Pattern
 
@@ -57,22 +58,18 @@ object DiscordBot
     }
 
     @JvmStatic
-    fun handleSystemMessages(message: String, sender: MessageSender)
+    fun handleChatMessages(sender: MessageSender, message: Text)
     {
-        if (sender.uuid == HackfleischDiskursMod.uuid) return
-        if (message.startsWith("<") || //TODO mentions?
-            message.contains("has made the advancement") ||
-            message.contains("has reached the goal") ||
-            message.contains("has completed the challenge") ||
-            message.contains("joined the game") ||
-            message.contains("left the game")
-        )
-        {
-            sendMessage(message.makeDiscordMarkdownSafe())
-        }
+        sendMessage("<${sender.name.string}> ${message.string.asDiscordMarkdownSafe()}")
     }
 
-    private fun String.makeDiscordMarkdownSafe(): String
+    @JvmStatic
+    fun handleSystemMessages(message: Text)
+    {
+        sendMessage(message.string.asDiscordMarkdownSafe())
+    }
+
+    private fun String.asDiscordMarkdownSafe(): String
     {
         return this
             .replace("\\", "\\\\")
@@ -143,9 +140,9 @@ object DiscordBot
                 val member = gateway.getMemberById(guildId, Snowflake.of(discordId)).block() //lag is jetzt nur noch hier
                 if (member != null) Users.put(member, minecraftName)
                 else handleNotAMember(Snowflake.of(discordId))
-            } catch (e: Exception)
+            } catch (e: ClientException)
             {
-                throw HackfleischDiskursException("Error while loading Users from Config")
+                handleNotAMember(Snowflake.of(discordId))
             }
         }
     }
