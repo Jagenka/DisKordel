@@ -1,15 +1,17 @@
-package de.jagenka
+package de.jagenka.commands
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
+import de.jagenka.DiscordBot
+import de.jagenka.HackfleischDiskursMod
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 
 
-object WhoisCommand
+object WhoisCommand : Command
 {
-    fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
+    override fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
     {
         dispatcher.register(
             CommandManager.literal("whois").then(CommandManager.argument("name", StringArgumentType.greedyString()).executes

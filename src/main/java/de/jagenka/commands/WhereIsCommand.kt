@@ -1,15 +1,16 @@
-package de.jagenka
+package de.jagenka.commands
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
+import de.jagenka.HackfleischDiskursMod
 import net.minecraft.command.CommandSource.suggestMatching
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 
-object WhereIsCommand
+object WhereIsCommand: Command
 {
-    fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
+    override fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
     {
         dispatcher.register(
             CommandManager.literal("whereis").then(

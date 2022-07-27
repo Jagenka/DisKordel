@@ -5,9 +5,12 @@ import com.google.gson.stream.JsonReader
 import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.Users.onlyMinecraftNames
 import de.jagenka.Util.unwrap
+import de.jagenka.commands.DeathsCommand
+import de.jagenka.commands.PlaytimeCommand
+import de.jagenka.commands.WhereIsCommand
+import de.jagenka.commands.WhoisCommand
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
-import de.jagenka.config.HackfleischDiskursException
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.command.CommandRegistryAccess
@@ -46,6 +49,8 @@ object HackfleischDiskursMod : ModInitializer
         CommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<ServerCommandSource>, _: CommandRegistryAccess, _: CommandManager.RegistrationEnvironment ->
             WhoisCommand.register(dispatcher)
             WhereIsCommand.register(dispatcher)
+            DeathsCommand.register(dispatcher)
+            PlaytimeCommand.register(dispatcher)
         }
 
         Config.loadConfig()
@@ -62,38 +67,74 @@ object HackfleischDiskursMod : ModInitializer
     /**
      * @return List of Pair of real playerName and deathCount
      */
-    fun getDeathScore(playerName: String): List<Pair<String, Int>>
+    fun getDeathScores(input: String): List<Pair<String, Int>> //TODO: get death count independent of scoreboard
     {
         if (!checkMinecraftServer()) return emptyList()
 
-        val result = ArrayList<Pair<String, Int>>()
+        val result = mutableListOf<Pair<String, Int>>()
 
-        val possiblePlayers = Users.find(playerName)
+        val possiblePlayers = Users.find(input)
 
         minecraftServer.scoreboard.getAllPlayerScores(minecraftServer.scoreboard.getObjective("deaths"))
             .forEach {
                 possiblePlayers.forEach { player ->
-                    if (it.playerName.equals(player.minecraftName, ignoreCase = true)) result.add(Pair(it.playerName, it.score))
+                    if (it.playerName.equals(player.minecraftName, ignoreCase = true)) result.add(it.playerName to it.score)
                 }
-                if (it.playerName.equals(playerName, ignoreCase = true)) result.add(Pair(it.playerName, it.score))
+                if (it.playerName.equals(input, ignoreCase = true)) result.add(it.playerName to it.score)
             }
 
-        return result
+        return result.toList().sortedByDescending { it.second }
+    }
+
+    /**
+     * @return List of human-readable "leaderboard" entries of how often they died
+     */
+    fun getDeathLeaderboardStrings(input: String): List<String>
+    {
+        val result = mutableListOf<String>()
+        getDeathScores(input).forEach { (playerName, deaths) ->
+            result.add("$playerName has died $deaths time" + if (deaths != 1) "s" else "")
+        }
+        return result.toList()
     }
 
     /**
      * @return List of Pair of real playerName and playtime in ticks
      */
-    fun getPlaytime(playerName: String): List<Pair<String, Int>>
+    fun getPlaytime(input: String): List<Pair<String, Int>>
     {
         if (!checkMinecraftServer()) return emptyList()
 
-        val result = ArrayList<Pair<String, Int>>()
-        val possibleUsers = Users.find(playerName).onlyMinecraftNames().toMutableList()
-        possibleUsers.add(playerName) // if someone is not registered
+        val result = mutableListOf<Pair<String, Int>>()
+        val possibleUsers = Users.find(input).onlyMinecraftNames().toMutableList()
+        possibleUsers.add(input) // if someone is not registered
         getPlaytimeLeaderboard().forEach { pair -> possibleUsers.forEach { if (pair.first.lowercase().contains(it.lowercase())) result.add(pair) } }
 
         return result.distinctBy { it.first.lowercase() }
+    }
+
+    fun getPlaytimeLeaderboardStrings(input: String): List<String>
+    {
+        val result = mutableListOf<String>()
+        getPlaytime(input).forEach { (playerName, ticks) ->
+            result.add("$playerName has played for ${ticksToPrettyString(ticks)}")
+        }
+        return result.toList()
+    }
+
+    fun ticksToPrettyString(ticks: Int): String
+    {
+        val seconds = ticks / 20
+        val minutes = seconds / 60
+        val hours = minutes / 60
+
+        val sb = StringBuilder()
+        if (hours > 0) sb.append("${hours}h")
+        if (hours > 0 || minutes > 0) sb.append(" ${minutes - hours * 60}min")
+        if (hours > 0 || minutes > 0 || seconds > 0) sb.append(" ${seconds - minutes * 60}s")
+        else sb.append("0h 0min 0s")
+
+        return sb.toString().trim()
     }
 
     private fun readPlaytimeFromStatsFiles(): Map<String, Int>

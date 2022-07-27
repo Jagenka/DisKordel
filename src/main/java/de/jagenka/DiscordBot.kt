@@ -304,13 +304,13 @@ object DiscordBot
                 startsWith("!deaths") ->
                 {
                     val input = this.removePrefix("!deaths").trim()
-                    val results = HackfleischDiskursMod.getDeathScore(input)
-                    if (results.isEmpty()) sendMessage("$input has no death count stored")
+                    val results = HackfleischDiskursMod.getDeathLeaderboardStrings(input)
+                    if (results.isEmpty()) sendMessage("no death counts stored for input: $input")
                     else
                     {
                         val stringBuilder = StringBuilder()
-                        results.forEach { deathScore ->
-                            stringBuilder.append("${deathScore.first} has died ${deathScore.second} time" + if (deathScore.second != 1) "s" else "")
+                        results.forEach {
+                            stringBuilder.append(it)
                             stringBuilder.appendLine()
                         }
                         sendMessage(stringBuilder.trim().toString())
@@ -318,31 +318,15 @@ object DiscordBot
                 }
                 startsWith("!playtime") ->
                 {
-                    if (this == "!playtime")
-                    {
-                        val leaderboard = HackfleischDiskursMod.getPlaytimeLeaderboard()
-                        val stringBuilder = StringBuilder()
-                        leaderboard.forEach { playtime ->
-                            stringBuilder.append("${playtime.first} has played for ${ticksToPrettyString(playtime.second)}")
-                            stringBuilder.appendLine()
-                        }
-                        sendMessage(stringBuilder.trim().toString())
-                    } else
-                    {
-                        val input = this.removePrefix("!playtime").trim()
-                        val results = HackfleischDiskursMod.getPlaytime(input)
-                        if (results.isEmpty()) sendMessage("$input has no playtime tracked")
-                        else
-                        {
-                            val stringBuilder = StringBuilder()
-                            results.forEach { playtime ->
-                                stringBuilder.append("${playtime.first} has played for ${ticksToPrettyString(playtime.second)}")
-                                stringBuilder.appendLine()
-                            }
-                            sendMessage(stringBuilder.trim().toString())
-                        }
-
+                    val input = this.removePrefix("!playtime").trim()
+                    val result = HackfleischDiskursMod.getPlaytimeLeaderboardStrings(input)
+                    if (result.isEmpty()) sendMessage("no playtime tracked for input: $input")
+                    val stringBuilder = StringBuilder()
+                    result.forEach {
+                        stringBuilder.append(it)
+                        stringBuilder.appendLine()
                     }
+                    sendMessage(stringBuilder.trim().toString())
                 }
                 equals("!thing") -> HackfleischDiskursMod.doThing()
                 else ->
@@ -352,21 +336,6 @@ object DiscordBot
                 }
             }
         }
-    }
-
-    private fun ticksToPrettyString(ticks: Int): String
-    {
-        val seconds = ticks / 20
-        val minutes = seconds / 60
-        val hours = minutes / 60
-
-        val sb = StringBuilder()
-        if (hours > 0) sb.append("${hours}h")
-        if (hours > 0 || minutes > 0) sb.append(" ${minutes - hours * 60}min")
-        if (hours > 0 || minutes > 0 || seconds > 0) sb.append(" ${seconds - minutes * 60}s")
-        else sb.append("0h 0min 0s")
-
-        return sb.toString()
     }
 
     private fun isJay(user: User): Boolean
