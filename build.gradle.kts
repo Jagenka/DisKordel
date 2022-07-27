@@ -31,6 +31,8 @@ dependencies {
     //discord4j
     modImplementation("com.discord4j:discord4j-core:3.2.2")
     shadow("com.discord4j:discord4j-core:3.2.2")
+
+    implementation("io.netty:netty-all:4.1.79.Final")
 }
 
 tasks.remapJar {
