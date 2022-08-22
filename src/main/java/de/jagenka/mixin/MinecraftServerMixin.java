@@ -1,10 +1,7 @@
 package de.jagenka.mixin;
 
-import de.jagenka.DiscordBot;
 import de.jagenka.HackfleischDiskursMod;
-import net.minecraft.network.message.MessageSender;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,11 +19,5 @@ public class MinecraftServerMixin
     private void serverLoaded(CallbackInfo ci)
     {
         HackfleischDiskursMod.onServerLoaded((MinecraftServer) (Object) this);
-    }
-
-    @Inject(method = "logChatMessage", at = @At("TAIL"))
-    public void logChatMessage(MessageSender sender, Text message, CallbackInfo ci)
-    {
-        discordExecutor.submit(() -> DiscordBot.handleChatMessages(sender, message));
     }
 }

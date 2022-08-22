@@ -13,7 +13,8 @@ import discord4j.core.`object`.entity.User
 import discord4j.core.`object`.entity.channel.Channel
 import discord4j.rest.RestClient
 import discord4j.rest.http.client.ClientException
-import net.minecraft.network.message.MessageSender
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Style
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import java.util.regex.Pattern
@@ -58,15 +59,14 @@ object DiscordBot
     }
 
     @JvmStatic
-    fun handleChatMessages(sender: MessageSender, message: Text)
+    fun handleChatMessage(message: Text, sender: ServerPlayerEntity?)
     {
-        sendMessage("<${sender.name.string}> ${message.string.asDiscordMarkdownSafe()}")
+        sendMessage("<${sender?.name?.string}> ${message.string.asDiscordMarkdownSafe()}")
     }
 
     @JvmStatic
-    fun handleSystemMessages(message: Text)
+    fun handleSystemMessage(message: Text)
     {
-        if (message.string.startsWith(">")) return
         sendMessage(message.string.asDiscordMarkdownSafe())
     }
 
@@ -80,12 +80,6 @@ object DiscordBot
             .replace("`", "\\`")
             .replace("|", "\\|")
             .replace(">", "\\>")
-    }
-
-    @JvmStatic
-    fun handleDeathMessages(text: String)
-    {
-        //sendMessage(text)
     }
 
     private fun sendMessage(text: String)
@@ -156,7 +150,7 @@ object DiscordBot
 
     private fun sendMessageToMinecraft(sender: String, text: String)
     {
-        HackfleischDiskursMod.broadcastMessage(">$sender< $text", Formatting.BLUE)
+        Util.sendChatMessage(Text.literal(">$sender< $text").getWithStyle(Style.EMPTY.withFormatting(Formatting.BLUE))[0])
     }
 
     private fun String.convertMentions(): String
@@ -267,40 +261,49 @@ object DiscordBot
                 {
                     sendHelpText()
                 }
+
                 equals("!list") ->
                 {
                     printOnlinePlayers()
                 }
+
                 startsWith("!register") ->
                 {
                     registerUser(message.author.get().id, this.removePrefix("!register").trim())
                 }
+
                 equals("!users") ->
                 {
                     sendRegisteredUsersToChat()
                 }
+
                 startsWith("!whois") ->
                 {
                     val input = this.removePrefix("!whois").trim()
                     sendMessage(whoIsUser(input))
                 }
+
                 equals("!updatenames") ->
                 {
                     loadUsersFromFile()
                     //TODO: add reaction
                 }
+
                 startsWith("!cmd") -> //NOT FILTERED!!
                 {
                     if (isJay(message.author.get())) HackfleischDiskursMod.runCommand(this.removePrefix("!cmd").trim())
                 }
+
                 startsWith("!whitelist") ->
                 {
                     ensureWhitelist(message.author.get().id)
                 }
+
                 equals("!perf") ->
                 {
                     handlePerfCommand()
                 }
+
                 startsWith("!deaths") ->
                 {
                     val input = this.removePrefix("!deaths").trim()
@@ -316,6 +319,7 @@ object DiscordBot
                         sendMessage(stringBuilder.trim().toString())
                     }
                 }
+
                 startsWith("!playtime") ->
                 {
                     val input = this.removePrefix("!playtime").trim()
@@ -328,6 +332,7 @@ object DiscordBot
                     }
                     sendMessage(stringBuilder.trim().toString())
                 }
+
                 equals("!thing") -> HackfleischDiskursMod.doThing()
                 else ->
                 {

@@ -27,10 +27,10 @@
     "hackfleisch_diskurs_mod.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.12.5",
+    "fabricloader": ">=0.14.9",
     "fabric": "*",
-    "fabric-language-kotlin": ">=1.7.0+kotlin.1.6.0",
-    "minecraft": ">=1.18",
+    "fabric-language-kotlin": ">=1.8.2+kotlin.1.7.10",
+    "minecraft": ">=1.19.2",
     "java": ">=17"
   }
 }

@@ -14,14 +14,12 @@ import de.jagenka.config.Config.configEntry
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.command.CommandRegistryAccess
-import net.minecraft.network.message.MessageType
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.stat.Stats
 import net.minecraft.text.Text
-import net.minecraft.util.Formatting
 import net.minecraft.util.WorldSavePath
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Position
@@ -41,7 +39,8 @@ object HackfleischDiskursMod : ModInitializer
 
     var uuid: UUID = UUID.randomUUID()
 
-    private lateinit var minecraftServer: MinecraftServer
+    lateinit var minecraftServer: MinecraftServer
+        private set
 
     override fun onInitialize() //TODO: schedule for later?
     {
@@ -201,14 +200,6 @@ object HackfleischDiskursMod : ModInitializer
         return list
     }
 
-    @JvmStatic
-    fun broadcastMessage(message: String, formatting: Formatting = Formatting.WHITE, sender: UUID = uuid)
-    {
-        if (!checkMinecraftServer()) return
-        val text = Text.literal(message).formatted(formatting)
-        minecraftServer.playerManager.broadcast(text, MessageType.TELLRAW_COMMAND)
-    }
-
     fun doThing()
     {
         getPlaytimeLeaderboard().forEach { println(it) }
@@ -247,7 +238,7 @@ object HackfleischDiskursMod : ModInitializer
     fun runCommand(cmd: String)
     {
         if (!checkMinecraftServer()) return
-        minecraftServer.commandManager.execute(minecraftServer.commandSource, cmd)
+        minecraftServer.commandManager.executeWithPrefix(minecraftServer.commandSource, cmd)
     }
 
     fun runWhitelistAdd(player: String)
@@ -278,7 +269,7 @@ object HackfleischDiskursMod : ModInitializer
         return player.pos
     }
 
-    private fun checkMinecraftServer(): Boolean
+    fun checkMinecraftServer(): Boolean
     {
         return HackfleischDiskursMod::minecraftServer.isInitialized
     }

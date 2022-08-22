@@ -1,10 +1,12 @@
 package de.jagenka.mixin;
 
 import de.jagenka.DiscordBot;
+import net.minecraft.network.message.MessageSourceProfile;
 import net.minecraft.network.message.MessageType;
+import net.minecraft.network.message.SignedMessage;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
-import net.minecraft.util.registry.RegistryKey;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -12,15 +14,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 @Mixin(PlayerManager.class)
 public class PlayerManagerMixin
 {
     ExecutorService discordExecutor = Executors.newSingleThreadExecutor();
 
-    @Inject(method = "broadcast(Lnet/minecraft/text/Text;Lnet/minecraft/util/registry/RegistryKey;)V", at = @At("TAIL"))
-    private void broadcast(Text message, RegistryKey<MessageType> typeKey, CallbackInfo ci)
+    @Inject(method = "broadcast(Lnet/minecraft/network/message/SignedMessage;Ljava/util/function/Predicate;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/network/message/MessageSourceProfile;Lnet/minecraft/network/message/MessageType$Parameters;)V", at = @At("TAIL"))
+    private void onChatMessage(SignedMessage message, Predicate<ServerPlayerEntity> shouldSendFiltered, ServerPlayerEntity sender, MessageSourceProfile sourceProfile, MessageType.Parameters params, CallbackInfo ci)
     {
-        discordExecutor.submit(() -> DiscordBot.handleSystemMessages(message));
+        discordExecutor.submit(() -> DiscordBot.handleChatMessage(message.getContent(), sender));
+    }
+
+    @Inject(method = "broadcast(Lnet/minecraft/text/Text;Ljava/util/function/Function;Z)V", at = @At("TAIL"))
+    private void onSystemMessage(Text message, Function<ServerPlayerEntity, Text> playerMessageFactory, boolean overlay, CallbackInfo ci)
+    {
+        discordExecutor.submit(() -> DiscordBot.handleSystemMessage(message));
     }
 }
