@@ -39,7 +39,7 @@ object HackfleischDiskursMod : ModInitializer
 
     var uuid: UUID = UUID.randomUUID()
 
-    lateinit var minecraftServer: MinecraftServer
+    var minecraftServer: MinecraftServer? = null
         private set
 
     override fun onInitialize() //TODO: schedule for later?
@@ -68,21 +68,23 @@ object HackfleischDiskursMod : ModInitializer
      */
     fun getDeathScores(input: String): List<Pair<String, Int>> //TODO: get death count independent of scoreboard
     {
-        if (!checkMinecraftServer()) return emptyList()
+        minecraftServer?.let { server ->
+            val result = mutableListOf<Pair<String, Int>>()
 
-        val result = mutableListOf<Pair<String, Int>>()
+            val possiblePlayers = Users.find(input)
 
-        val possiblePlayers = Users.find(input)
-
-        minecraftServer.scoreboard.getAllPlayerScores(minecraftServer.scoreboard.getObjective("deaths"))
-            .forEach {
-                possiblePlayers.forEach { player ->
-                    if (it.playerName.equals(player.minecraftName, ignoreCase = true)) result.add(it.playerName to it.score)
+            server.scoreboard.getAllPlayerScores(server.scoreboard.getObjective("deaths"))
+                .forEach {
+                    possiblePlayers.forEach { player ->
+                        if (it.playerName.equals(player.minecraftName, ignoreCase = true)) result.add(it.playerName to it.score)
+                    }
+                    if (it.playerName.equals(input, ignoreCase = true)) result.add(it.playerName to it.score)
                 }
-                if (it.playerName.equals(input, ignoreCase = true)) result.add(it.playerName to it.score)
-            }
 
-        return result.toList().sortedByDescending { it.second }
+            return result.toList().sortedByDescending { it.second }
+        }
+
+        return emptyList()
     }
 
     /**
@@ -102,8 +104,6 @@ object HackfleischDiskursMod : ModInitializer
      */
     fun getPlaytime(input: String): List<Pair<String, Int>>
     {
-        if (!checkMinecraftServer()) return emptyList()
-
         val result = mutableListOf<Pair<String, Int>>()
         val possibleUsers = Users.find(input).onlyMinecraftNames().toMutableList()
         possibleUsers.add(input) // if someone is not registered
@@ -138,66 +138,75 @@ object HackfleischDiskursMod : ModInitializer
 
     private fun readPlaytimeFromStatsFiles(): Map<String, Int>
     {
-        if (!checkMinecraftServer()) return emptyMap()
+        minecraftServer?.let { server ->
+            val statsPath = server.getSavePath(WorldSavePath.STATS)
 
-        val statsPath = minecraftServer.getSavePath(WorldSavePath.STATS)
+            val statsOnDiskMap = HashMap<String, Int>() // key: minecraftName, value: playtime
 
-        val statsOnDiskMap = HashMap<String, Int>() // key: minecraftName, value: playtime
+            Files.list(statsPath).forEach { statFile ->
+                val jsonReader = JsonReader(StringReader(statFile.readText()))
+                val jsonElement = Streams.parse(jsonReader)
+                val jsonObject = jsonElement.asJsonObject
 
-        Files.list(statsPath).forEach { statFile ->
-            val jsonReader = JsonReader(StringReader(statFile.readText()))
-            val jsonElement = Streams.parse(jsonReader)
-            val jsonObject = jsonElement.asJsonObject
+                jsonObject.entrySet().find { it.key == "stats" }
+                    ?.let {
+                        it.value.asJsonObject.entrySet().find { it.key == "minecraft:custom" }
+                            ?.let {
+                                it.value.asJsonObject.entrySet().find { it.key == "minecraft:play_time" }
+                                    ?.let { playtimeEntry ->
+                                        val playerUUID = statFile.fileName.name.dropLast(5)
+                                        statsOnDiskMap[server.userCache.getByUuid(UUID.fromString(playerUUID)).unwrap()?.name.toString()] =
+                                                //TODO: seems to return null sometimes -> try to get name from someplace else than userCache
+                                            playtimeEntry.value.asInt
+                                    }
+                            }
 
-            jsonObject.entrySet().find { it.key == "stats" }
-                ?.let {
-                    it.value.asJsonObject.entrySet().find { it.key == "minecraft:custom" }
-                        ?.let {
-                            it.value.asJsonObject.entrySet().find { it.key == "minecraft:play_time" }
-                                ?.let { playtimeEntry ->
-                                    val playerUUID = statFile.fileName.name.dropLast(5)
-                                    statsOnDiskMap[minecraftServer.userCache.getByUuid(UUID.fromString(playerUUID)).unwrap()?.name.toString()] =
-                                            //TODO: seems to return null sometimes -> try to get name from someplace else than userCache
-                                        playtimeEntry.value.asInt
-                                }
-                        }
+                    }
+            }
 
-                }
+            return statsOnDiskMap
         }
 
-        return statsOnDiskMap
+        return emptyMap()
     }
 
     fun getPlaytimeLeaderboard(): List<Pair<String, Int>>
     {
-        if (!checkMinecraftServer()) return emptyList()
+        minecraftServer?.let { server ->
+            val leaderboardMap = HashMap<String, Int>()
+            val statsFromFilesMap = readPlaytimeFromStatsFiles()
 
-        val leaderboardMap = HashMap<String, Int>()
-        val statsFromFilesMap = readPlaytimeFromStatsFiles()
+            statsFromFilesMap.forEach { (name, playtime) ->
+                leaderboardMap[name] = playtime
+            }
 
-        statsFromFilesMap.forEach { (name, playtime) ->
-            leaderboardMap[name] = playtime
+            server.playerManager.playerList.forEach { onlinePlayer ->
+                val playtime = onlinePlayer.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
+                leaderboardMap[onlinePlayer.name.string] = playtime
+            }
+
+            return leaderboardMap.toList().sortedByDescending { it.second }
         }
 
-        minecraftServer.playerManager.playerList.forEach { onlinePlayer ->
-            val playtime = onlinePlayer.statHandler.getStat(Stats.CUSTOM, Stats.PLAY_TIME)
-            leaderboardMap[onlinePlayer.name.string] = playtime
-        }
-
-        return leaderboardMap.toList().sortedByDescending { it.second }
+        return emptyList()
     }
 
     fun getScoreFromScoreboard() //TODO
     {
-        minecraftServer.scoreboard.getAllPlayerScores(minecraftServer.scoreboard.getObjective("deaths")).forEach { println("${it.playerName}: ${it.score}") }
+        minecraftServer?.let { server ->
+            server.scoreboard.getAllPlayerScores(server.scoreboard.getObjective("deaths")).forEach { println("${it.playerName}: ${it.score}") }
+        }
     }
 
     fun getOnlinePlayers(): List<String>
     {
-        if (!checkMinecraftServer()) return emptyList()
-        val list = ArrayList<String>()
-        minecraftServer.playerManager.playerList.forEach { list.add(it.name.string) }
-        return list
+        minecraftServer?.let { server ->
+            val list = ArrayList<String>()
+            server.playerManager.playerList.forEach { list.add(it.name.string) }
+            return list
+        }
+
+        return emptyList()
     }
 
     fun doThing()
@@ -237,8 +246,7 @@ object HackfleischDiskursMod : ModInitializer
 
     fun runCommand(cmd: String)
     {
-        if (!checkMinecraftServer()) return
-        minecraftServer.commandManager.executeWithPrefix(minecraftServer.commandSource, cmd)
+        minecraftServer?.commandManager?.executeWithPrefix(minecraftServer?.commandSource, cmd)
     }
 
     fun runWhitelistAdd(player: String)
@@ -255,23 +263,23 @@ object HackfleischDiskursMod : ModInitializer
 
     fun getPerformanceMetrics(): PerformanceMetrics
     {
-        if (!checkMinecraftServer()) return PerformanceMetrics(0.0, 0.0)
-        val mspt = MathHelper.average(minecraftServer.lastTickLengths) * 1.0E-6
-        val tps = min(1000.0 / mspt, 20.0)
+        minecraftServer?.let { server ->
+            val mspt = MathHelper.average(server.lastTickLengths) * 1.0E-6
+            val tps = min(1000.0 / mspt, 20.0)
 
-        return PerformanceMetrics(mspt, tps)
+            return PerformanceMetrics(mspt, tps)
+        }
+
+        return PerformanceMetrics(0.0, 0.0)
     }
 
     fun getPlayerPosition(playerString: String): Position?
     {
-        if (!checkMinecraftServer()) return null
-        val player = minecraftServer.playerManager.getPlayer(playerString) ?: return null
-        return player.pos
-    }
-
-    fun checkMinecraftServer(): Boolean
-    {
-        return HackfleischDiskursMod::minecraftServer.isInitialized
+        minecraftServer?.let { server ->
+            val player = server.playerManager.getPlayer(playerString) ?: return null
+            return player.pos
+        }
+        return null
     }
 
     fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)
