@@ -8,7 +8,7 @@ import net.minecraft.command.CommandSource.suggestMatching
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 
-object WhereIsCommand: Command
+object WhereIsCommand : Command
 {
     override fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
     {

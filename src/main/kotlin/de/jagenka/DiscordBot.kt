@@ -1,6 +1,8 @@
 package de.jagenka
 
 import de.jagenka.Util.trim
+import de.jagenka.commands.DeathsCommand.getDeathLeaderboardStrings
+import de.jagenka.commands.PlaytimeCommand.getPlaytimeLeaderboardStrings
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
 import discord4j.common.util.Snowflake
@@ -307,7 +309,7 @@ object DiscordBot
                 startsWith("!deaths") ->
                 {
                     val input = this.removePrefix("!deaths").trim()
-                    val results = HackfleischDiskursMod.getDeathLeaderboardStrings(input)
+                    val results = getDeathLeaderboardStrings(input)
                     if (results.isEmpty()) sendMessage("no death counts stored for input: $input")
                     else
                     {
@@ -323,7 +325,7 @@ object DiscordBot
                 startsWith("!playtime") ->
                 {
                     val input = this.removePrefix("!playtime").trim()
-                    val result = HackfleischDiskursMod.getPlaytimeLeaderboardStrings(input)
+                    val result = getPlaytimeLeaderboardStrings(input)
                     if (result.isEmpty()) sendMessage("no playtime tracked for input: $input")
                     val stringBuilder = StringBuilder()
                     result.forEach {
