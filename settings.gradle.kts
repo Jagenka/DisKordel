@@ -1,3 +1,5 @@
+rootProject.name = "hackfleisch-diskurs-mod"
+
 pluginManagement {
     repositories {
         maven("https://maven.fabricmc.net") { name = "Fabric" }
