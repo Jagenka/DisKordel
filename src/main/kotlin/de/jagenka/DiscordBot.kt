@@ -69,6 +69,7 @@ object DiscordBot
     @JvmStatic
     fun handleSystemMessage(message: Text)
     {
+        if(message.string.startsWith(">")) return
         sendMessage(message.string.asDiscordMarkdownSafe())
     }
 
