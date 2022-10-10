@@ -1,6 +1,8 @@
 package de.jagenka
 
 import de.jagenka.Util.trim
+import de.jagenka.commands.DeathsCommand
+import de.jagenka.commands.PlaytimeCommand
 import de.jagenka.config.Config
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
@@ -102,7 +104,7 @@ object DiscordHandler
                 startsWith("!deaths") ->
                 {
                     val input = this.removePrefix("!deaths").trim()
-                    val results = getDeathLeaderboardStrings(input)
+                    val results = DeathsCommand.getDeathLeaderboardStrings(input)
                     if (results.isEmpty()) sendMessage("no death counts stored for input: $input")
                     else
                     {
@@ -118,7 +120,7 @@ object DiscordHandler
                 startsWith("!playtime") ->
                 {
                     val input = this.removePrefix("!playtime").trim()
-                    val result = getPlaytimeLeaderboardStrings(input)
+                    val result = PlaytimeCommand.getPlaytimeLeaderboardStrings(input)
                     if (result.isEmpty()) sendMessage("no playtime tracked for input: $input")
                     val stringBuilder = StringBuilder()
                     result.forEach {
@@ -128,11 +130,10 @@ object DiscordHandler
                     sendMessage(stringBuilder.trim().toString())
                 }
 
-                equals("!thing") -> HackfleischDiskursMod.doThing()
                 else ->
                 {
-                    val member = gateway.getMemberById(guildId, message.author.get().id).block()
-                    sendMessageToMinecraft(if (member != null) member.displayName else message.author.get().username, message.content)
+                    val authorName = event.member?.displayName ?: event.message.author?.username ?: "NONAME"
+                    MinecraftHandler.sendMessage(authorName, event.message.content)
                 }
             }
         }
