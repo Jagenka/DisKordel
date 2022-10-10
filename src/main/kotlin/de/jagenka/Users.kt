@@ -1,7 +1,7 @@
 package de.jagenka
 
 import de.jagenka.config.UserEntry
-import discord4j.core.`object`.entity.Member
+import dev.kord.core.entity.Member
 
 class Users : BiMap<Member, String>()
 {

@@ -7,11 +7,12 @@ import de.jagenka.commands.WhereIsCommand
 import de.jagenka.commands.WhoisCommand
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.command.CommandRegistryAccess
@@ -40,7 +41,7 @@ object Main : ModInitializer
     var kord: Kord? = null
         private set
 
-    val
+    val scope = MainScope()
 
     override fun onInitialize()
     {
@@ -59,20 +60,21 @@ object Main : ModInitializer
         val channelId = configEntry.discordSettings.channelId
 
         // creating bot
-        runBlocking {
-            launch {
-                kord = Kord(token)
+        scope.launch {
+            kord = Kord(token)
 
-                kord?.login {
-                    @OptIn(PrivilegedIntent::class)
-                    intents += Intent.MessageContent
-                } ?: error("error logging in")
-            }
+            kord?.login {
+                @OptIn(PrivilegedIntent::class)
+                intents += Intent.MessageContent
+            } ?: error("error logging in")
+
+            ChannelHandler.addChannel(Snowflake(guildId), Snowflake(channelId))
         }
-        DiscordBot.initialize(token, guildId, channelId)
 
         println("hackfleisch-diskurs-mod has been initialized.")
     }
+
+    //TODO move everything after this line to own object
 
     fun getScoreFromScoreboard() //TODO
     {
