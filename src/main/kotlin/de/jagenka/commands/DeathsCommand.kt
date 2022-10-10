@@ -3,7 +3,7 @@ package de.jagenka.commands
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
-import de.jagenka.Main
+import de.jagenka.MinecraftHandler
 import de.jagenka.Users
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
@@ -40,7 +40,7 @@ object DeathsCommand : Command
      */
     fun getDeathScores(input: String): List<Pair<String, Int>> //TODO: get death count independent of scoreboard
     {
-        Main.minecraftServer?.let { server ->
+        MinecraftHandler.minecraftServer?.let { server ->
             val result = mutableListOf<Pair<String, Int>>()
 
             val possiblePlayers = Users.find(input)

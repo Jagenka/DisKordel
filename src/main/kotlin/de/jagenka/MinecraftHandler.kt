@@ -13,7 +13,7 @@ import kotlin.math.min
 
 object MinecraftHandler
 {
-    private var minecraftServer: MinecraftServer? = null
+    var minecraftServer: MinecraftServer? = null
 
     // to set MinecraftServer instance coming from Mixin
     @JvmStatic
