@@ -11,6 +11,8 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.entity.Member
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Style
 import net.minecraft.text.Text
@@ -19,9 +21,6 @@ import java.util.regex.Pattern
 
 object ChannelHandler
 {
-    private val guild: GuildBehavior? = null
-    private val channel: MessageChannelBehavior? = null
-
     private val channels = mutableListOf<LinkedChannel>()
 
     init
@@ -40,15 +39,23 @@ object ChannelHandler
         }
     }
 
-    fun addChannel(guildSnowflake: Snowflake, channelSnowflake: Snowflake)//TODO: catch errors
+    fun addChannel(guildSnowflake: Snowflake, channelSnowflake: Snowflake)
     {
-        Main.kord?.let { kord ->
-            this.channels.add(
-                LinkedChannel(
-                    channel = MessageChannelBehavior(channelSnowflake, kord),
-                    guild = GuildBehavior(guildSnowflake, kord)
-                )
-            )
+        Main.scope.launch {
+            repeat(5) {
+                Main.kord?.let { kord ->
+                    channels.add(
+                        LinkedChannel(
+                            channel = MessageChannelBehavior(channelSnowflake, kord),
+                            guild = GuildBehavior(guildSnowflake, kord)
+                        )
+                    )
+
+                    return@launch // we're done here
+                }
+                delay(1000)
+            }
+            error("error connecting to channel $channelSnowflake in guild $guildSnowflake")
         }
     }
 
@@ -77,22 +84,9 @@ object ChannelHandler
             .replace(">", "\\>")
     }
 
-    private suspend fun sendMessage(text: String)
-    {
-        if (!initialized) return
-        if (text.isBlank()) return
-        channel?.createMessage(text) ?: println("channel is null")
-
-    }
-
     private fun getPrettyMemberName(member: Member): String
     {
         return "@${member.username} (${member.displayName})"
-    }
-
-    private suspend fun handleNotAMember(id: Snowflake)
-    {
-        sendMessage("ERROR: user with id ${id.value} is not a member of configured guild!")
     }
 
     private suspend fun registerUser(userId: Snowflake, minecraftName: String)
