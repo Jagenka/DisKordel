@@ -29,8 +29,8 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
 
     //discord4j
-    modImplementation("com.discord4j:discord4j-core:3.2.2")
-    shadow("com.discord4j:discord4j-core:3.2.2")
+    implementation("dev.kord:kord-core:0.8.0-M16")
+    shadow("dev.kord:kord-core:0.8.0-M16")
 
     implementation("io.netty:netty-all:4.1.79.Final")
 }

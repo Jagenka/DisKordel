@@ -4,7 +4,7 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import de.jagenka.DiscordBot
-import de.jagenka.HackfleischDiskursMod
+import de.jagenka.Main
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 
@@ -25,6 +25,6 @@ object WhoisCommand : Command
     private fun handleWhoIsCommand(context: CommandContext<ServerCommandSource>, name: String)
     {
         val player = context.source.player ?: return
-        HackfleischDiskursMod.sendMessageToPlayer(player, DiscordBot.whoIsUser(name))
+        Main.sendMessageToPlayer(player, DiscordBot.whoIsUser(name))
     }
 }
