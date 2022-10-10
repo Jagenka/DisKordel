@@ -9,6 +9,8 @@ import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import kotlinx.coroutines.MainScope
@@ -41,6 +43,8 @@ object Main : ModInitializer
     var kord: Kord? = null
         private set
 
+    private var link: HackfleischDiskursLink? = null
+
     val scope = MainScope()
 
     override fun onInitialize()
@@ -68,10 +72,29 @@ object Main : ModInitializer
                 intents += Intent.MessageContent
             } ?: error("error logging in")
 
-            ChannelHandler.addChannel(Snowflake(guildId), Snowflake(channelId))
+            kord?.on<MessageCreateEvent> {
+                // return if author is a bot or undefined
+                if (message.author?.isBot != false) return@on
+                if (message.channelId != Snowflake(channelId)) return@on
+                link?.handleDiscordMessage(this)
+            } ?: error("error initializing message handling")
+
+            link = HackfleischDiskursLink(Snowflake(guildId), Snowflake(channelId))
         }
 
         println("hackfleisch-diskurs-mod has been initialized.")
+    }
+
+    @JvmStatic
+    fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity?)
+    {
+        scope.launch { link?.handleMinecraftChatMessage(message, sender) }
+    }
+
+    @JvmStatic
+    fun handleMinecraftSystemMessage(message: Text)
+    {
+        scope.launch { link?.handleMinecraftSystemMessage(message) }
     }
 
     //TODO move everything after this line to own object
