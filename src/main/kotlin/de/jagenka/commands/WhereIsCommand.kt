@@ -3,7 +3,7 @@ package de.jagenka.commands
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
-import de.jagenka.HackfleischDiskursMod
+import de.jagenka.Main
 import net.minecraft.command.CommandSource.suggestMatching
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
@@ -27,14 +27,14 @@ object WhereIsCommand : Command
 
     private fun handleWhereIsCommand(context: CommandContext<ServerCommandSource>, name: String)
     {
-        val position = HackfleischDiskursMod.getPlayerPosition(name)
+        val position = Main.getPlayerPosition(name)
         val player = context.source.player ?: return
         if (position == null)
         {
-            HackfleischDiskursMod.sendMessageToPlayer(player, "$name is not a valid player name!")
+            Main.sendMessageToPlayer(player, "$name is not a valid player name!")
         } else
         {
-            HackfleischDiskursMod.sendMessageToPlayer(player, "$name is at ${position.x.toInt()} ${position.y.toInt()} ${position.z.toInt()}")
+            Main.sendMessageToPlayer(player, "$name is at ${position.x.toInt()} ${position.y.toInt()} ${position.z.toInt()}")
         }
     }
 }

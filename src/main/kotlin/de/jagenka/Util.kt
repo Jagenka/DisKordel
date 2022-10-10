@@ -20,7 +20,7 @@ object Util
 
     fun sendChatMessage(text: Text)
     {
-        HackfleischDiskursMod.minecraftServer?.playerManager?.broadcast(text, false)
+        Main.minecraftServer?.playerManager?.broadcast(text, false)
     }
 
     fun ServerPlayerEntity.sendPrivateMessage(text: String)

@@ -7,6 +7,11 @@ import de.jagenka.commands.WhereIsCommand
 import de.jagenka.commands.WhoisCommand
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
+import dev.kord.core.Kord
+import dev.kord.gateway.Intent
+import dev.kord.gateway.PrivilegedIntent
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.command.CommandRegistryAccess
@@ -23,7 +28,7 @@ import kotlin.math.min
 //TODO command interface
 
 @Suppress("UNUSED")
-object HackfleischDiskursMod : ModInitializer
+object Main : ModInitializer
 {
     private const val MOD_ID = "hackfleisch-diskurs-mod"
 
@@ -31,6 +36,11 @@ object HackfleischDiskursMod : ModInitializer
 
     var minecraftServer: MinecraftServer? = null
         private set
+
+    var kord: Kord? = null
+        private set
+
+    val
 
     override fun onInitialize()
     {
@@ -48,6 +58,17 @@ object HackfleischDiskursMod : ModInitializer
         val guildId = configEntry.discordSettings.guildId
         val channelId = configEntry.discordSettings.channelId
 
+        // creating bot
+        runBlocking {
+            launch {
+                kord = Kord(token)
+
+                kord?.login {
+                    @OptIn(PrivilegedIntent::class)
+                    intents += Intent.MessageContent
+                } ?: error("error logging in")
+            }
+        }
         DiscordBot.initialize(token, guildId, channelId)
 
         println("hackfleisch-diskurs-mod has been initialized.")

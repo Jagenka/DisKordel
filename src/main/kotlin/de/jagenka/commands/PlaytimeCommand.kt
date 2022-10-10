@@ -5,7 +5,7 @@ import com.google.gson.stream.JsonReader
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
-import de.jagenka.HackfleischDiskursMod
+import de.jagenka.Main
 import de.jagenka.Users
 import de.jagenka.Users.onlyMinecraftNames
 import de.jagenka.Util.ticksToPrettyString
@@ -72,7 +72,7 @@ object PlaytimeCommand : Command
 
     private fun readPlaytimeFromStatsFiles(): Map<String, Int>
     {
-        HackfleischDiskursMod.minecraftServer?.let { server ->
+        Main.minecraftServer?.let { server ->
             val statsPath = server.getSavePath(WorldSavePath.STATS)
 
             val statsOnDiskMap = HashMap<String, Int>() // key: minecraftName, value: playtime
@@ -106,7 +106,7 @@ object PlaytimeCommand : Command
 
     fun getPlaytimeLeaderboard(): List<Pair<String, Int>>
     {
-        HackfleischDiskursMod.minecraftServer?.let { server ->
+        Main.minecraftServer?.let { server ->
             val leaderboardMap = HashMap<String, Int>()
             val statsFromFilesMap = readPlaytimeFromStatsFiles()
 

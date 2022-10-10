@@ -3,7 +3,7 @@ package de.jagenka
 import de.jagenka.config.UserEntry
 import discord4j.core.`object`.entity.Member
 
-object Users : BiMap<Member, String>()
+class Users : BiMap<Member, String>()
 {
     fun registerUser(member: Member, minecraftName: String): Boolean
     {

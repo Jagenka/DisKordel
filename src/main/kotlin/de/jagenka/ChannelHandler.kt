@@ -5,59 +5,51 @@ import de.jagenka.commands.DeathsCommand.getDeathLeaderboardStrings
 import de.jagenka.commands.PlaytimeCommand.getPlaytimeLeaderboardStrings
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
-import discord4j.common.util.Snowflake
-import discord4j.core.DiscordClient
-import discord4j.core.GatewayDiscordClient
-import discord4j.core.event.domain.message.MessageCreateEvent
-import discord4j.core.`object`.entity.Member
-import discord4j.core.`object`.entity.Message
-import discord4j.core.`object`.entity.User
-import discord4j.core.`object`.entity.channel.Channel
-import discord4j.rest.RestClient
-import discord4j.rest.http.client.ClientException
+import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.GuildBehavior
+import dev.kord.core.behavior.channel.MessageChannelBehavior
+import dev.kord.core.entity.Member
+import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.on
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Style
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import java.util.regex.Pattern
 
-object DiscordBot
+object ChannelHandler
 {
-    var initialized = false
+    private val guild: GuildBehavior? = null
+    private val channel: MessageChannelBehavior? = null
 
-    private lateinit var token: String
-    private lateinit var guildId: Snowflake
-    private lateinit var channel: Channel
+    private val channels = mutableListOf<LinkedChannel>()
 
-    private lateinit var client: DiscordClient
-    private lateinit var gateway: GatewayDiscordClient
-    private lateinit var restClient: RestClient
-
-    fun initialize(token: String, guildId: Long, channelId: Long) //TODO: catch errors
+    init
     {
-        this.token = token
+        Main.kord?.let { kord ->
+            kord.on<MessageCreateEvent> {
+                // return if wrong guild
+                if (message.getGuildOrNull()?.id !in channels.map { it.guild.id }) return@on
+                // return if wrong channel
+                if (message.channelId !in channels.map { it.channel.id }) return@on
+                // return if author is a bot or undefined
+                if (message.author?.isBot != false) return@on
 
-        //init DiscordClient
-        client = DiscordClient.create(token)
-        //init GatewayDiscordClient
-        gateway = client.login().block()!!
-        //init RestClient
-        restClient = gateway.restClient
-        //get RestClient AppID
-        //var appId = restClient.applicationId.block()!!
+                // TODO: handle chat messages here
+            }
+        }
+    }
 
-        //handle received Messages
-        gateway.on(MessageCreateEvent::class.java)
-            .filter { event -> event.message.channelId == Snowflake.of(channelId) }
-            .filter { event -> !event.message.author.get().isBot }
-            .subscribe { event -> processMessage(event.message) }
-
-        this.guildId = Snowflake.of(guildId)
-        channel = gateway.getChannelById(Snowflake.of(channelId)).block()!!
-
-        loadUsersFromFile() //TODO: investigate, why this doesn't work sometimes
-
-        initialized = true
+    fun addChannel(guildSnowflake: Snowflake, channelSnowflake: Snowflake)//TODO: catch errors
+    {
+        Main.kord?.let { kord ->
+            this.channels.add(
+                LinkedChannel(
+                    channel = MessageChannelBehavior(channelSnowflake, kord),
+                    guild = GuildBehavior(guildSnowflake, kord)
+                )
+            )
+        }
     }
 
     @JvmStatic
@@ -69,7 +61,7 @@ object DiscordBot
     @JvmStatic
     fun handleSystemMessage(message: Text)
     {
-        if(message.string.startsWith(">")) return
+        if (message.string.startsWith(">")) return
         sendMessage(message.string.asDiscordMarkdownSafe())
     }
 
@@ -85,11 +77,12 @@ object DiscordBot
             .replace(">", "\\>")
     }
 
-    private fun sendMessage(text: String)
+    private suspend fun sendMessage(text: String)
     {
         if (!initialized) return
-        if (text.isEmpty() || text.isBlank()) return
-        channel.restChannel.createMessage(text).block()
+        if (text.isBlank()) return
+        channel?.createMessage(text) ?: println("channel is null")
+
     }
 
     private fun getPrettyMemberName(member: Member): String
@@ -97,14 +90,14 @@ object DiscordBot
         return "@${member.username} (${member.displayName})"
     }
 
-    private fun handleNotAMember(id: Snowflake)
+    private suspend fun handleNotAMember(id: Snowflake)
     {
-        sendMessage("ERROR: user with id ${id.asLong()} is not a member of configured guild!")
+        sendMessage("ERROR: user with id ${id.value} is not a member of configured guild!")
     }
 
-    private fun registerUser(userId: Snowflake, minecraftName: String)
+    private suspend fun registerUser(userId: Snowflake, minecraftName: String)
     {
-        val member = gateway.getMemberById(guildId, userId).block()
+        val member = guild?.getMember(userId)
         if (member == null)
         {
             handleNotAMember(userId)
@@ -116,8 +109,8 @@ object DiscordBot
             sendMessage("$minecraftName is already assigned to ${getPrettyMemberName(member)}")
         } else
         {
-            HackfleischDiskursMod.runWhitelistRemove(oldName)
-            HackfleischDiskursMod.runWhitelistAdd(minecraftName)
+            Main.runWhitelistRemove(oldName)
+            Main.runWhitelistAdd(minecraftName)
             sendMessage(
                 "$minecraftName now assigned to ${getPrettyMemberName(member)}\n" +
                         "$minecraftName is now whitelisted" +
@@ -125,24 +118,6 @@ object DiscordBot
             )
         }
         saveUsersToFile()
-    }
-
-    //TODO: load every so often
-    private fun loadUsersFromFile()
-    {
-        Users.clear()
-
-        configEntry.users.forEach { (discordId, minecraftName) ->
-            try
-            {
-                val member = gateway.getMemberById(guildId, Snowflake.of(discordId)).block() //lag is jetzt nur noch hier
-                if (member != null) Users.put(member, minecraftName)
-                else handleNotAMember(Snowflake.of(discordId))
-            } catch (e: ClientException)
-            {
-                handleNotAMember(Snowflake.of(discordId))
-            }
-        }
     }
 
     private fun saveUsersToFile()
@@ -169,9 +144,9 @@ object DiscordBot
         return newString
     }
 
-    private fun printOnlinePlayers()
+    private suspend fun printOnlinePlayers()
     {
-        val onlinePlayers = HackfleischDiskursMod.getOnlinePlayers()
+        val onlinePlayers = Main.getOnlinePlayers()
         val sb = StringBuilder("Currently online: ")
         if (onlinePlayers.isEmpty()) sb.append("~nobody~, ")
         else onlinePlayers.forEach { sb.append("$it, ") }
@@ -179,7 +154,7 @@ object DiscordBot
         sendMessage(sb.toString())
     }
 
-    private fun sendRegisteredUsersToChat()
+    private suspend fun sendRegisteredUsersToChat()
     {
         val sb = StringBuilder("Currently registered Users:")
         Users.getAsUserList().forEach {
@@ -189,19 +164,19 @@ object DiscordBot
         sendMessage(sb.toString())
     }
 
-    private fun ensureWhitelist(id: Snowflake)
+    private suspend fun ensureWhitelist(snowflake: Snowflake)
     {
-        val member = gateway.getMemberById(guildId, id).block()
+        val member = guild?.getMember(snowflake)
         if (member == null)
         {
-            handleNotAMember(id)
+            handleNotAMember(snowflake)
             return
         }
         if (!Users.containsKey(member)) sendMessage("Please register first with `!register minecraftName`")
         else
         {
             val minecraftName = Users.getValueForKey(member).orEmpty()
-            HackfleischDiskursMod.runWhitelistAdd(minecraftName)
+            Main.runWhitelistAdd(minecraftName)
             sendMessage("Ensured whitelist for $minecraftName") //TODO: reaction
         }
     }
@@ -250,7 +225,7 @@ object DiscordBot
 
     private fun handlePerfCommand()
     {
-        val performanceMetrics = HackfleischDiskursMod.getPerformanceMetrics()
+        val performanceMetrics = Main.getPerformanceMetrics()
         sendMessage("TPS: ${performanceMetrics.tps.trim(1)} MSPT: ${performanceMetrics.mspt.trim(1)}")
     }
 
