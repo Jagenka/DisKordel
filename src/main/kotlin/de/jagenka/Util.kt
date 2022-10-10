@@ -1,7 +1,5 @@
 package de.jagenka
 
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
 import java.util.*
 
 object Util
@@ -12,21 +10,6 @@ object Util
     }
 
     fun <T> Optional<T>.unwrap(): T? = orElse(null)
-
-    fun sendChatMessage(message: String)
-    {
-        sendChatMessage(Text.of(message))
-    }
-
-    fun sendChatMessage(text: Text)
-    {
-        Main.minecraftServer?.playerManager?.broadcast(text, false)
-    }
-
-    fun ServerPlayerEntity.sendPrivateMessage(text: String)
-    {
-        this.sendMessage(Text.of(text))
-    }
 
     fun ticksToPrettyString(ticks: Int): String
     {
