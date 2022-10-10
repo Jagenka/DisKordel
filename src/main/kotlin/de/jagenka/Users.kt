@@ -3,7 +3,7 @@ package de.jagenka
 import de.jagenka.config.UserEntry
 import dev.kord.core.entity.Member
 
-class Users : BiMap<Member, String>()
+object Users : BiMap<Member, String>()
 {
     fun registerUser(member: Member, minecraftName: String): Boolean
     {

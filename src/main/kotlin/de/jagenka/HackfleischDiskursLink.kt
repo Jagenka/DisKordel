@@ -10,8 +10,6 @@ import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.entity.Member
 import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.core.on
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Style
@@ -19,57 +17,67 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import java.util.regex.Pattern
 
-object ChannelHandler
+class HackfleischDiskursLink(val guildSnowflake: Snowflake, val channelSnowflake: Snowflake)
 {
-    private val channels = mutableListOf<LinkedChannel>()
+    private lateinit var guild: GuildBehavior
+    private lateinit var channel: MessageChannelBehavior
+
+    private var initialized: Boolean = false
 
     init
     {
         Main.kord?.let { kord ->
-            kord.on<MessageCreateEvent> {
-                // return if wrong guild
-                if (message.getGuildOrNull()?.id !in channels.map { it.guild.id }) return@on
-                // return if wrong channel
-                if (message.channelId !in channels.map { it.channel.id }) return@on
-                // return if author is a bot or undefined
-                if (message.author?.isBot != false) return@on
+            guild = GuildBehavior(guildSnowflake, kord)
+            channel = MessageChannelBehavior(channelSnowflake, kord)
 
-                // TODO: handle chat messages here
+            Main.scope.launch {
+                loadUsersFromFile()
+                initialized = true
             }
+        } ?: error("error connecting to channel $channelSnowflake in guild $guildSnowflake")
+    }
+
+
+    fun handleDiscordMessage(event: MessageCreateEvent)
+    {
+        // TODO: handle discord messages here
+    }
+
+    //TODO: load every so often
+    suspend fun loadUsersFromFile()
+    {
+        Users.clear()
+
+        configEntry.users.forEach { (discordId, minecraftName) ->
+            val memberSnowflake = Snowflake(discordId)
+            val member = guild.getMemberOrNull(memberSnowflake)
+            if (member != null) Users.put(member, minecraftName)
+            else handleNotAMember(memberSnowflake)
         }
     }
 
-    fun addChannel(guildSnowflake: Snowflake, channelSnowflake: Snowflake)
+    private fun handleNotAMember(id: Snowflake)
+    {
+        sendDiscordMessage("ERROR: user with id ${id.value} is not a member of configured guild!")
+    }
+
+    fun sendDiscordMessage(text: String)
     {
         Main.scope.launch {
-            repeat(5) {
-                Main.kord?.let { kord ->
-                    channels.add(
-                        LinkedChannel(
-                            channel = MessageChannelBehavior(channelSnowflake, kord),
-                            guild = GuildBehavior(guildSnowflake, kord)
-                        )
-                    )
-
-                    return@launch // we're done here
-                }
-                delay(1000)
-            }
-            error("error connecting to channel $channelSnowflake in guild $guildSnowflake")
+            if (text.isBlank()) return@launch
+            channel.createMessage(text)
         }
     }
 
-    @JvmStatic
-    fun handleChatMessage(message: Text, sender: ServerPlayerEntity?)
+    fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity?)
     {
-        sendMessage("<${sender?.name?.string}> ${message.string.asDiscordMarkdownSafe()}")
+        sendDiscordMessage("<${sender?.name?.string}> ${message.string.asDiscordMarkdownSafe()}")
     }
 
-    @JvmStatic
-    fun handleSystemMessage(message: Text)
+    fun handleMinecraftSystemMessage(message: Text)
     {
         if (message.string.startsWith(">")) return
-        sendMessage(message.string.asDiscordMarkdownSafe())
+        sendDiscordMessage(message.string.asDiscordMarkdownSafe())
     }
 
     private fun String.asDiscordMarkdownSafe(): String
@@ -100,12 +108,12 @@ object ChannelHandler
         val oldName = Users.getValueForKey(member).orEmpty()
         if (!Users.registerUser(member, minecraftName))
         {
-            sendMessage("$minecraftName is already assigned to ${getPrettyMemberName(member)}")
+            sendDiscordMessage("$minecraftName is already assigned to ${getPrettyMemberName(member)}")
         } else
         {
             Main.runWhitelistRemove(oldName)
             Main.runWhitelistAdd(minecraftName)
-            sendMessage(
+            sendDiscordMessage(
                 "$minecraftName now assigned to ${getPrettyMemberName(member)}\n" +
                         "$minecraftName is now whitelisted" +
                         if (oldName.isNotEmpty()) "\n$oldName is no longer whitelisted" else ""
@@ -145,7 +153,7 @@ object ChannelHandler
         if (onlinePlayers.isEmpty()) sb.append("~nobody~, ")
         else onlinePlayers.forEach { sb.append("$it, ") }
         sb.deleteRange(sb.length - 2, sb.length)
-        sendMessage(sb.toString())
+        sendDiscordMessage(sb.toString())
     }
 
     private suspend fun sendRegisteredUsersToChat()
@@ -155,7 +163,7 @@ object ChannelHandler
             sb.appendLine()
             sb.append(getPrettyComboName(it))
         }
-        sendMessage(sb.toString())
+        sendDiscordMessage(sb.toString())
     }
 
     private suspend fun ensureWhitelist(snowflake: Snowflake)
@@ -166,12 +174,12 @@ object ChannelHandler
             handleNotAMember(snowflake)
             return
         }
-        if (!Users.containsKey(member)) sendMessage("Please register first with `!register minecraftName`")
+        if (!Users.containsKey(member)) sendDiscordMessage("Please register first with `!register minecraftName`")
         else
         {
             val minecraftName = Users.getValueForKey(member).orEmpty()
             Main.runWhitelistAdd(minecraftName)
-            sendMessage("Ensured whitelist for $minecraftName") //TODO: reaction
+            sendDiscordMessage("Ensured whitelist for $minecraftName") //TODO: reaction
         }
     }
 
@@ -191,7 +199,7 @@ object ChannelHandler
                     "- `!playtime minecraftName`: shows a players playtime\n" +
                     "\n" +
                     "- `!help`: see this help text"
-        sendMessage(helpString)
+        sendDiscordMessage(helpString)
     }
 
     fun whoIsUser(name: String): String
@@ -220,7 +228,7 @@ object ChannelHandler
     private fun handlePerfCommand()
     {
         val performanceMetrics = Main.getPerformanceMetrics()
-        sendMessage("TPS: ${performanceMetrics.tps.trim(1)} MSPT: ${performanceMetrics.mspt.trim(1)}")
+        sendDiscordMessage("TPS: ${performanceMetrics.tps.trim(1)} MSPT: ${performanceMetrics.mspt.trim(1)}")
     }
 
     private fun processMessage(message: Message)
