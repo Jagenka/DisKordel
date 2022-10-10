@@ -72,6 +72,23 @@ object Users : BiMap<Member, String>()
         this.forEach { minecraftNames.add(it.minecraftName) }
         return minecraftNames
     }
+
+    fun whoIsPrintable(name: String): String
+    {
+        val members = Users.find(name)
+        return if (members.isEmpty())
+        {
+            "No users found!"
+        } else
+        {
+            val sb = StringBuilder("")
+            members.forEach {
+                sb.append(it.prettyComboName)
+                sb.appendLine()
+            }
+            sb.setLength(sb.length - 1)
+            sb.toString()
+        }
+    }
 }
 
-data class User(val username: String, val displayName: String, val minecraftName: String)
