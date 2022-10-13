@@ -3,8 +3,8 @@ package de.jagenka.commands
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
-import de.jagenka.DiscordBot
-import de.jagenka.Main
+import de.jagenka.MinecraftHandler
+import de.jagenka.Users
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 
@@ -25,6 +25,6 @@ object WhoisCommand : Command
     private fun handleWhoIsCommand(context: CommandContext<ServerCommandSource>, name: String)
     {
         val player = context.source.player ?: return
-        Main.sendMessageToPlayer(player, DiscordBot.whoIsUser(name))
+        MinecraftHandler.sendMessageToPlayer(player, Users.whoIsPrintable(name))
     }
 }

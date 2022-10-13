@@ -32,7 +32,7 @@ object Users : BiMap<Member, String>()
     fun getAsUserEntryList(): List<UserEntry>
     {
         val list = mutableListOf<UserEntry>()
-        keys().forEach { list.add(UserEntry(it.id.asLong(), getValueForKey(it).orEmpty())) }
+        keys().forEach { list.add(UserEntry(it.id.value.toLong(), getValueForKey(it).orEmpty())) }
         return list
     }
 
@@ -46,7 +46,7 @@ object Users : BiMap<Member, String>()
     fun getAsUserEntrySet(): Set<UserEntry>
     {
         val set = mutableSetOf<UserEntry>()
-        keys().forEach { set.add(UserEntry(it.id.asLong(), getValueForKey(it).orEmpty())) }
+        keys().forEach { set.add(UserEntry(it.id.value.toLong(), getValueForKey(it).orEmpty())) }
         return set
     }
 

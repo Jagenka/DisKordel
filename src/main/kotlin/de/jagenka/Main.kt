@@ -26,8 +26,6 @@ object Main : ModInitializer
 
     var uuid: UUID = UUID.randomUUID()
 
-    private var link: HackfleischDiskursLink? = null
-
     val scope = MainScope()
 
     override fun onInitialize()
