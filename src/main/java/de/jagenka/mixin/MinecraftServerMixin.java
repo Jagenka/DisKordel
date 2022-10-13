@@ -1,6 +1,6 @@
 package de.jagenka.mixin;
 
-import de.jagenka.Main;
+import de.jagenka.MinecraftHandler;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,6 +18,6 @@ public class MinecraftServerMixin
     @Inject(method = "loadWorld", at = @At("HEAD"))
     private void serverLoaded(CallbackInfo ci)
     {
-        Main.onServerLoaded((MinecraftServer) (Object) this);
+        MinecraftHandler.onServerLoaded((MinecraftServer) (Object) this);
     }
 }

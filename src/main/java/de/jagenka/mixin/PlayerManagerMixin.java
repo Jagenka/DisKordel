@@ -1,6 +1,6 @@
 package de.jagenka.mixin;
 
-import de.jagenka.DiscordBot;
+import de.jagenka.MinecraftHandler;
 import net.minecraft.network.message.MessageSourceProfile;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
@@ -25,14 +25,14 @@ public class PlayerManagerMixin
     @Inject(method = "broadcast(Lnet/minecraft/network/message/SignedMessage;Ljava/util/function/Predicate;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/network/message/MessageSourceProfile;Lnet/minecraft/network/message/MessageType$Parameters;)V", at = @At("TAIL"))
     private void onChatMessage(SignedMessage message, Predicate<ServerPlayerEntity> shouldSendFiltered, ServerPlayerEntity sender, MessageSourceProfile sourceProfile, MessageType.Parameters params, CallbackInfo ci)
     {
-        discordExecutor.submit(() -> DiscordBot.handleChatMessage(message.getContent(), sender));
+        discordExecutor.submit(() -> MinecraftHandler.handleMinecraftChatMessage(message.getContent(), sender));
         //System.out.println("chatmsg");
     }
 
     @Inject(method = "broadcast(Lnet/minecraft/text/Text;Ljava/util/function/Function;Z)V", at = @At("TAIL"))
     private void onSystemMessage(Text message, Function<ServerPlayerEntity, Text> playerMessageFactory, boolean overlay, CallbackInfo ci)
     {
-        discordExecutor.submit(() -> DiscordBot.handleSystemMessage(message));
+        discordExecutor.submit(() -> MinecraftHandler.handleMinecraftSystemMessage(message));
         //System.out.println("sysmsg");
     }
 }
