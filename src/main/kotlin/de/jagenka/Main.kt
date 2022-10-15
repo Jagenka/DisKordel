@@ -16,27 +16,26 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
-import java.util.*
 
 //TODO command interface
 
 @Suppress("UNUSED")
 object Main : ModInitializer
 {
-    private const val MOD_ID = "hackfleisch-diskurs-mod"
-
-    var uuid: UUID = UUID.randomUUID()
-
     val scope: CoroutineScope = CoroutineScope(SupervisorJob())
+
+    val commands = listOf(
+        WhoisCommand,
+        WhereIsCommand,
+        DeathsCommand,
+        PlaytimeCommand
+    )
 
     override fun onInitialize()
     {
         //register commands
         CommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<ServerCommandSource>, _: CommandRegistryAccess, _: CommandManager.RegistrationEnvironment ->
-            WhoisCommand.register(dispatcher)
-            WhereIsCommand.register(dispatcher)
-            DeathsCommand.register(dispatcher)
-            PlaytimeCommand.register(dispatcher)
+            commands.forEach { it.register(dispatcher) }
         }
 
         Config.loadConfig()

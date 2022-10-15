@@ -1,38 +1,16 @@
 package de.jagenka.commands
 
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.arguments.StringArgumentType
-import com.mojang.brigadier.context.CommandContext
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
-import net.minecraft.server.command.CommandManager
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
 
-object DeathsCommand : Command
+object DeathsCommand : StringInStringOutCommand
 {
-    override fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
-    {
-        dispatcher.register(
-            CommandManager.literal("deaths")
-                .executes {
-                    handle(it, "")
-                    return@executes 0
-                }
-                .then(
-                    CommandManager.argument("name", StringArgumentType.greedyString()).executes
-                    {
-                        handle(it, StringArgumentType.getString(it, "name"))
-                        return@executes 0
-                    })
-        )
-    }
+    override val literal: String
+        get() = "deaths"
 
-    private fun handle(it: CommandContext<ServerCommandSource>, input: String)
+    override fun execute(input: String): String
     {
-        getDeathLeaderboardStrings(input).forEach { line ->
-            it.source.sendFeedback(Text.literal(line), false)
-        }
+        return getDeathLeaderboardStrings(input).joinToString("\n")
     }
 
     /**
@@ -45,10 +23,15 @@ object DeathsCommand : Command
 
             val possiblePlayers = Users.find(input)
 
+            println(possiblePlayers)
+
             server.scoreboard.getAllPlayerScores(server.scoreboard.getObjective("deaths"))
                 .forEach {
                     possiblePlayers.forEach { player ->
-                        if (it.playerName.equals(player.minecraftName, ignoreCase = true)) result.add(it.playerName to it.score)
+                        if (it.playerName.equals(player.minecraftName, ignoreCase = true))
+                        {
+                            result.add(it.playerName to it.score)
+                        }
                     }
                     if (it.playerName.equals(input, ignoreCase = true)) result.add(it.playerName to it.score)
                 }
