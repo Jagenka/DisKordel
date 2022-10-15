@@ -8,7 +8,8 @@ import de.jagenka.commands.WhoisCommand
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
 import dev.kord.common.entity.Snowflake
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -26,7 +27,7 @@ object Main : ModInitializer
 
     var uuid: UUID = UUID.randomUUID()
 
-    val scope = MainScope()
+    val scope: CoroutineScope = CoroutineScope(SupervisorJob())
 
     override fun onInitialize()
     {
@@ -45,7 +46,10 @@ object Main : ModInitializer
         val channelId = configEntry.discordSettings.channelId
 
         // creating bot
-        scope.launch { DiscordHandler.init(token, Snowflake(guildId), Snowflake(channelId)) }
+        scope.launch {
+            println("launching bot...")
+            DiscordHandler.init(token, Snowflake(guildId), Snowflake(channelId))
+        }
 
         println("hackfleisch-diskurs-mod has been initialized.")
     }

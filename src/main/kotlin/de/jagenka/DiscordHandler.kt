@@ -30,24 +30,24 @@ object DiscordHandler
     {
         kord = Kord(token)
 
-        kord?.login {
-            @OptIn(PrivilegedIntent::class)
-            intents += Intent.MessageContent
-        } ?: error("error logging in")
-
-        kord?.on<MessageCreateEvent> {
-            // return if author is a bot or undefined
-            if (message.author?.isBot != false) return@on
-            if (message.channelId != channelSnowflake) return@on
-            handleMessage(this)
-        } ?: error("error initializing message handling")
-
         kord?.let { kord ->
             guild = GuildBehavior(guildSnowflake, kord)
             channel = MessageChannelBehavior(channelSnowflake, kord)
-        } ?: error("error initializing channel")
 
-        loadUsersFromFile()
+            loadUsersFromFile()
+
+            kord.on<MessageCreateEvent> {
+                // return if author is a bot or undefined
+                if (message.author?.isBot != false) return@on
+                if (message.channelId != channelSnowflake) return@on
+                handleMessage(this)
+            }
+
+            kord.login {// nicht sicher ob man für jeden link nen eigenen bot braucht mit der API
+                @OptIn(PrivilegedIntent::class)
+                intents += Intent.MessageContent
+            }
+        } ?: error("error initializing bot")
     }
 
     private suspend fun handleMessage(event: MessageCreateEvent)
