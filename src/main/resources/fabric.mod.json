@@ -12,7 +12,7 @@
     "issues": "",
     "sources": ""
   },
-  "license": "GNU Lesser General Public License version 3 (LGPLv3)",
+  "license": "GNU General Public License version 3 (GPLv3)",
   "icon": "assets/hackfleisch_diskurs_mod/icon.png",
   "environment": "*",
   "entrypoints": {
