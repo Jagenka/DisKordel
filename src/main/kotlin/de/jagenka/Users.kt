@@ -75,10 +75,10 @@ object Users : BiMap<Member, String>()
 
     fun whoIsPrintable(name: String): String
     {
-        val members = Users.find(name)
+        val members = find(name)
         return if (members.isEmpty())
         {
-            "No users found!"
+            "No-one found!"
         } else
         {
             val sb = StringBuilder("")

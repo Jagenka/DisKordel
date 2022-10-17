@@ -1,40 +1,30 @@
 package de.jagenka.commands
 
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import de.jagenka.MinecraftHandler
-import net.minecraft.command.CommandSource.suggestMatching
-import net.minecraft.server.command.CommandManager
+import de.jagenka.Users
 import net.minecraft.server.command.ServerCommandSource
 
-object WhereIsCommand : Command
+object WhereIsCommand : StringInStringOutCommand
 {
-    override fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
+    override val literal: String
+        get() = "whereis"
+
+    override fun execute(ctx: CommandContext<ServerCommandSource>): String
     {
-        dispatcher.register(
-            CommandManager.literal("whereis").then(
-                CommandManager.argument("player", StringArgumentType.word())
-                    .suggests { commandContext, suggestionsBuilder ->
-                        suggestMatching(commandContext.source.playerNames, suggestionsBuilder)
-                    }
-                    .executes {
-                        handleWhereIsCommand(it, StringArgumentType.getString(it, "player"))
-                        return@executes 0
-                    })
-        )
+        return "Press F3, you dungus!"
     }
 
-    private fun handleWhereIsCommand(context: CommandContext<ServerCommandSource>, name: String)
+    override fun execute(ctx: CommandContext<ServerCommandSource>, input: String): String
     {
-        val position = MinecraftHandler.getPlayerPosition(name)
-        val player = context.source.player ?: return
-        if (position == null)
-        {
-            MinecraftHandler.sendMessageToPlayer(player, "$name is not a valid player name!")
-        } else
-        {
-            MinecraftHandler.sendMessageToPlayer(player, "$name is at ${position.x.toInt()} ${position.y.toInt()} ${position.z.toInt()}")
+        val possibleUsers = Users.find(input)
+
+        if (possibleUsers.isEmpty()) return "No-one found!"
+
+        return possibleUsers.joinToString("\n") { user ->
+            MinecraftHandler.getPlayerPosition(user.minecraftName)?.let {
+                "${user.minecraftName} is at (${it.x.toInt()} ${it.y.toInt()} ${it.z.toInt()})."
+            } ?: ""
         }
     }
 }

@@ -1,16 +1,24 @@
 package de.jagenka.commands
 
+import com.mojang.brigadier.context.CommandContext
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
+import net.minecraft.server.command.ServerCommandSource
 
 object DeathsCommand : StringInStringOutCommand
 {
     override val literal: String
         get() = "deaths"
 
-    override fun execute(input: String): String
+    override fun execute(ctx: CommandContext<ServerCommandSource>): String
     {
-        return getDeathLeaderboardStrings(input).joinToString("\n")
+        val nameToCount = getDeathScores(ctx.source.name).firstOrNull() ?: return "No-one found!"
+        return "You have died ${nameToCount.second} time" + (if (nameToCount.second != 1) "s" else "") + "."
+    }
+
+    override fun execute(ctx: CommandContext<ServerCommandSource>, input: String): String
+    {
+        return getDeathLeaderboardStrings(input).joinToString("\n").ifBlank { "No-one found!" }
     }
 
     /**
@@ -49,7 +57,7 @@ object DeathsCommand : StringInStringOutCommand
     {
         val result = mutableListOf<String>()
         getDeathScores(input).forEach { (playerName, deaths) ->
-            result.add("$playerName has died $deaths time" + if (deaths != 1) "s" else "")
+            result.add("$playerName has died $deaths time" + (if (deaths != 1) "s" else "") + ".")
         }
         return result.toList()
     }
