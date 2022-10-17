@@ -2,18 +2,14 @@ package de.jagenka.commands
 
 import com.google.gson.internal.Streams
 import com.google.gson.stream.JsonReader
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import de.jagenka.MinecraftHandler.minecraftServer
 import de.jagenka.Users
 import de.jagenka.Users.onlyMinecraftNames
 import de.jagenka.Util.ticksToPrettyString
 import de.jagenka.Util.unwrap
-import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.stat.Stats
-import net.minecraft.text.Text
 import net.minecraft.util.WorldSavePath
 import java.io.StringReader
 import java.nio.file.Files
@@ -21,31 +17,20 @@ import java.util.*
 import kotlin.io.path.name
 import kotlin.io.path.readText
 
-object PlaytimeCommand : Command
+object PlaytimeCommand : StringInStringOutCommand
 {
-    override fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
+    override val literal: String
+        get() = "playtime"
+
+    override fun execute(ctx: CommandContext<ServerCommandSource>): String
     {
-        dispatcher.register(
-            CommandManager.literal("playtime")
-                .executes
-                {
-                    handle(it, "")
-                    return@executes 0
-                }
-                .then(
-                    CommandManager.argument("name", StringArgumentType.greedyString()).executes
-                    {
-                        handle(it, StringArgumentType.getString(it, "name"))
-                        return@executes 0
-                    })
-        )
+        val nameToPlaytime = getPlaytime(ctx.source.name).firstOrNull() ?: return "No-one found!"
+        return "You have played for ${ticksToPrettyString(nameToPlaytime.second)}."
     }
 
-    private fun handle(it: CommandContext<ServerCommandSource>, input: String)
+    override fun execute(ctx: CommandContext<ServerCommandSource>, input: String): String
     {
-        getPlaytimeLeaderboardStrings(input).forEach { line ->
-            it.source.sendFeedback(Text.literal(line), false)
-        }
+        return getPlaytimeLeaderboardStrings(input).joinToString("\n").ifBlank { "No-one found!" }
     }
 
     /**
@@ -65,7 +50,7 @@ object PlaytimeCommand : Command
     {
         val result = mutableListOf<String>()
         getPlaytime(input).forEach { (playerName, ticks) ->
-            result.add("$playerName has played for ${ticksToPrettyString(ticks)}")
+            result.add("$playerName has played for ${ticksToPrettyString(ticks)}.")
         }
         return result.toList()
     }

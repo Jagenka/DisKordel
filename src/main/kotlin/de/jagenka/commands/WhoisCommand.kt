@@ -1,30 +1,17 @@
 package de.jagenka.commands
 
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
-import de.jagenka.MinecraftHandler
 import de.jagenka.Users
-import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 
 
-object WhoisCommand : Command
+object WhoisCommand : StringInStringOutCommand
 {
-    override fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
-    {
-        dispatcher.register(
-            CommandManager.literal("whois").then(CommandManager.argument("name", StringArgumentType.greedyString()).executes
-            {
-                handleWhoIsCommand(it, StringArgumentType.getString(it, "name"))
-                return@executes 0
-            })
-        )
-    }
+    override val literal: String
+        get() = "whois"
 
-    private fun handleWhoIsCommand(context: CommandContext<ServerCommandSource>, name: String)
+    override fun execute(ctx: CommandContext<ServerCommandSource>, input: String): String
     {
-        val player = context.source.player ?: return
-        MinecraftHandler.sendMessageToPlayer(player, Users.whoIsPrintable(name))
+        return Users.whoIsPrintable(input)
     }
 }
