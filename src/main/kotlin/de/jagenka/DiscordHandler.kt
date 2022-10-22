@@ -2,6 +2,7 @@ package de.jagenka
 
 import de.jagenka.Util.trim
 import de.jagenka.commands.DeathsCommand
+import de.jagenka.commands.DiscordCommandRegistry
 import de.jagenka.commands.PlaytimeCommand
 import de.jagenka.config.Config
 import dev.kord.common.entity.Snowflake
@@ -40,7 +41,7 @@ object DiscordHandler
                 // return if author is a bot or undefined
                 if (message.author?.isBot != false) return@on
                 if (message.channelId != channelSnowflake) return@on
-                handleMessage(this)
+                DiscordCommandRegistry.handleCommand(this) //TODO: send to Minecraft if not a command
             }
 
             kord.login {// nicht sicher ob man für jeden link nen eigenen bot braucht mit der API
@@ -50,7 +51,7 @@ object DiscordHandler
         } ?: error("error initializing bot")
     }
 
-    private suspend fun handleMessage(event: MessageCreateEvent)
+    private suspend fun handleMessage(event: MessageCreateEvent) // TODO: alles auslagern
     {
         // TODO: handle discord messages here
         with(event.message.content)

@@ -1,23 +1,18 @@
 package de.jagenka.commands
 
-import com.mojang.brigadier.context.CommandContext
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
-import net.minecraft.server.command.ServerCommandSource
 
 object WhereIsCommand : StringInStringOutCommand
 {
-    override val literal: String
+    override val minecraftName: String
         get() = "whereis"
+    override val discordName: String
+        get() = minecraftName
 
-    override fun execute(ctx: CommandContext<ServerCommandSource>): String
+    override fun process(input: String): String
     {
-        return "Press F3, you dungus!"
-    }
-
-    override fun execute(ctx: CommandContext<ServerCommandSource>, input: String): String
-    {
-        val possibleUsers = Users.find(input)
+        val possibleUsers = Users.find(input.trim())
 
         if (possibleUsers.isEmpty()) return "No-one found!"
 

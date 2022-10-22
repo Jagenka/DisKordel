@@ -2,25 +2,26 @@ package de.jagenka.commands
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
-import com.mojang.brigadier.context.CommandContext
+import de.jagenka.DiscordHandler
+import dev.kord.core.event.message.MessageCreateEvent
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 
-interface StringInStringOutCommand : Command
+interface StringInStringOutCommand : MinecraftCommand, DiscordCommand
 {
-    val literal: String
-
     /**
-     * sends all lines of return value of execute()
+     * sends all lines of return value of process()
      */
     override fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
     {
+        DiscordCommandRegistry.register(this)
+
         dispatcher.register(
-            CommandManager.literal(literal)
+            CommandManager.literal(minecraftName)
                 .executes {
-                    val output = execute(it)
-                    output.lines().forEach { line ->
+                    val output = process(it.source.name)
+                    output.lines().toSet().forEach { line ->
                         if (line.isBlank()) return@forEach
                         it.source.sendFeedback(Text.literal(line), false)
                     }
@@ -29,7 +30,7 @@ interface StringInStringOutCommand : Command
                 .then(
                     CommandManager.argument("name", StringArgumentType.greedyString()).executes
                     {
-                        val output = execute(it, StringArgumentType.getString(it, "name"))
+                        val output = process(StringArgumentType.getString(it, "name"))
                         output.lines().forEach { line ->
                             if (line.isBlank()) return@forEach
                             it.source.sendFeedback(Text.literal(line), false)
@@ -39,13 +40,14 @@ interface StringInStringOutCommand : Command
         )
     }
 
-    /**
-     * @return what is to be sent as feedback to sender
-     */
-    fun execute(ctx: CommandContext<ServerCommandSource>): String
+    override fun execute(event: MessageCreateEvent, args: String)
     {
-        return execute(ctx, "")
+        val input = args.trim()
+        DiscordHandler.sendMessage(process(input))
     }
 
-    fun execute(ctx: CommandContext<ServerCommandSource>, input: String): String
+    /**
+     * @param input if this is empty, command should give back all information TODO test this
+     */
+    fun process(input: String): String
 }
