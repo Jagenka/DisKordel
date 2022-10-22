@@ -1,24 +1,18 @@
 package de.jagenka.commands
 
-import com.mojang.brigadier.context.CommandContext
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
-import net.minecraft.server.command.ServerCommandSource
 
 object DeathsCommand : StringInStringOutCommand
 {
-    override val literal: String
+    override val minecraftName: String
         get() = "deaths"
+    override val discordName: String
+        get() = minecraftName
 
-    override fun execute(ctx: CommandContext<ServerCommandSource>): String
+    override fun process(input: String): String
     {
-        val nameToCount = getDeathScores(ctx.source.name).firstOrNull() ?: return "No-one found!"
-        return "You have died ${nameToCount.second} time" + (if (nameToCount.second != 1) "s" else "") + "."
-    }
-
-    override fun execute(ctx: CommandContext<ServerCommandSource>, input: String): String
-    {
-        return getDeathLeaderboardStrings(input).joinToString("\n").ifBlank { "No-one found!" }
+        return getDeathLeaderboardStrings(input.trim()).joinToString("\n").ifBlank { "No-one found!" }
     }
 
     /**

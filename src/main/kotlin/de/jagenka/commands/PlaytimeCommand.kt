@@ -2,13 +2,11 @@ package de.jagenka.commands
 
 import com.google.gson.internal.Streams
 import com.google.gson.stream.JsonReader
-import com.mojang.brigadier.context.CommandContext
 import de.jagenka.MinecraftHandler.minecraftServer
 import de.jagenka.Users
 import de.jagenka.Users.onlyMinecraftNames
 import de.jagenka.Util.ticksToPrettyString
 import de.jagenka.Util.unwrap
-import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.stat.Stats
 import net.minecraft.util.WorldSavePath
 import java.io.StringReader
@@ -19,18 +17,14 @@ import kotlin.io.path.readText
 
 object PlaytimeCommand : StringInStringOutCommand
 {
-    override val literal: String
+    override val minecraftName: String
         get() = "playtime"
+    override val discordName: String
+        get() = minecraftName
 
-    override fun execute(ctx: CommandContext<ServerCommandSource>): String
+    override fun process(input: String): String
     {
-        val nameToPlaytime = getPlaytime(ctx.source.name).firstOrNull() ?: return "No-one found!"
-        return "You have played for ${ticksToPrettyString(nameToPlaytime.second)}."
-    }
-
-    override fun execute(ctx: CommandContext<ServerCommandSource>, input: String): String
-    {
-        return getPlaytimeLeaderboardStrings(input).joinToString("\n").ifBlank { "No-one found!" }
+        return getPlaytimeLeaderboardStrings(input.trim()).joinToString("\n").ifBlank { "No-one found!" }
     }
 
     /**

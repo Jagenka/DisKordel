@@ -1,17 +1,17 @@
 package de.jagenka.commands
 
-import com.mojang.brigadier.context.CommandContext
 import de.jagenka.Users
-import net.minecraft.server.command.ServerCommandSource
 
 
 object WhoisCommand : StringInStringOutCommand
 {
-    override val literal: String
+    override val minecraftName: String
         get() = "whois"
+    override val discordName: String
+        get() = minecraftName
 
-    override fun execute(ctx: CommandContext<ServerCommandSource>, input: String): String
+    override fun process(input: String): String
     {
-        return Users.whoIsPrintable(input)
+        return Users.whoIsPrintable(input.trim())
     }
 }
