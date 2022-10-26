@@ -1,4 +1,4 @@
-package de.jagenka.commands
+package de.jagenka.commands.universal
 
 import com.google.gson.internal.Streams
 import com.google.gson.stream.JsonReader

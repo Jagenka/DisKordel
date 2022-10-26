@@ -1,10 +1,10 @@
 package de.jagenka
 
 import com.mojang.brigadier.CommandDispatcher
-import de.jagenka.commands.DeathsCommand
-import de.jagenka.commands.PlaytimeCommand
-import de.jagenka.commands.WhereIsCommand
-import de.jagenka.commands.WhoisCommand
+import de.jagenka.commands.universal.DeathsCommand
+import de.jagenka.commands.universal.PlaytimeCommand
+import de.jagenka.commands.universal.WhereIsCommand
+import de.jagenka.commands.universal.WhoisCommand
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
 import dev.kord.common.entity.Snowflake
@@ -24,7 +24,7 @@ object Main : ModInitializer
 {
     val scope: CoroutineScope = CoroutineScope(SupervisorJob())
 
-    val commands = listOf(
+    private val minecraftCommands = listOf(
         WhoisCommand,
         WhereIsCommand,
         DeathsCommand,
@@ -35,7 +35,7 @@ object Main : ModInitializer
     {
         //register commands
         CommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<ServerCommandSource>, _: CommandRegistryAccess, _: CommandManager.RegistrationEnvironment ->
-            commands.forEach { it.register(dispatcher) }
+            minecraftCommands.forEach { it.register(dispatcher) }
         }
 
         Config.loadConfig()
