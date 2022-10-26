@@ -1,15 +1,11 @@
 package de.jagenka
 
-import de.jagenka.Util.trim
-import de.jagenka.commands.DeathsCommand
-import de.jagenka.commands.DiscordCommandRegistry
-import de.jagenka.commands.PlaytimeCommand
+import de.jagenka.commands.discord.*
 import de.jagenka.config.Config
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
-import dev.kord.core.entity.Member
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
@@ -37,6 +33,8 @@ object DiscordHandler
 
             loadUsersFromFile()
 
+            registerCommands()
+
             kord.on<MessageCreateEvent> {
                 // return if author is a bot or undefined
                 if (message.author?.isBot != false) return@on
@@ -51,92 +49,16 @@ object DiscordHandler
         } ?: error("error initializing bot")
     }
 
-    private suspend fun handleMessage(event: MessageCreateEvent) // TODO: alles auslagern
+    private fun registerCommands()
     {
-        // TODO: handle discord messages here
-        with(event.message.content)
+        with(DiscordCommandRegistry)
         {
-            when
-            {
-                equals("!help") ->
-                {
-                    sendHelpText()
-                }
-
-                equals("!list") ->
-                {
-                    printOnlinePlayers()
-                }
-
-                startsWith("!register") ->
-                {
-                    event.message.author?.let {
-                        registerUser(it.id, this.removePrefix("!register").trim())
-                    }
-                }
-
-                equals("!users") ->
-                {
-                    printRegisteredUsers()
-                }
-
-                startsWith("!whois") ->
-                {
-                    val input = this.removePrefix("!whois").trim()
-                    sendMessage(Users.whoIsPrintable(input))
-                }
-
-                equals("!updatenames") ->
-                {
-                    loadUsersFromFile()
-                    //TODO: add reaction
-                }
-
-                startsWith("!whitelist") ->
-                {
-                    event.message.author?.let { ensureWhitelist(it.id) }
-                }
-
-                equals("!perf") ->
-                {
-                    printPerfMetrics()
-                }
-
-                startsWith("!deaths") ->
-                {
-                    val input = this.removePrefix("!deaths").trim()
-                    val results = DeathsCommand.getDeathLeaderboardStrings(input)
-                    if (results.isEmpty()) sendMessage("no death counts stored for input: $input")
-                    else
-                    {
-                        val stringBuilder = StringBuilder()
-                        results.forEach {
-                            stringBuilder.append(it)
-                            stringBuilder.appendLine()
-                        }
-                        sendMessage(stringBuilder.trim().toString())
-                    }
-                }
-
-                startsWith("!playtime") ->
-                {
-                    val input = this.removePrefix("!playtime").trim()
-                    val result = PlaytimeCommand.getPlaytimeLeaderboardStrings(input)
-                    if (result.isEmpty()) sendMessage("no playtime tracked for input: $input")
-                    val stringBuilder = StringBuilder()
-                    result.forEach {
-                        stringBuilder.append(it)
-                        stringBuilder.appendLine()
-                    }
-                    sendMessage(stringBuilder.trim().toString())
-                }
-
-                else ->
-                {
-                    val authorName = event.member?.displayName ?: event.message.author?.username ?: "NONAME"
-                    MinecraftHandler.sendMessage(authorName, event.message.content)
-                }
-            }
+            register(HelpCommand)
+            register(ListCommand)
+            register(RegisterCommand)
+            register(UsersCommand)
+            register(UpdateNamesCommand)
+            register(PerfCommand)
         }
     }
 
@@ -146,31 +68,6 @@ object DiscordHandler
             if (text.isBlank()) return@launch
             channel.createMessage(text)
         }
-    }
-
-    private suspend fun registerUser(userId: Snowflake, minecraftName: String)
-    {
-        val member = guild.getMemberOrNull(userId)
-        if (member == null)
-        {
-            handleNotAMember(userId)
-            return
-        }
-        val oldName = Users.getValueForKey(member).orEmpty()
-        if (!Users.registerUser(member, minecraftName))
-        {
-            sendMessage("$minecraftName is already assigned to ${getPrettyMemberName(member)}")
-        } else
-        {
-            MinecraftHandler.runWhitelistRemove(oldName)
-            MinecraftHandler.runWhitelistAdd(minecraftName)
-            sendMessage(
-                "$minecraftName now assigned to ${getPrettyMemberName(member)}\n" +
-                        "$minecraftName is now whitelisted" +
-                        if (oldName.isNotEmpty()) "\n$oldName is no longer whitelisted" else ""
-            )
-        }
-        saveUsersToFile()
     }
 
     //TODO: load every so often
@@ -184,32 +81,6 @@ object DiscordHandler
             if (member != null) Users.put(member, minecraftName)
             else handleNotAMember(memberSnowflake)
         }
-    }
-
-    private fun saveUsersToFile()
-    {
-        Config.configEntry.users = Users.getAsUserEntryList().toList()
-        Config.store()
-    }
-
-    private fun printOnlinePlayers()
-    {
-        val onlinePlayers = MinecraftHandler.getOnlinePlayers()
-        val sb = StringBuilder("Currently online: ")
-        if (onlinePlayers.isEmpty()) sb.append("~nobody~, ")
-        else onlinePlayers.forEach { sb.append("$it, ") }
-        sb.deleteRange(sb.length - 2, sb.length)
-        sendMessage(sb.toString())
-    }
-
-    private fun printRegisteredUsers()
-    {
-        val sb = StringBuilder("Currently registered Users:")
-        Users.getAsUserList().forEach {
-            sb.appendLine()
-            sb.append(it.prettyComboName)
-        }
-        sendMessage(sb.toString())
     }
 
     private suspend fun ensureWhitelist(snowflake: Snowflake)
@@ -229,36 +100,6 @@ object DiscordHandler
         }
     }
 
-    private fun sendHelpText()
-    {
-        val helpString =
-            "Available commands:\n" +
-                    "- `!register minecraftName`: connect your Minecraft name to your Discord account\n" +
-                    "- `!whitelist`: ensure that you're on the whitelist if it doesn't automatically work\n" +
-                    "\n" +
-                    "- `!users`: see all registered Users\n" +
-                    "- `!whois username`: look for a user\n" +
-                    "- `!updatenames`: update discord display names in database\n" +
-                    "\n" +
-                    "- `!list`: list currently online players\n" +
-                    "- `!deaths minecraftName`: shows how often a player has died\n" +
-                    "- `!playtime minecraftName`: shows a players playtime\n" +
-                    "\n" +
-                    "- `!help`: see this help text"
-        sendMessage(helpString)
-    }
-
-    private fun printPerfMetrics()
-    {
-        val performanceMetrics = MinecraftHandler.getPerformanceMetrics()
-        sendMessage("TPS: ${performanceMetrics.tps.trim(1)} MSPT: ${performanceMetrics.mspt.trim(1)}")
-    }
-
-    private fun handleNotAMember(id: Snowflake)
-    {
-        sendMessage("ERROR: user with id ${id.value} is not a member of configured guild!")
-    }
-
     fun String.markdownSafe(): String
     {
         return this
@@ -271,9 +112,9 @@ object DiscordHandler
             .replace(">", "\\>")
     }
 
-    private fun getPrettyMemberName(member: Member): String
+    fun handleNotAMember(id: Snowflake)
     {
-        return "@${member.username} (${member.displayName})"
+        sendMessage("ERROR: user with id ${id.value} is not a member of configured guild!")
     }
 
     fun String.convertMentions(): String // TODO: integrate

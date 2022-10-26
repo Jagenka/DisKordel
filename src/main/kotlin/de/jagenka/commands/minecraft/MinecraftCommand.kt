@@ -1,4 +1,4 @@
-package de.jagenka.commands
+package de.jagenka.commands.minecraft
 
 import com.mojang.brigadier.CommandDispatcher
 import net.minecraft.server.command.ServerCommandSource

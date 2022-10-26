@@ -1,5 +1,6 @@
-package de.jagenka.commands
+package de.jagenka.commands.discord
 
+import de.jagenka.MinecraftHandler
 import dev.kord.core.event.message.MessageCreateEvent
 
 object DiscordCommandRegistry
@@ -17,16 +18,21 @@ object DiscordCommandRegistry
     {
         val messageContent = event.message.content
 
-        println(messageContent)
-
-        messageContent.split(" ").firstOrNull()?.let { first ->
-            println(first)
-            if (first.startsWith(commandPrefix))
-            {
+        if (messageContent.startsWith(commandPrefix))
+        {
+            messageContent.split(" ").firstOrNull()?.let { first ->
                 val commandLiteral = first.removePrefix(commandPrefix)
-                println(commandLiteral)
                 commands.find { it.discordName == commandLiteral }?.execute(event, messageContent.removePrefix(first).trim())
             }
+        } else
+        {
+            defaultHandling(event)
         }
+    }
+
+    private fun defaultHandling(event: MessageCreateEvent)
+    {
+        val authorName = event.member?.displayName ?: event.message.author?.username ?: "NONAME"
+        MinecraftHandler.sendMessage(authorName, event.message.content)
     }
 }

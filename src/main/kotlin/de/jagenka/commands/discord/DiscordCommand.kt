@@ -1,4 +1,4 @@
-package de.jagenka.commands
+package de.jagenka.commands.discord
 
 import dev.kord.core.event.message.MessageCreateEvent
 

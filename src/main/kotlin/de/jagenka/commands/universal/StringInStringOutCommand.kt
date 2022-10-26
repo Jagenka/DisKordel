@@ -1,8 +1,11 @@
-package de.jagenka.commands
+package de.jagenka.commands.universal
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
+import de.jagenka.commands.discord.DiscordCommand
+import de.jagenka.commands.discord.DiscordCommandRegistry
+import de.jagenka.commands.minecraft.MinecraftCommand
 import dev.kord.core.event.message.MessageCreateEvent
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource

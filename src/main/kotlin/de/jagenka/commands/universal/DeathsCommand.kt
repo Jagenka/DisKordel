@@ -1,4 +1,4 @@
-package de.jagenka.commands
+package de.jagenka.commands.universal
 
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users

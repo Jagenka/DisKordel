@@ -31,6 +31,8 @@ dependencies {
     //discord4j
     implementation("dev.kord:kord-core:0.8.0-M16")
     shadow("dev.kord:kord-core:0.8.0-M16")
+    implementation("dev.kord.x:emoji:0.5.0")
+    shadow("dev.kord.x:emoji:0.5.0")
 
     implementation("io.netty:netty-all:4.1.79.Final")
 }
