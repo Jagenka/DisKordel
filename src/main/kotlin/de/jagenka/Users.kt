@@ -1,17 +1,19 @@
 package de.jagenka
 
+import de.jagenka.config.Config
 import de.jagenka.config.UserEntry
 import dev.kord.core.entity.Member
 
 object Users : BiMap<Member, String>()
 {
-    fun registerUser(member: Member, minecraftName: String): Boolean
+    fun registerUser(member: Member, minecraftName: String)
     {
-        if (this.containsValue(minecraftName)) return false
-
         this.put(member, minecraftName)
+    }
 
-        return true
+    fun unregisterUser(member: Member)
+    {
+        this.removeKey(member)
     }
 
     fun getDiscordMember(inputName: String): Member?
@@ -89,6 +91,12 @@ object Users : BiMap<Member, String>()
             sb.setLength(sb.length - 1)
             sb.toString()
         }
+    }
+
+    fun saveToFile()
+    {
+        Config.configEntry.users = getAsUserEntryList().toList()
+        Config.store()
     }
 }
 

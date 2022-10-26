@@ -1,13 +1,12 @@
 package de.jagenka.commands.discord
 
 import de.jagenka.DiscordHandler
+import de.jagenka.DiscordHandler.getPrettyMemberName
 import de.jagenka.DiscordHandler.handleNotAMember
 import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
-import de.jagenka.config.Config
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.entity.Member
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.launch
 
@@ -33,31 +32,23 @@ object RegisterCommand : DiscordCommand
             handleNotAMember(userId)
             return
         }
-        val oldName = Users.getValueForKey(member).orEmpty()
-        if (!Users.registerUser(member, minecraftName))
+
+        if (Users.containsValue(minecraftName))
         {
             DiscordHandler.sendMessage("$minecraftName is already assigned to ${getPrettyMemberName(member)}")
-        } else
-        {
-            MinecraftHandler.runWhitelistRemove(oldName)
-            MinecraftHandler.runWhitelistAdd(minecraftName)
-            DiscordHandler.sendMessage(
-                "$minecraftName now assigned to ${getPrettyMemberName(member)}\n" +
-                        "$minecraftName is now whitelisted" +
-                        if (oldName.isNotEmpty()) "\n$oldName is no longer whitelisted" else ""
-            )
+            return
         }
-        saveUsersToFile()
-    }
 
-    private fun getPrettyMemberName(member: Member): String
-    {
-        return "@${member.username} (${member.displayName})"
-    }
+        val oldName = Users.getValueForKey(member).orEmpty()
+        Users.registerUser(member, minecraftName)
+        MinecraftHandler.runWhitelistRemove(oldName)
+        MinecraftHandler.runWhitelistAdd(minecraftName)
+        DiscordHandler.sendMessage(
+            "$minecraftName now assigned to ${getPrettyMemberName(member)}\n" +
+                    "$minecraftName is now whitelisted" +
+                    if (oldName.isNotEmpty()) "\n$oldName is no longer whitelisted" else ""
+        )
 
-    private fun saveUsersToFile()
-    {
-        Config.configEntry.users = Users.getAsUserEntryList().toList()
-        Config.store()
+        Users.saveToFile()
     }
 }

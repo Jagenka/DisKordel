@@ -6,6 +6,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
+import dev.kord.core.entity.Member
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
@@ -59,6 +60,7 @@ object DiscordHandler
             register(UsersCommand)
             register(UpdateNamesCommand)
             register(PerfCommand)
+            register(UnregisterCommand)
         }
     }
 
@@ -128,5 +130,10 @@ object DiscordHandler
             if (member != null) newString = newString.replaceRange(matcher.start(), matcher.end(), "<@!${member.id.value}>")
         }
         return newString
+    }
+
+    fun getPrettyMemberName(member: Member): String
+    {
+        return "@${member.username} (${member.displayName})"
     }
 }
