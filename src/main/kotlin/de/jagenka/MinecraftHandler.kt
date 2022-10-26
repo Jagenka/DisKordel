@@ -82,6 +82,7 @@ object MinecraftHandler
     {
         if (player.isEmpty()) return
         runCommand("whitelist remove $player")
+        runCommand("kick $player")
     }
 
     fun getPerformanceMetrics(): PerformanceMetrics
