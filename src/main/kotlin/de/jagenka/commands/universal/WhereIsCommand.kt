@@ -2,6 +2,7 @@ package de.jagenka.commands.universal
 
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
+import de.jagenka.commands.discord.DiscordCommandRegistry
 
 object WhereIsCommand : StringInStringOutCommand
 {
@@ -9,6 +10,9 @@ object WhereIsCommand : StringInStringOutCommand
         get() = "whereis"
     override val discordName: String
         get() = minecraftName
+    override val helpText: String
+        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName} [name]`: List where players are. No argument lists all players."
+
 
     override fun process(input: String): String
     {

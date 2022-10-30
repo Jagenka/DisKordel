@@ -7,6 +7,7 @@ import de.jagenka.Users
 import de.jagenka.Users.onlyMinecraftNames
 import de.jagenka.Util.ticksToPrettyString
 import de.jagenka.Util.unwrap
+import de.jagenka.commands.discord.DiscordCommandRegistry
 import net.minecraft.stat.Stats
 import net.minecraft.util.WorldSavePath
 import java.io.StringReader
@@ -21,6 +22,9 @@ object PlaytimeCommand : StringInStringOutCommand
         get() = "playtime"
     override val discordName: String
         get() = minecraftName
+    override val helpText: String
+        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName} [name]`: List how much players have played. No argument lists all players."
+
 
     override fun process(input: String): String
     {

@@ -8,6 +8,9 @@ object UsersCommand : DiscordCommand
 {
     override val discordName: String
         get() = "users"
+    override val helpText: String
+        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName}`: Lists all registered users."
+
 
     override fun execute(event: MessageCreateEvent, args: String)
     {

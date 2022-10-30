@@ -8,6 +8,9 @@ object ListCommand : DiscordCommand
 {
     override val discordName: String
         get() = "list"
+    override val helpText: String
+        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName}`: List Minecraft players currently in-game."
+
 
     override fun execute(event: MessageCreateEvent, args: String)
     {

@@ -13,6 +13,9 @@ object UnregisterCommand : DiscordCommand
 {
     override val discordName: String
         get() = "unregister"
+    override val helpText: String
+        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName}`: Unlink your current Discord User from the linked Minecraft Player."
+
 
     override fun execute(event: MessageCreateEvent, args: String)
     {

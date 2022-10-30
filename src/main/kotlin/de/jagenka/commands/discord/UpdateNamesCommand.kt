@@ -11,6 +11,9 @@ object UpdateNamesCommand : DiscordCommand
 {
     override val discordName: String
         get() = "updatenames"
+    override val helpText: String
+        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName}`: Update Member names in registry."
+
 
     override fun execute(event: MessageCreateEvent, args: String)
     {

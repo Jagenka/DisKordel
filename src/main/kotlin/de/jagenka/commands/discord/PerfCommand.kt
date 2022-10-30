@@ -9,6 +9,9 @@ object PerfCommand : DiscordCommand
 {
     override val discordName: String
         get() = "perf"
+    override val helpText: String
+        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName}`: Show current server performance metrics."
+
 
     override fun execute(event: MessageCreateEvent, args: String)
     {

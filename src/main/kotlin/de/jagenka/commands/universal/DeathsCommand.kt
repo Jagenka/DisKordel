@@ -2,6 +2,7 @@ package de.jagenka.commands.universal
 
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
+import de.jagenka.commands.discord.DiscordCommandRegistry
 
 object DeathsCommand : StringInStringOutCommand
 {
@@ -9,6 +10,9 @@ object DeathsCommand : StringInStringOutCommand
         get() = "deaths"
     override val discordName: String
         get() = minecraftName
+    override val helpText: String
+        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName} [name]`: List how many deaths players have. No argument lists all players."
+
 
     override fun process(input: String): String
     {
