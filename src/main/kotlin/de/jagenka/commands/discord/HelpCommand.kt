@@ -25,6 +25,13 @@ object HelpCommand : DiscordCommand
 
     override fun execute(event: MessageCreateEvent, args: String)
     {
-        DiscordHandler.sendMessage(helpString)
+        val stringBuilder = StringBuilder()
+
+        DiscordCommandRegistry.getCommands().forEach { command ->
+            stringBuilder.append(command.helpText)
+            stringBuilder.appendLine()
+        }
+
+        DiscordHandler.sendMessage(stringBuilder.toString().trim())
     }
 }

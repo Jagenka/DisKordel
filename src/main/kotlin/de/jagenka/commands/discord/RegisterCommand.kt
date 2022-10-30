@@ -14,6 +14,8 @@ object RegisterCommand : DiscordCommand
 {
     override val discordName: String
         get() = "register"
+    override val helpText: String
+        get() = "`${DiscordCommandRegistry.commandPrefix}register minecraftName`: Link your current Discord User to your Minecraft Player."
 
     override fun execute(event: MessageCreateEvent, args: String)
     {

@@ -5,9 +5,9 @@ import dev.kord.core.event.message.MessageCreateEvent
 
 object DiscordCommandRegistry
 {
-    private const val commandPrefix = "!"
+    const val commandPrefix = "!"
 
-    private val commands = mutableSetOf<DiscordCommand>()
+    private val commands = mutableListOf<DiscordCommand>()
 
     fun register(command: DiscordCommand)
     {
@@ -35,4 +35,6 @@ object DiscordCommandRegistry
         val authorName = event.member?.displayName ?: event.message.author?.username ?: "NONAME"
         MinecraftHandler.sendMessage(authorName, event.message.content)
     }
+
+    fun getCommands(): List<DiscordCommand> = commands.toList().sortedBy { it.discordName }
 }

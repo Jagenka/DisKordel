@@ -50,7 +50,7 @@ interface StringInStringOutCommand : MinecraftCommand, DiscordCommand
     }
 
     /**
-     * @param input if this is empty, command should give back all information TODO test this
+     * @param input if this is empty, command should give back all information
      */
     fun process(input: String): String
 }
