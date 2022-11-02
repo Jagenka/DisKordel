@@ -7,7 +7,6 @@ interface DiscordCommand
     val discordName: String
 
     val helpText: String
-        get() = "`$discordName` is missing a help text."
 
     val needsAdmin: Boolean
         get() = false

@@ -7,10 +7,13 @@ import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.entity.Member
+import dev.kord.core.entity.Message
+import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
+import dev.kord.x.emoji.Emojis
 import kotlinx.coroutines.launch
 import java.util.regex.Pattern
 
@@ -61,6 +64,7 @@ object DiscordHandler
             register(UpdateNamesCommand)
             register(PerfCommand)
             register(UnregisterCommand)
+            register(SyncDeathsCommand)
         }
     }
 
@@ -117,6 +121,13 @@ object DiscordHandler
     fun handleNotAMember(id: Snowflake)
     {
         sendMessage("ERROR: user with id ${id.value} is not a member of configured guild!")
+    }
+
+    fun reactConfirmation(message: Message)
+    {
+        Main.scope.launch {
+            message.addReaction(ReactionEmoji.Unicode(Emojis.whiteCheckMark.unicode))
+        }
     }
 
     fun String.convertMentions(): String // TODO: integrate

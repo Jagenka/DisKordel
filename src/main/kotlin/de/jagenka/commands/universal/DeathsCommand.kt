@@ -3,6 +3,7 @@ package de.jagenka.commands.universal
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
 import de.jagenka.commands.discord.DiscordCommandRegistry
+import de.jagenka.config.StatManager
 
 object DeathsCommand : StringInStringOutCommand
 {
@@ -22,24 +23,22 @@ object DeathsCommand : StringInStringOutCommand
     /**
      * @return List of Pair of real playerName and deathCount
      */
-    fun getDeathScores(input: String): List<Pair<String, Int>> //TODO: get death count independent of scoreboard
+    fun getDeathScores(input: String): List<Pair<String, Int>>
     {
         MinecraftHandler.minecraftServer?.let { server ->
             val result = mutableListOf<Pair<String, Int>>()
 
             val possiblePlayers = Users.find(input)
 
-            println(possiblePlayers)
-
-            server.scoreboard.getAllPlayerScores(server.scoreboard.getObjective("deaths"))
+            StatManager.statEntries
                 .forEach {
                     possiblePlayers.forEach { player ->
-                        if (it.playerName.equals(player.minecraftName, ignoreCase = true))
+                        if (it.key.equals(player.minecraftName, ignoreCase = true))
                         {
-                            result.add(it.playerName to it.score)
+                            result.add(it.key to it.value.deaths)
                         }
                     }
-                    if (it.playerName.equals(input, ignoreCase = true)) result.add(it.playerName to it.score)
+                    if (it.key.equals(input, ignoreCase = true)) result.add(it.key to it.value.deaths)
                 }
 
             return result.toList().sortedByDescending { it.second }

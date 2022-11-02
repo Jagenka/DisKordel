@@ -1,6 +1,8 @@
 package de.jagenka
 
 import de.jagenka.DiscordHandler.markdownSafe
+import de.jagenka.config.StatEntry
+import de.jagenka.config.StatManager
 import kotlinx.coroutines.launch
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -42,13 +44,6 @@ object MinecraftHandler
     fun sendMessage(sender: String, text: String)
     {
         sendChatMessage(Text.literal(">$sender< $text").getWithStyle(Style.EMPTY.withFormatting(Formatting.BLUE))[0])
-    }
-
-    fun getScoreFromScoreboard() //TODO
-    {
-        minecraftServer?.let { server ->
-            server.scoreboard.getAllPlayerScores(server.scoreboard.getObjective("deaths")).forEach { println("${it.playerName}: ${it.score}") }
-        }
     }
 
     fun getOnlinePlayers(): List<String>
@@ -104,6 +99,13 @@ object MinecraftHandler
             return player.pos
         }
         return null
+    }
+
+    @JvmStatic
+    fun increaseDeathStat(playerName: String)
+    {
+        StatManager.statEntries.getOrPut(playerName) { StatEntry(deaths = 0) }.deaths += 1
+        StatManager.store()
     }
 
     fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)
