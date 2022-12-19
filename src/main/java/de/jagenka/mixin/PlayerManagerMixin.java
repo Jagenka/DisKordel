@@ -1,7 +1,6 @@
 package de.jagenka.mixin;
 
 import de.jagenka.MinecraftHandler;
-import net.minecraft.network.message.MessageSourceProfile;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
 import net.minecraft.server.PlayerManager;
@@ -22,8 +21,8 @@ public class PlayerManagerMixin
 {
     ExecutorService discordExecutor = Executors.newSingleThreadExecutor();
 
-    @Inject(method = "broadcast(Lnet/minecraft/network/message/SignedMessage;Ljava/util/function/Predicate;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/network/message/MessageSourceProfile;Lnet/minecraft/network/message/MessageType$Parameters;)V", at = @At("TAIL"))
-    private void onChatMessage(SignedMessage message, Predicate<ServerPlayerEntity> shouldSendFiltered, ServerPlayerEntity sender, MessageSourceProfile sourceProfile, MessageType.Parameters params, CallbackInfo ci)
+    @Inject(method = "broadcast(Lnet/minecraft/network/message/SignedMessage;Ljava/util/function/Predicate;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/network/message/MessageType$Parameters;)V", at = @At("TAIL"))
+    private void onChatMessage(SignedMessage message, Predicate<ServerPlayerEntity> shouldSendFiltered, ServerPlayerEntity sender, MessageType.Parameters params, CallbackInfo ci)
     {
         discordExecutor.submit(() -> MinecraftHandler.handleMinecraftChatMessage(message.getContent(), sender));
         //System.out.println("chatmsg");
