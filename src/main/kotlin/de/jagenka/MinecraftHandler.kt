@@ -9,7 +9,6 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Style
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Position
 import kotlin.math.min
 
@@ -83,7 +82,7 @@ object MinecraftHandler
     fun getPerformanceMetrics(): PerformanceMetrics
     {
         minecraftServer?.let { server ->
-            val mspt = MathHelper.average(server.lastTickLengths) * 1.0E-6
+            val mspt = server.lastTickLengths.average() * 1.0E-6 // average is in nanoseconds -> convert to milliseconds
             val tps = min(1000.0 / mspt, 20.0)
 
             return PerformanceMetrics(mspt, tps)
