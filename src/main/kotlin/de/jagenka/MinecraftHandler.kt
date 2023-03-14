@@ -16,8 +16,7 @@ object MinecraftHandler
 {
     var minecraftServer: MinecraftServer? = null
 
-    // to set MinecraftServer instance coming from Mixin
-    @JvmStatic
+    // to set MinecraftServer instance coming from Mixin (actually from FabricAPI)
     fun onServerLoaded(minecraftServer: MinecraftServer)
     {
         this.minecraftServer = minecraftServer
