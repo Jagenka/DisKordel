@@ -1,6 +1,8 @@
 package de.jagenka.mixin;
 
 import de.jagenka.MinecraftHandler;
+import de.jagenka.config.Config;
+import net.minecraft.network.ClientConnection;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
 import net.minecraft.server.PlayerManager;
@@ -20,6 +22,15 @@ import java.util.function.Predicate;
 public class PlayerManagerMixin
 {
     ExecutorService discordExecutor = Executors.newSingleThreadExecutor();
+
+    @Inject(method = "onPlayerConnect", at = @At("TAIL"))
+    private void saveUUIDOnPlayerConnect(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci)
+    {
+        discordExecutor.submit(() ->
+        {
+            Config.INSTANCE.storeUUIDForPlayerName(player.getName().getString(), player.getUuid());
+        });
+    }
 
     @Inject(method = "broadcast(Lnet/minecraft/network/message/SignedMessage;Ljava/util/function/Predicate;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/network/message/MessageType$Parameters;)V", at = @At("TAIL"))
     private void onChatMessage(SignedMessage message, Predicate<ServerPlayerEntity> shouldSendFiltered, ServerPlayerEntity sender, MessageType.Parameters params, CallbackInfo ci)

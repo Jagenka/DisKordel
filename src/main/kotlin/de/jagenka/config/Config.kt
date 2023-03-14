@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import net.fabricmc.loader.api.FabricLoader
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.*
 
 object Config
 {
@@ -18,6 +19,21 @@ object Config
     }
 
     lateinit var configEntry: BaseConfigEntry
+
+    fun storeUUIDForPlayerName(playerName: String, uuid: UUID)
+    {
+        try
+        {
+            configEntry.users.find {
+                it.minecraftName.equals(playerName, ignoreCase = true)
+            }?.let {
+                it.uuid = uuid.toString()
+                store()
+            }
+        } catch (ignored: Exception)
+        {
+        }
+    }
 
     fun loadConfig()
     {

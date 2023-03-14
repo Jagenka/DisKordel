@@ -65,6 +65,7 @@ object DiscordHandler
             register(PerfCommand)
             register(UnregisterCommand)
             register(SyncDeathsCommand)
+            register(TestCommand)
         }
     }
 

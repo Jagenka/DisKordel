@@ -1,6 +1,7 @@
 package de.jagenka
 
 import com.mojang.brigadier.CommandDispatcher
+import de.jagenka.MinecraftHandler.logger
 import de.jagenka.commands.universal.DeathsCommand
 import de.jagenka.commands.universal.PlaytimeCommand
 import de.jagenka.commands.universal.WhereIsCommand
@@ -54,11 +55,11 @@ object Main : ModInitializer
 
         // creating bot
         scope.launch {
-            println("launching bot...")
+            logger.info("launching bot...")
             DiscordHandler.init(token, Snowflake(guildId), Snowflake(channelId))
         }
 
-        println("hackfleisch-diskurs-mod has been initialized.")
+        logger.info("hackfleisch-diskurs-mod has been initialized.")
     }
 }
 

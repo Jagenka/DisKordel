@@ -10,10 +10,13 @@ import net.minecraft.text.Style
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.Position
+import org.slf4j.LoggerFactory
 import kotlin.math.min
 
 object MinecraftHandler
 {
+    val logger = LoggerFactory.getLogger("hackfleisch_diskurs_mod")
+
     var minecraftServer: MinecraftServer? = null
 
     // to set MinecraftServer instance coming from Mixin (actually from FabricAPI)

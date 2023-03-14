@@ -12,7 +12,8 @@ class BotConfigEntry(
 @Serializable
 data class UserEntry(
     var discordId: Long = 123456789,
-    var minecraftName: String = "Herobrine"
+    var minecraftName: String = "Herobrine",
+    var uuid: String = "",
 )
 
 @Serializable
