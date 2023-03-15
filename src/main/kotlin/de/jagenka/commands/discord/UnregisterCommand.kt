@@ -2,37 +2,34 @@ package de.jagenka.commands.discord
 
 import de.jagenka.DiscordHandler
 import de.jagenka.DiscordHandler.getPrettyMemberName
-import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
+import de.jagenka.commands.discord.structure.ArgumentCombination
+import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
+import de.jagenka.commands.discord.structure.MessageCommand
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.event.message.MessageCreateEvent
-import kotlinx.coroutines.launch
 
-object UnregisterCommand : DiscordCommand
+object UnregisterCommand : MessageCommand
 {
-    override val discordName: String
-        get() = "unregister"
+    override val ids: List<String>
+        get() = listOf("unregister")
     override val helpText: String
-        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName}`: Unlink your current Discord User from the linked Minecraft Player."
-
-
-    override fun execute(event: MessageCreateEvent, args: String)
-    {
-        event.message.author?.let {
-            Main.scope.launch {
-                unregisterUser(it.id)
+        get() = "Unlink your current Discord User from the linked Minecraft Player."
+    override val allowedArgumentCombinations: List<ArgumentCombination>
+        get() = listOf(empty(helpText) { event ->
+            event.message.author?.let {
+                return@empty unregisterUser(it.id)
             }
-        }
-    }
+            true
+        })
 
-    private suspend fun unregisterUser(userId: Snowflake)
+    private suspend fun unregisterUser(userId: Snowflake): Boolean
     {
         val member = DiscordHandler.guild.getMemberOrNull(userId)
         if (member == null)
         {
             DiscordHandler.handleNotAMember(userId)
-            return
+            return false
         }
 
         val minecraftName = Users.getValueForKey(member).orEmpty()
@@ -42,5 +39,7 @@ object UnregisterCommand : DiscordCommand
             "${getPrettyMemberName(member)} now unregistered.\n" +
                     if (minecraftName.isNotBlank()) "$minecraftName is no longer whitelisted" else ""
         )
+
+        return true
     }
 }
