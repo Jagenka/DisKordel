@@ -2,6 +2,7 @@ package de.jagenka.commands.discord
 
 import de.jagenka.DiscordHandler
 import de.jagenka.MinecraftHandler
+import de.jagenka.MinecraftHandler.logger
 import de.jagenka.config.StatEntry
 import de.jagenka.config.StatManager
 import dev.kord.core.event.message.MessageCreateEvent
@@ -20,7 +21,7 @@ object SyncDeathsCommand : DiscordCommand
         MinecraftHandler.minecraftServer?.let { server ->
             server.scoreboard.getAllPlayerScores(server.scoreboard.getObjective(args.split(" ").firstOrNull() ?: "deaths"))
                 .forEach {
-                    println("${it.playerName} - ${it.score}")
+                    logger.info("${it.playerName} - ${it.score}")
                     StatManager.statEntries.getOrPut(it.playerName) { StatEntry() }.deaths = it.score
                 }
         }
