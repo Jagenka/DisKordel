@@ -25,13 +25,11 @@ public class PlayerManagerMixin
     private void onChatMessage(SignedMessage message, Predicate<ServerPlayerEntity> shouldSendFiltered, ServerPlayerEntity sender, MessageType.Parameters params, CallbackInfo ci)
     {
         discordExecutor.submit(() -> MinecraftHandler.handleMinecraftChatMessage(message.getContent(), sender));
-        //System.out.println("chatmsg");
     }
 
     @Inject(method = "broadcast(Lnet/minecraft/text/Text;Ljava/util/function/Function;Z)V", at = @At("TAIL"))
     private void onSystemMessage(Text message, Function<ServerPlayerEntity, Text> playerMessageFactory, boolean overlay, CallbackInfo ci)
     {
         discordExecutor.submit(() -> MinecraftHandler.handleMinecraftSystemMessage(message));
-        //System.out.println("sysmsg");
     }
 }
