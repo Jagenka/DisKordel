@@ -1,5 +1,6 @@
 package de.jagenka
 
+import de.jagenka.MinecraftHandler.logger
 import de.jagenka.commands.discord.*
 import de.jagenka.config.Config
 import dev.kord.common.entity.Snowflake
@@ -120,7 +121,7 @@ object DiscordHandler
 
     fun handleNotAMember(id: Snowflake)
     {
-        sendMessage("ERROR: user with id ${id.value} is not a member of configured guild!")
+        logger.error("user with id ${id.value} is not a member of configured guild!")
     }
 
     fun reactConfirmation(message: Message)
