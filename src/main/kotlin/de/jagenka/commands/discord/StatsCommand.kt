@@ -17,13 +17,16 @@ object StatsCommand : MessageCommand
         get() = "Display Stats for players."
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(
-            ArgumentCombination(listOf(string("playerName"), string("stat")), helpText) { event, arguments ->
+            ArgumentCombination(listOf(string("playerName"), string("stat")), "Given an identifier, show a players stat value.") { event, arguments ->
                 val playerName = arguments["playerName"].toString()
-                val stat = arguments["stat"].toString()
+                val stat = arguments["stat"].toString() // TODO: other identifiers?
+
+                val statObject = Stats.CUSTOM.getOrCreateStat(Registries.CUSTOM_STAT.get(Identifier(stat))) // TODO: other stat types than Stats.CUSTOM
+                val statValue = PlayerStatManager.getStatHandlerForPlayer(playerName)
+                    ?.getStat(statObject)
 
                 DiscordHandler.sendMessage(
-                    PlayerStatManager.getStatHandlerForPlayer(playerName)
-                        ?.getStat(Stats.CUSTOM.getOrCreateStat(Registries.CUSTOM_STAT.get(Identifier(stat))))?.toString() ?: "null"
+                    statValue?.let { statObject.format(it) } ?: "No stat found!" // TODO: better formatting than Vanilla
                 )
 
                 true
