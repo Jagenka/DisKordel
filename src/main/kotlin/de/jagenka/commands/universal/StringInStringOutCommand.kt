@@ -3,22 +3,24 @@ package de.jagenka.commands.universal
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
-import de.jagenka.commands.discord.DiscordCommand
-import de.jagenka.commands.discord.DiscordCommandRegistry
+import de.jagenka.commands.discord.structure.Argument.Companion.string
+import de.jagenka.commands.discord.structure.ArgumentCombination
+import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
+import de.jagenka.commands.discord.structure.MessageCommand
+import de.jagenka.commands.discord.structure.Registry
 import de.jagenka.commands.minecraft.MinecraftCommand
-import dev.kord.core.event.message.MessageCreateEvent
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 
-interface StringInStringOutCommand : MinecraftCommand, DiscordCommand
+interface StringInStringOutCommand : MinecraftCommand, MessageCommand
 {
     /**
      * sends all lines of return value of process()
      */
     override fun register(dispatcher: CommandDispatcher<ServerCommandSource>)
     {
-        DiscordCommandRegistry.register(this)
+        Registry.register(this)
 
         dispatcher.register(
             CommandManager.literal(minecraftName)
@@ -43,11 +45,18 @@ interface StringInStringOutCommand : MinecraftCommand, DiscordCommand
         )
     }
 
-    override fun execute(event: MessageCreateEvent, args: String)
-    {
-        val input = args.trim()
-        DiscordHandler.sendMessage(process(input))
-    }
+    val variableName: String
+
+    override val allowedArgumentCombinations: List<ArgumentCombination>
+        get() = listOf(
+            empty(helpText) {
+                DiscordHandler.sendMessage(process(""))
+                true
+            },
+            ArgumentCombination(string(variableName), helpText) { event, arguments ->
+                DiscordHandler.sendMessage(process(arguments[variableName].toString()))
+                true
+            })
 
     /**
      * @param input if this is empty, command should give back all information

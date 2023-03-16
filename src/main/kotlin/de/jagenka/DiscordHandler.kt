@@ -1,6 +1,7 @@
 package de.jagenka
 
 import de.jagenka.commands.discord.*
+import de.jagenka.commands.discord.structure.Registry
 import de.jagenka.config.Config
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
@@ -9,8 +10,6 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.ReactionEmoji
-import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.x.emoji.Emojis
@@ -39,12 +38,7 @@ object DiscordHandler
 
             registerCommands()
 
-            kord.on<MessageCreateEvent> {
-                // return if author is a bot or undefined
-                if (message.author?.isBot != false) return@on
-                if (message.channelId != channelSnowflake) return@on
-                DiscordCommandRegistry.handleCommand(this) //TODO: send to Minecraft if not a command
-            }
+            Registry.setup(kord)
 
             kord.login {// nicht sicher ob man für jeden link nen eigenen bot braucht mit der API
                 @OptIn(PrivilegedIntent::class)
@@ -55,16 +49,15 @@ object DiscordHandler
 
     private fun registerCommands()
     {
-        with(DiscordCommandRegistry)
+        with(Registry)
         {
-            register(HelpCommand)
+            register(HelpMessageCommand)
             register(ListCommand)
             register(RegisterCommand)
             register(UsersCommand)
             register(UpdateNamesCommand)
             register(PerfCommand)
             register(UnregisterCommand)
-            register(SyncDeathsCommand)
             register(StatsCommand)
         }
     }

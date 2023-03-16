@@ -2,17 +2,18 @@ package de.jagenka.commands.universal
 
 import de.jagenka.MinecraftHandler
 import de.jagenka.Users
-import de.jagenka.commands.discord.DiscordCommandRegistry
 import de.jagenka.config.StatManager
 
 object DeathsCommand : StringInStringOutCommand
 {
     override val minecraftName: String
         get() = "deaths"
-    override val discordName: String
-        get() = minecraftName
+    override val ids: List<String>
+        get() = listOf(minecraftName)
     override val helpText: String
-        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName} [name]`: List how many deaths players have. No argument lists all players."
+        get() = "List how many deaths players have. No argument lists all players."
+    override val variableName: String
+        get() = "playerName"
 
 
     override fun process(input: String): String
