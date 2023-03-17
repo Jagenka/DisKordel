@@ -4,7 +4,7 @@ import de.jagenka.MinecraftHandler
 import de.jagenka.Users
 import de.jagenka.config.StatManager
 
-object DeathsCommand : StringInStringOutCommand
+object DeathsCommand : StringInStringOutCommand // TODO: remove
 {
     override val minecraftName: String
         get() = "deaths"

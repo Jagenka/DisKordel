@@ -15,7 +15,7 @@ import java.util.*
 import kotlin.io.path.name
 import kotlin.io.path.readText
 
-object PlaytimeCommand : StringInStringOutCommand
+object PlaytimeCommand : StringInStringOutCommand // TODO: remove
 {
     override val minecraftName: String
         get() = "playtime"

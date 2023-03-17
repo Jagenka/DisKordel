@@ -2,6 +2,7 @@ package de.jagenka.commands.discord
 
 import de.jagenka.DiscordHandler
 import de.jagenka.PlayerStatManager
+import de.jagenka.Users
 import de.jagenka.commands.discord.structure.Argument
 import de.jagenka.commands.discord.structure.Argument.Companion.string
 import de.jagenka.commands.discord.structure.ArgumentCombination
@@ -19,38 +20,49 @@ object StatsCommand : MessageCommand
         get() = "Display Stats for players."
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(
-            ArgumentCombination(listOf(string("playerName"), StatArgument(), string("stat")), "Get stat related to any for one player.") { event, arguments ->
+            ArgumentCombination(listOf(StatArgument(), string("stat")), "Get stat for all players.") { event, arguments ->
+                val (argType, argText) = arguments[0]
+                DiscordHandler.sendMessage(
+                    Users.getAsUserList().map {
+                        it.minecraftName to handle(
+                            it.minecraftName,
+                            (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
+                            arguments[1].second
+                        )
+                    }.filterNot { it.second == null }.sortedByDescending { it.second }.joinToString(separator = "\n") { "${it.first}: ${it.second}" }
+                        .ifBlank { "Nothing found!".also { return@ArgumentCombination false } }
+                )
+                true
+            },
+            ArgumentCombination(listOf(string("playerName"), StatArgument(), string("stat")), "Get stat for one player.") { event, arguments ->
                 val (_, playerName) = arguments.first()
                 val (argType, argText) = arguments[1]
-                return@ArgumentCombination handle(
-                    playerName,
-                    (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
-                    arguments[2].second
+                DiscordHandler.sendMessage(
+                    handle(
+                        playerName,
+                        (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
+                        arguments[2].second
+                    )?.ifBlank { "Nothing found!" } ?: return@ArgumentCombination false
                 )
+                true
             },
         )
 
-    private fun handleIdentifierStatType(playerName: String, id: String): Boolean
+    private fun handle(playerName: String, statType: StatType<Any>, id: String): String?
     {
-        val stat = Stats.CUSTOM.getOrCreateStat(Stats.CUSTOM.registry.get(Identifier(id)))
-        return replyWithStat(playerName, stat)
+        return try
+        {
+            getReplyWithStat(playerName, statType.getOrCreateStat(statType.registry.get(Identifier(id))))
+        } catch (_: Exception)
+        {
+            null
+        }
     }
 
-    private fun handle(playerName: String, statType: StatType<Any>, id: String): Boolean // TODO: catch errors
+    private fun getReplyWithStat(playerName: String, stat: Stat<*>): String?
     {
-        val stat = statType.getOrCreateStat(statType.registry.get(Identifier(id)))
-        return replyWithStat(playerName, stat)
-    }
-
-    private fun replyWithStat(playerName: String, stat: Stat<*>): Boolean
-    {
-        val statValue = PlayerStatManager.getStatHandlerForPlayer(playerName)
-            ?.getStat(stat)
-
-        DiscordHandler.sendMessage(
-            statValue?.let { stat.format(it) } ?: "No stat found!".also { return false } // TODO: better formatting than Vanilla
-        )
-        return true
+        val statValue = PlayerStatManager.getStatHandlerForPlayer(playerName)?.getStat(stat)
+        return statValue?.let { stat.format(it) } // TODO: better formatting than Vanilla (especially for playtime)
     }
 }
 
@@ -73,18 +85,27 @@ class StatArgument : Argument<StatType<Any>>
 
     companion object
     {
-        fun convert(word: String): StatType<Any>? = when (word)
+        fun convert(word: String): StatType<Any>?
         {
-            "mined" -> Stats.MINED as StatType<Any>
-            "crafted" -> Stats.CRAFTED as StatType<Any>
-            "used" -> Stats.USED as StatType<Any>
-            "broken" -> Stats.BROKEN as StatType<Any>
-            "picked_up" -> Stats.PICKED_UP as StatType<Any>
-            "dropped" -> Stats.DROPPED as StatType<Any>
-            "killed" -> Stats.KILLED as StatType<Any>
-            "killed_by" -> Stats.KILLED_BY as StatType<Any>
-            "custom" -> Stats.CUSTOM as StatType<Any>
-            else -> null
+            try
+            {
+                return when (word)
+                {
+                    "mined" -> Stats.MINED as StatType<Any>
+                    "crafted" -> Stats.CRAFTED as StatType<Any>
+                    "used" -> Stats.USED as StatType<Any>
+                    "broken" -> Stats.BROKEN as StatType<Any>
+                    "picked_up" -> Stats.PICKED_UP as StatType<Any>
+                    "dropped" -> Stats.DROPPED as StatType<Any>
+                    "killed" -> Stats.KILLED as StatType<Any>
+                    "killed_by" -> Stats.KILLED_BY as StatType<Any>
+                    "custom" -> Stats.CUSTOM as StatType<Any>
+                    else -> null
+                }
+            } catch (_: Exception)
+            {
+                return null
+            }
         }
     }
 }
