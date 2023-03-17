@@ -3,6 +3,7 @@ package de.jagenka.commands.discord
 import de.jagenka.DiscordHandler
 import de.jagenka.commands.discord.structure.Argument
 import de.jagenka.commands.discord.structure.ArgumentCombination
+import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.findInput
 import de.jagenka.commands.discord.structure.MessageCommand
 import de.jagenka.commands.discord.structure.Registry
 
@@ -28,7 +29,7 @@ object HelpMessageCommand : MessageCommand
                     },
                     ArgumentCombination(listOf(Argument.string("command")), "Get help for a specific command.") { event, arguments ->
                         DiscordHandler.sendMessage(
-                            registry.getHelpTextsForCommand(arguments["command"].toString(), event).joinToString(separator = System.lineSeparator())
+                            registry.getHelpTextsForCommand(arguments.findInput("command"), event).joinToString(separator = System.lineSeparator())
                         )
                         true
                     }

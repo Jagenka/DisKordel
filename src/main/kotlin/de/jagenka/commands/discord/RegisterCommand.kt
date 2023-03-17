@@ -7,6 +7,7 @@ import de.jagenka.MinecraftHandler
 import de.jagenka.Users
 import de.jagenka.commands.discord.structure.Argument.Companion.string
 import de.jagenka.commands.discord.structure.ArgumentCombination
+import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.findInput
 import de.jagenka.commands.discord.structure.MessageCommand
 import dev.kord.common.entity.Snowflake
 
@@ -19,7 +20,7 @@ object RegisterCommand : MessageCommand
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(ArgumentCombination(string("minecraftName"), "Links your Minecraft name to your Discord account.") { event, arguments ->
             event.message.author?.let {
-                return@ArgumentCombination registerUser(it.id, arguments["minecraftName"].toString())
+                return@ArgumentCombination registerUser(it.id, arguments.findInput("minecraftName"))
             }
             true
         })

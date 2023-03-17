@@ -32,7 +32,7 @@ interface MessageCommand : Comparable<MessageCommand>
         allowedArgumentCombinations.sorted().forEach { combination ->
             if (combination.fitsTo(args.drop(1)))
             {
-                if (combination.needsAdmin && Registry.isSenderAdmin.invoke(event) != true)
+                if (combination.needsAdmin && !Registry.isSenderAdmin.invoke(event))
                 {
                     Registry.needsAdminResponse.invoke(event)
                     return false

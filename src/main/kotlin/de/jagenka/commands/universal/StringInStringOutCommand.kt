@@ -6,6 +6,7 @@ import de.jagenka.DiscordHandler
 import de.jagenka.commands.discord.structure.Argument.Companion.string
 import de.jagenka.commands.discord.structure.ArgumentCombination
 import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
+import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.findInput
 import de.jagenka.commands.discord.structure.MessageCommand
 import de.jagenka.commands.discord.structure.Registry
 import de.jagenka.commands.minecraft.MinecraftCommand
@@ -54,7 +55,7 @@ interface StringInStringOutCommand : MinecraftCommand, MessageCommand
                 true
             },
             ArgumentCombination(string(variableName), helpText) { event, arguments ->
-                DiscordHandler.sendMessage(process(arguments[variableName].toString()))
+                DiscordHandler.sendMessage(process(arguments.findInput(variableName)))
                 true
             })
 

@@ -1,6 +1,6 @@
 package de.jagenka.commands.discord.structure
 
-interface Argument<T>
+interface Argument<out T>
 {
     val id: String
     val displayInHelp: String
@@ -8,6 +8,7 @@ interface Argument<T>
 
     fun isOfType(word: String): Boolean
     fun convertToType(word: String): T?
+    fun find(id: String): Boolean = id == this.id
 
     companion object
     {

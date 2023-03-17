@@ -6,17 +6,15 @@ class ArgumentCombination(
     internal val arguments: List<Argument<*>>,
     internal val helpText: String,
     internal val needsAdmin: Boolean = false,
-    private val executes: suspend (event: MessageCreateEvent, arguments: Map<String, Any?>) -> Boolean
+    private val executes: suspend (event: MessageCreateEvent, arguments: List<Pair<Argument<*>, String>>) -> Boolean // TODO: move List<Pair... to class
 ) : Comparable<ArgumentCombination>
 {
     constructor(
         argument: Argument<*>,
         helpText: String,
         needsAdmin: Boolean = false,
-        executes: suspend (event: MessageCreateEvent, arguments: Map<String, Any?>) -> Boolean
-    ) : this(
-        listOf(argument), helpText, needsAdmin, executes
-    )
+        executes: suspend (event: MessageCreateEvent, arguments: List<Pair<Argument<*>, String>>) -> Boolean
+    ) : this(listOf(argument), helpText, needsAdmin, executes)
 
     companion object
     {
@@ -24,6 +22,11 @@ class ArgumentCombination(
             ArgumentCombination(emptyList(), helpText, needsAdmin) { event, _ ->
                 executes(event)
             }
+
+        fun List<Pair<Argument<*>, String>>.findInput(id: String): String
+        {
+            return this.firstOrNull { it.first.find(id) }?.second ?: ""
+        }
     }
 
     internal fun fitsTo(args: List<String>): Boolean
@@ -39,12 +42,7 @@ class ArgumentCombination(
 
     internal suspend fun run(event: MessageCreateEvent, args: List<String>): Boolean
     {
-        val map = mutableMapOf<String, Any?>()
-        args.drop(1).forEachIndexed { index, arg ->
-            val argument = arguments[index]
-            map[argument.id] = argument.convertToType(arg)
-        }
-        return executes.invoke(event, map.toMap())
+        return executes.invoke(event, arguments zip args.drop(1))
     }
 
     private val rank: Int
