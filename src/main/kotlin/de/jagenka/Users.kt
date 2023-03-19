@@ -1,8 +1,12 @@
 package de.jagenka
 
+import de.jagenka.MinecraftHandler.minecraftServer
 import de.jagenka.config.Config
 import de.jagenka.config.UserEntry
 import dev.kord.core.entity.Member
+import net.minecraft.util.WorldSavePath
+import java.nio.file.Files
+import java.util.*
 
 object Users : BiMap<Member, String>()
 {
@@ -91,6 +95,35 @@ object Users : BiMap<Member, String>()
             sb.setLength(sb.length - 1)
             sb.toString()
         }
+    }
+
+    fun getAllKnownMinecraftUsers(): List<MinecraftUser>
+    {
+        val users = Config.configEntry.users.mapNotNull {
+            if (it.uuid.isBlank()) return@mapNotNull null
+            MinecraftUser(name = it.minecraftName.ifBlank { it.uuid }, uuid = UUID.fromString(it.uuid))
+        }.toMutableList()
+
+        users.addAll(minecraftServer?.let { server ->
+            Files.walk(server.getSavePath(WorldSavePath.PLAYERDATA)).toList()
+                .asSequence()
+                .map { it.fileName.toString() }
+                .filter { it.endsWith(".dat") }
+                .map { it.removeSuffix(".dat") }
+                .mapNotNull {
+                    try
+                    {
+                        UUID.fromString(it)
+                    } catch (_: Exception)
+                    {
+                        null
+                    }
+                }
+                .map { MinecraftUser(name = PlayerStatManager.getPlayerNameFromUUID(it) ?: it.toString(), uuid = it) }
+                .filter { fromPlayerData -> users.none { it.name.equals(fromPlayerData.name, ignoreCase = true) } }
+        } ?: emptySequence())
+
+        return users
     }
 
     fun saveToFile()

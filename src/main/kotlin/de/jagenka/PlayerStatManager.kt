@@ -1,18 +1,42 @@
 package de.jagenka
 
+import com.mojang.authlib.GameProfile
 import de.jagenka.MinecraftHandler.logger
 import de.jagenka.Util.unwrap
 import de.jagenka.config.Config
+import net.minecraft.server.WhitelistEntry
 import net.minecraft.stat.ServerStatHandler
 import net.minecraft.util.PathUtil
 import net.minecraft.util.WorldSavePath
 import java.io.File
 import java.nio.file.Path
 import java.util.*
+import java.util.function.Function
+import java.util.function.IntFunction
+import java.util.function.Predicate
 
 object PlayerStatManager
 {
     private val statisticsMap = mutableMapOf<UUID, ServerStatHandler>()
+
+    fun getPlayerNameFromUUID(uuid: UUID): String?
+    {
+        MinecraftHandler.minecraftServer?.playerManager?.whitelist?.values()!!.stream().map<GameProfile> { obj: WhitelistEntry -> obj.getKey() }.filter(Predicate { obj: GameProfile? ->
+            Objects.nonNull(
+                obj
+            )
+        }).map<String>(
+            Function { obj: GameProfile -> obj.name }).toArray<String>(IntFunction<Array<String>> { _Dummy_.__Array__() });
+
+        val playerName = Config.configEntry.users.find { it.uuid == uuid.toString() }?.minecraftName
+            ?: MinecraftHandler.minecraftServer?.playerManager?.getPlayer(uuid)?.name?.string
+            ?: MinecraftHandler.minecraftServer?.playerManager?.whitelist?.values()
+            ?: MinecraftHandler.minecraftServer?.userCache?.getByUuid(uuid)?.unwrap()?.name
+
+        // TODO: save to my config
+
+        return playerName
+    }
 
     fun getUUIDFromPlayerName(playerName: String): UUID?
     {
