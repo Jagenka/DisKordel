@@ -59,6 +59,7 @@ object DiscordHandler
             register(PerfCommand)
             register(UnregisterCommand)
             register(StatsCommand)
+            register(TestCommand)
         }
     }
 
@@ -73,12 +74,12 @@ object DiscordHandler
     //TODO: load every so often
     suspend fun loadUsersFromFile()
     {
-        Users.clear()
+        UserRegistry.clear()
 
         Config.configEntry.users.forEach { (discordId, minecraftName) ->
             val memberSnowflake = Snowflake(discordId)
             val member = guild.getMemberOrNull(memberSnowflake)
-            if (member != null) Users.put(member, minecraftName)
+            if (member != null) UserRegistry.put(member, minecraftName)
             else handleNotAMember(memberSnowflake)
         }
     }
@@ -91,10 +92,10 @@ object DiscordHandler
             handleNotAMember(snowflake)
             return
         }
-        if (!Users.containsKey(member)) sendMessage("Please register first with `!register minecraftName`")
+        if (!UserRegistry.containsKey(member)) sendMessage("Please register first with `!register minecraftName`")
         else
         {
-            val minecraftName = Users.getValueForKey(member).orEmpty()
+            val minecraftName = UserRegistry.getValueForKey(member).orEmpty()
             MinecraftHandler.runWhitelistAdd(minecraftName)
             sendMessage("Ensured whitelist for $minecraftName") //TODO: reaction
         }
@@ -131,7 +132,7 @@ object DiscordHandler
         while (matcher.find())
         {
             val mention = matcher.group().substring(1, length - 1)
-            val member = Users.getDiscordMember(mention)
+            val member = UserRegistry.getDiscordMember(mention)
             if (member != null) newString = newString.replaceRange(matcher.start(), matcher.end(), "<@!${member.id.value}>")
         }
         return newString

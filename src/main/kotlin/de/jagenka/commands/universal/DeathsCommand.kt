@@ -1,7 +1,7 @@
 package de.jagenka.commands.universal
 
 import de.jagenka.MinecraftHandler
-import de.jagenka.Users
+import de.jagenka.UserRegistry
 import de.jagenka.config.StatManager
 
 object DeathsCommand : StringInStringOutCommand // TODO: remove
@@ -29,7 +29,7 @@ object DeathsCommand : StringInStringOutCommand // TODO: remove
         MinecraftHandler.minecraftServer?.let { server ->
             val result = mutableListOf<Pair<String, Int>>()
 
-            val possiblePlayers = Users.find(input)
+            val possiblePlayers = UserRegistry.find(input)
 
             StatManager.statEntries
                 .forEach {

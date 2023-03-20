@@ -4,7 +4,7 @@ import de.jagenka.DiscordHandler
 import de.jagenka.DiscordHandler.getPrettyMemberName
 import de.jagenka.DiscordHandler.handleNotAMember
 import de.jagenka.MinecraftHandler
-import de.jagenka.Users
+import de.jagenka.UserRegistry
 import de.jagenka.commands.discord.structure.Argument.Companion.string
 import de.jagenka.commands.discord.structure.ArgumentCombination
 import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.findInput
@@ -34,14 +34,14 @@ object RegisterCommand : MessageCommand
             return false
         }
 
-        if (Users.containsValue(minecraftName))
+        if (UserRegistry.containsValue(minecraftName))
         {
             DiscordHandler.sendMessage("$minecraftName is already assigned to ${getPrettyMemberName(member)}")
             return false
         }
 
-        val oldName = Users.getValueForKey(member).orEmpty()
-        Users.registerUser(member, minecraftName)
+        val oldName = UserRegistry.getValueForKey(member).orEmpty()
+        UserRegistry.register(member, minecraftName)
         MinecraftHandler.runWhitelistRemove(oldName)
         MinecraftHandler.runWhitelistAdd(minecraftName)
         DiscordHandler.sendMessage(
@@ -50,7 +50,7 @@ object RegisterCommand : MessageCommand
                     if (oldName.isNotEmpty()) "\n$oldName is no longer whitelisted" else ""
         )
 
-        Users.saveToFile()
+        UserRegistry.saveToFile()
 
         return true
     }

@@ -1,6 +1,6 @@
 package de.jagenka.commands.universal
 
-import de.jagenka.Users
+import de.jagenka.UserRegistry
 
 
 object WhoisCommand : StringInStringOutCommand
@@ -17,6 +17,6 @@ object WhoisCommand : StringInStringOutCommand
 
     override fun process(input: String): String
     {
-        return Users.whoIsPrintable(input.trim())
+        return UserRegistry.whoIsPrintable(input.trim())
     }
 }

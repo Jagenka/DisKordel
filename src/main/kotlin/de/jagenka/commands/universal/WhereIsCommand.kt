@@ -1,7 +1,7 @@
 package de.jagenka.commands.universal
 
 import de.jagenka.MinecraftHandler
-import de.jagenka.Users
+import de.jagenka.UserRegistry
 
 object WhereIsCommand : StringInStringOutCommand
 {
@@ -17,7 +17,7 @@ object WhereIsCommand : StringInStringOutCommand
 
     override fun process(input: String): String
     {
-        val possibleUsers = Users.find(input.trim())
+        val possibleUsers = UserRegistry.find(input.trim())
 
         if (possibleUsers.isEmpty()) return "No-one found!"
 

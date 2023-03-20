@@ -25,6 +25,8 @@ object MinecraftHandler
         this.minecraftServer = minecraftServer
 
         minecraftServer.playerManager.isWhitelistEnabled = true
+
+        UserRegistry.loadGameProfilesFromPlayerData()
     }
 
     @JvmStatic

@@ -3,7 +3,7 @@ package de.jagenka.commands.discord
 import de.jagenka.DiscordHandler
 import de.jagenka.DiscordHandler.getPrettyMemberName
 import de.jagenka.MinecraftHandler
-import de.jagenka.Users
+import de.jagenka.UserRegistry
 import de.jagenka.commands.discord.structure.ArgumentCombination
 import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
 import de.jagenka.commands.discord.structure.MessageCommand
@@ -32,8 +32,8 @@ object UnregisterCommand : MessageCommand
             return false
         }
 
-        val minecraftName = Users.getValueForKey(member).orEmpty()
-        Users.unregisterUser(member)
+        val minecraftName = UserRegistry.getValueForKey(member).orEmpty()
+        UserRegistry.unregister(member)
         MinecraftHandler.runWhitelistRemove(minecraftName)
         DiscordHandler.sendMessage(
             "${getPrettyMemberName(member)} now unregistered.\n" +

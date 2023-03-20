@@ -2,7 +2,7 @@ package de.jagenka.commands.discord
 
 import de.jagenka.DiscordHandler
 import de.jagenka.PlayerStatManager
-import de.jagenka.Users
+import de.jagenka.UserRegistry
 import de.jagenka.commands.discord.structure.Argument
 import de.jagenka.commands.discord.structure.Argument.Companion.string
 import de.jagenka.commands.discord.structure.ArgumentCombination
@@ -22,11 +22,11 @@ object StatsCommand : MessageCommand
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(
             ArgumentCombination(listOf(StatArgument(), string("stat")), "Get stat for all players.") { event, arguments ->
-                println(Users.getAllKnownMinecraftUsers())
+                println(UserRegistry.getAllKnownMinecraftUsers())
 
                 val (argType, argText) = arguments[0]
                 DiscordHandler.sendMessage(
-                    Users.getAllKnownMinecraftUsers().map {
+                    UserRegistry.getAllKnownMinecraftUsers().map {
                         it.name to handle(
                             it.uuid,
                             (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
