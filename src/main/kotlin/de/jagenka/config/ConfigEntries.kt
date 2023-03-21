@@ -13,11 +13,11 @@ class BotConfigEntry(
 data class UserEntry(
     var discordId: Long = 123456789,
     var minecraftName: String = "Herobrine",
-    var uuid: String = "",
+    var uuid: String = "", // not sure if needed
 )
 
 @Serializable
 class BaseConfigEntry(
     var discordSettings: BotConfigEntry = BotConfigEntry(),
-    var users: List<UserEntry> = listOf()
+    var users: MutableList<UserEntry> = mutableListOf()
 )

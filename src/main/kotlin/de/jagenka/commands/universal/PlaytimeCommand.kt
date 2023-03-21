@@ -3,8 +3,8 @@ package de.jagenka.commands.universal
 import com.google.gson.internal.Streams
 import com.google.gson.stream.JsonReader
 import de.jagenka.MinecraftHandler.minecraftServer
-import de.jagenka.Users
-import de.jagenka.Users.onlyMinecraftNames
+import de.jagenka.UserRegistry
+import de.jagenka.UserRegistry.onlyMinecraftNames
 import de.jagenka.Util.ticksToPrettyString
 import de.jagenka.Util.unwrap
 import net.minecraft.stat.Stats
@@ -38,7 +38,7 @@ object PlaytimeCommand : StringInStringOutCommand // TODO: remove
     fun getPlaytime(input: String): List<Pair<String, Int>>
     {
         val result = mutableListOf<Pair<String, Int>>()
-        val possibleUsers = Users.find(input).onlyMinecraftNames().toMutableList()
+        val possibleUsers = UserRegistry.find(input).onlyMinecraftNames().toMutableList()
         possibleUsers.add(input) // if someone is not registered
         getPlaytimeLeaderboard().forEach { pair -> possibleUsers.forEach { if (pair.first.lowercase().contains(it.lowercase())) result.add(pair) } }
 

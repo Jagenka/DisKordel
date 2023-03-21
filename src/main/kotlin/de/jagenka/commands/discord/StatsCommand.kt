@@ -2,7 +2,7 @@ package de.jagenka.commands.discord
 
 import de.jagenka.DiscordHandler
 import de.jagenka.PlayerStatManager
-import de.jagenka.Users
+import de.jagenka.UserRegistry
 import de.jagenka.commands.discord.structure.Argument
 import de.jagenka.commands.discord.structure.Argument.Companion.string
 import de.jagenka.commands.discord.structure.ArgumentCombination
@@ -11,6 +11,7 @@ import net.minecraft.stat.Stat
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.util.Identifier
+import java.util.*
 
 object StatsCommand : MessageCommand
 {
@@ -23,9 +24,9 @@ object StatsCommand : MessageCommand
             ArgumentCombination(listOf(StatArgument(), string("stat")), "Get stat for all players.") { event, arguments ->
                 val (argType, argText) = arguments[0]
                 DiscordHandler.sendMessage(
-                    Users.getAsUserList().map {
-                        it.minecraftName to handle(
-                            it.minecraftName,
+                    UserRegistry.getAllUsers().map {
+                        it.minecraft.name to handle(
+                            it.minecraft.uuid,
                             (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
                             arguments[1].second
                         )
@@ -62,7 +63,24 @@ object StatsCommand : MessageCommand
     private fun getReplyWithStat(playerName: String, stat: Stat<*>): String?
     {
         val statValue = PlayerStatManager.getStatHandlerForPlayer(playerName)?.getStat(stat)
-        return statValue?.let { stat.format(it) } // TODO: better formatting than Vanilla (especially for playtime)
+        return statValue?.let { stat.format(it) }
+    }
+
+    private fun handle(uuid: UUID, statType: StatType<Any>, id: String): String?
+    {
+        return try
+        {
+            getReplyWithStat(uuid, statType.getOrCreateStat(statType.registry.get(Identifier(id))))
+        } catch (_: Exception)
+        {
+            null
+        }
+    }
+
+    private fun getReplyWithStat(uuid: UUID, stat: Stat<*>): String?
+    {
+        val statValue = PlayerStatManager.getStatHandlerForPlayer(uuid)?.getStat(stat)
+        return statValue?.let { stat.format(it) }
     }
 }
 

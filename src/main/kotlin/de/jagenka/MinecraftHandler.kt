@@ -25,6 +25,9 @@ object MinecraftHandler
         this.minecraftServer = minecraftServer
 
         minecraftServer.playerManager.isWhitelistEnabled = true
+
+        DiscordHandler.loadUsersFromFile()
+        UserRegistry.loadGameProfilesFromPlayerData()
     }
 
     @JvmStatic
