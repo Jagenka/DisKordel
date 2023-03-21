@@ -13,7 +13,6 @@ class BotConfigEntry(
 data class UserEntry(
     var discordId: Long = 123456789,
     var minecraftName: String = "Herobrine",
-    var uuid: String = "", // not sure if needed
 )
 
 @Serializable

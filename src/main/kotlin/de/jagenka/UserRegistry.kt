@@ -110,23 +110,15 @@ object UserRegistry
 
     fun register(userEntry: UserEntry)
     {
-        val (snowflake, minecraftName, uuid) = userEntry
+        val (snowflake, minecraftName) = userEntry
         Main.scope.launch {
-            if (!findMinecraftProfileOrError(minecraftName))
-            {
-                return@launch
-            }
-            if (!findDiscordMemberOrError(Snowflake(snowflake)))
-            {
-                return@launch
-            }
-            users.put(User(DiscordUser(Snowflake(snowflake)), MinecraftUser(minecraftName, UUID.fromString(uuid))))
+            register(Snowflake(snowflake), minecraftName)
         }
     }
 
     fun getForConfig(): List<UserEntry>
     {
-        return users.map { UserEntry(it.discord.id.value.toLong(), it.minecraft.name, it.minecraft.uuid.toString()) }
+        return users.map { UserEntry(it.discord.id.value.toLong(), it.minecraft.name) }
     }
 
     fun saveToFile()
