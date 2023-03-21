@@ -22,13 +22,11 @@ object StatsCommand : MessageCommand
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(
             ArgumentCombination(listOf(StatArgument(), string("stat")), "Get stat for all players.") { event, arguments ->
-                println(UserRegistry.getAllKnownMinecraftUsers())
-
                 val (argType, argText) = arguments[0]
                 DiscordHandler.sendMessage(
-                    UserRegistry.getAllKnownMinecraftUsers().map {
-                        it.name to handle(
-                            it.uuid,
+                    UserRegistry.getAllUsers().map {
+                        it.minecraft.name to handle(
+                            it.minecraft.uuid,
                             (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
                             arguments[1].second
                         )

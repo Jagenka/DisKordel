@@ -1,8 +1,7 @@
 package de.jagenka.commands.discord
 
 import de.jagenka.DiscordHandler
-import de.jagenka.DiscordHandler.getPrettyMemberName
-import de.jagenka.DiscordHandler.handleNotAMember
+import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
 import de.jagenka.commands.discord.structure.Argument.Companion.string
@@ -27,28 +26,32 @@ object RegisterCommand : MessageCommand
 
     private suspend fun registerUser(userId: Snowflake, minecraftName: String): Boolean
     {
-        val member = DiscordHandler.guild.getMemberOrNull(userId)
-        if (member == null)
+        val member = DiscordHandler.getMemberOrSendError(userId) ?: return false
+
+        var response = ""
+
+        val oldUser = UserRegistry.findUser(userId)
+
+        if (UserRegistry.register(userId, minecraftName))
         {
-            handleNotAMember(userId)
-            return false
+            oldUser?.let {
+                MinecraftHandler.runWhitelistRemove(oldUser.minecraft.name)
+                response += "`${oldUser.minecraft.name}` is no longer whitelisted.\n"
+            }
+
+            val realName = UserRegistry.findUser(userId)?.minecraft?.name ?: minecraftName
+
+            MinecraftHandler.runWhitelistAdd(realName)
+
+            response += "`$realName` now assigned to ${member.prettyName()}.\n" +
+                    "`$realName` is now whitelisted."
+
+        } else
+        {
+            response += "Error registering."
         }
 
-        if (UserRegistry.containsValue(minecraftName))
-        {
-            DiscordHandler.sendMessage("$minecraftName is already assigned to ${getPrettyMemberName(member)}")
-            return false
-        }
-
-        val oldName = UserRegistry.getValueForKey(member).orEmpty()
-        UserRegistry.register(member, minecraftName)
-        MinecraftHandler.runWhitelistRemove(oldName)
-        MinecraftHandler.runWhitelistAdd(minecraftName)
-        DiscordHandler.sendMessage(
-            "$minecraftName now assigned to ${getPrettyMemberName(member)}\n" +
-                    "$minecraftName is now whitelisted" +
-                    if (oldName.isNotEmpty()) "\n$oldName is no longer whitelisted" else ""
-        )
+        DiscordHandler.sendMessage(response)
 
         UserRegistry.saveToFile()
 

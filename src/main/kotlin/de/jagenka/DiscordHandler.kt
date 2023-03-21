@@ -34,8 +34,6 @@ object DiscordHandler
             guild = GuildBehavior(guildSnowflake, kord)
             channel = MessageChannelBehavior(channelSnowflake, kord)
 
-            loadUsersFromFile()
-
             registerCommands()
 
             Registry.setup(kord)
@@ -59,7 +57,6 @@ object DiscordHandler
             register(PerfCommand)
             register(UnregisterCommand)
             register(StatsCommand)
-            register(TestCommand)
         }
     }
 
@@ -71,34 +68,11 @@ object DiscordHandler
         }
     }
 
-    //TODO: load every so often
-    suspend fun loadUsersFromFile()
+    fun loadUsersFromFile()
     {
+        Config.loadConfig()
         UserRegistry.clear()
-
-        Config.configEntry.users.forEach { (discordId, minecraftName) ->
-            val memberSnowflake = Snowflake(discordId)
-            val member = guild.getMemberOrNull(memberSnowflake)
-            if (member != null) UserRegistry.put(member, minecraftName)
-            else handleNotAMember(memberSnowflake)
-        }
-    }
-
-    private suspend fun ensureWhitelist(snowflake: Snowflake)
-    {
-        val member = guild.getMemberOrNull(snowflake)
-        if (member == null)
-        {
-            handleNotAMember(snowflake)
-            return
-        }
-        if (!UserRegistry.containsKey(member)) sendMessage("Please register first with `!register minecraftName`")
-        else
-        {
-            val minecraftName = UserRegistry.getValueForKey(member).orEmpty()
-            MinecraftHandler.runWhitelistAdd(minecraftName)
-            sendMessage("Ensured whitelist for $minecraftName") //TODO: reaction
-        }
+        Config.configEntry.users.forEach { UserRegistry.register(it) }
     }
 
     fun String.markdownSafe(): String
@@ -113,9 +87,19 @@ object DiscordHandler
             .replace(">", "\\>")
     }
 
+    suspend fun getMemberOrSendError(id: Snowflake): Member?
+    {
+        guild.getMemberOrNull(id)?.let {
+            return it
+        }
+
+        handleNotAMember(id)
+        return null
+    }
+
     fun handleNotAMember(id: Snowflake)
     {
-        sendMessage("ERROR: user with id ${id.value} is not a member of configured guild!")
+        MinecraftHandler.logger.error("User with Snowflake $id is not a member of the configured guild!")
     }
 
     fun reactConfirmation(message: Message)
@@ -138,8 +122,5 @@ object DiscordHandler
         return newString
     }
 
-    fun getPrettyMemberName(member: Member): String
-    {
-        return "@${member.username} (${member.displayName})"
-    }
+    fun Member.prettyName() = "${this.displayName} (${this.username})"
 }

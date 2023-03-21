@@ -34,7 +34,7 @@ object DeathsCommand : StringInStringOutCommand // TODO: remove
             StatManager.statEntries
                 .forEach {
                     possiblePlayers.forEach { player ->
-                        if (it.key.equals(player.minecraftName, ignoreCase = true))
+                        if (it.key.equals(player.minecraft.name, ignoreCase = true))
                         {
                             result.add(it.key to it.value.deaths)
                         }

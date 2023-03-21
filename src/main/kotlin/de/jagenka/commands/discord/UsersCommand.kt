@@ -13,11 +13,8 @@ object UsersCommand : MessageCommand
     override val helpText: String
         get() = "Lists all registered users."
     override val allowedArgumentCombinations: List<ArgumentCombination>
-        get() = listOf(empty(helpText) { event ->
-            DiscordHandler.sendMessage(UserRegistry.getAsUserList()
-                .joinToString(prefix = "Currently registered Users:\n", separator = "\n") {
-                    it.prettyComboName
-                })
+        get() = listOf(empty(helpText) {
+            DiscordHandler.sendMessage(UserRegistry.getAllUsersAsOutput())
             true
         })
 }

@@ -1,7 +1,6 @@
 package de.jagenka
 
 import de.jagenka.MinecraftHandler.logger
-import de.jagenka.UserRegistry.getUUIDFromPlayerName
 import net.minecraft.stat.ServerStatHandler
 import net.minecraft.util.PathUtil
 import net.minecraft.util.WorldSavePath
@@ -15,11 +14,7 @@ object PlayerStatManager
 
     fun getStatHandlerForPlayer(playerName: String): ServerStatHandler?
     {
-        val uuid = getUUIDFromPlayerName(playerName)
-
-        uuid?.let { return getStatHandlerForPlayer(it) }
-
-        return null
+        return getStatHandlerForPlayer(UserRegistry.getMinecraftUser(playerName)?.uuid ?: return null)
     }
 
     fun getStatHandlerForPlayer(uuid: UUID): ServerStatHandler?
@@ -37,13 +32,13 @@ object PlayerStatManager
         if (!statisticsMap.containsKey(uuid))
         {
             // if not, load from file, save it to storage and return
-            val statHandlerFromFile = loadStatHandlerFromFile(uuid)
-            statisticsMap[uuid] = statHandlerFromFile ?: return null
+            statisticsMap[uuid] = loadStatHandlerFromFile(uuid) ?: return null
         }
 
         return statisticsMap[uuid]
     }
 
+    // code largely copied from original minecraft source
     private fun loadStatHandlerFromFile(uuid: UUID, playerName: String = ""): ServerStatHandler?
     {
         MinecraftHandler.minecraftServer?.let { server ->

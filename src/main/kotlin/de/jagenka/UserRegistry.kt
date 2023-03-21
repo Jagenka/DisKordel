@@ -3,6 +3,7 @@ package de.jagenka
 import com.mojang.authlib.Agent
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.ProfileLookupCallback
+import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.MinecraftHandler.logger
 import de.jagenka.MinecraftHandler.minecraftServer
 import de.jagenka.Util.unwrap
@@ -10,6 +11,7 @@ import de.jagenka.config.Config
 import de.jagenka.config.UserEntry
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
+import kotlinx.coroutines.launch
 import net.minecraft.util.WorldSavePath
 import java.nio.file.Files
 import java.util.*
@@ -18,18 +20,33 @@ object UserRegistry
 {
     private val users = mutableSetOf<User>()
 
-    private val discordMembers = mutableMapOf<DiscordUser, Member>()
+    private val discordMembers = mutableMapOf<DiscordUser, Member>() //TODO: load Members every so often (?)
     private val minecraftProfiles = mutableSetOf<GameProfile>()
 
     // region getter
+    fun findUser(minecraftName: String): User?
+    {
+        return users.find { it.minecraft.name.equals(minecraftName, ignoreCase = true) }
+    }
+
+    fun findUser(uuid: UUID): User?
+    {
+        return users.find { it.minecraft.uuid == uuid }
+    }
+
+    fun findUser(snowflake: Snowflake): User?
+    {
+        return users.find { it.discord.id == snowflake }
+    }
+
     fun getMinecraftUser(name: String): MinecraftUser?
     {
-        return users.find { it.minecraft.name.equals(name, ignoreCase = true) }?.minecraft
+        return findUser(name)?.minecraft
     }
 
     fun getMinecraftUser(uuid: UUID): MinecraftUser?
     {
-        return users.find { it.minecraft.uuid == uuid }?.minecraft
+        return findUser(uuid)?.minecraft
     }
 
     fun getGameProfile(name: String): GameProfile?
@@ -44,7 +61,7 @@ object UserRegistry
 
     fun getDiscordUser(id: Snowflake): DiscordUser?
     {
-        return users.find { it.discord.id == id }?.discord
+        return findUser(id)?.discord
     }
 
     fun getDiscordMember(snowflake: Snowflake): Member?
@@ -61,10 +78,11 @@ object UserRegistry
     // region registration
     suspend fun register(snowflake: Snowflake, minecraftName: String): Boolean
     {
-        if (!findMinecraftProfile(minecraftName)) return false
-        if (!findDiscordMember(snowflake)) return false
+        if (!findMinecraftProfileOrError(minecraftName)) return false
+        if (!findDiscordMemberOrError(snowflake)) return false
 
-        users.add(User(DiscordUser(snowflake), MinecraftUser(minecraftName, getGameProfile(minecraftName)?.id ?: return false)))
+        val gameProfile = getGameProfile(minecraftName) ?: return false
+        users.put(User(DiscordUser(snowflake), MinecraftUser(gameProfile.name, gameProfile.id)))
         return true
     }
 
@@ -85,6 +103,27 @@ object UserRegistry
     // endregion
 
     // region config stuffs
+    fun clear()
+    {
+        users.clear()
+    }
+
+    fun register(userEntry: UserEntry)
+    {
+        val (snowflake, minecraftName, uuid) = userEntry
+        Main.scope.launch {
+            if (!findMinecraftProfileOrError(minecraftName))
+            {
+                return@launch
+            }
+            if (!findDiscordMemberOrError(Snowflake(snowflake)))
+            {
+                return@launch
+            }
+            users.put(User(DiscordUser(Snowflake(snowflake)), MinecraftUser(minecraftName, UUID.fromString(uuid))))
+        }
+    }
+
     fun getForConfig(): List<UserEntry>
     {
         return users.map { UserEntry(it.discord.id.value.toLong(), it.minecraft.name, it.minecraft.uuid.toString()) }
@@ -92,12 +131,23 @@ object UserRegistry
 
     fun saveToFile()
     {
-        Config.configEntry.users = getForConfig()
+        Config.configEntry.users = getForConfig().toMutableList()
         Config.store()
     }
     // endregion
 
     fun getAllUsers() = users.toList()
+
+    fun getAllUsersAsOutput(): String
+    {
+        return getAllUsers().joinToString(prefix = "Currently registered Users:\n", separator = "\n") { it.prettyString() }
+    }
+
+    fun User.prettyString(): String
+    {
+        val member = discordMembers[this.discord] ?: return "~not a member~ aka `${this.minecraft.name}`"
+        return "${member.prettyName()} aka `${this.minecraft.name}`"
+    }
 
     fun find(name: String): List<User>
     {
@@ -137,7 +187,7 @@ object UserRegistry
         }
     }
 
-    private fun findMinecraftProfile(minecraftName: String): Boolean
+    private fun findMinecraftProfileOrError(minecraftName: String): Boolean
     {
         var found = false
 
@@ -168,10 +218,16 @@ object UserRegistry
         return found
     }
 
-    private suspend fun findDiscordMember(snowflake: Snowflake): Boolean
+    private suspend fun findDiscordMemberOrError(snowflake: Snowflake): Boolean
     {
-        discordMembers[DiscordUser(snowflake)] = DiscordHandler.guild.getMemberOrNull(snowflake) ?: return false
+        discordMembers[DiscordUser(snowflake)] = DiscordHandler.getMemberOrSendError(snowflake) ?: return false
         return true
+    }
+
+    fun <V> MutableSet<V>.put(element: V)
+    {
+        this.remove(element)
+        this.add(element)
     }
 }
 

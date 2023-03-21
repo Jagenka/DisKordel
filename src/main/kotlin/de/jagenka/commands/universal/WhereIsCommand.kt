@@ -22,8 +22,8 @@ object WhereIsCommand : StringInStringOutCommand
         if (possibleUsers.isEmpty()) return "No-one found!"
 
         return possibleUsers.joinToString("\n") { user ->
-            MinecraftHandler.getPlayerPosition(user.minecraftName)?.let {
-                "${user.minecraftName} is at (${it.x.toInt()} ${it.y.toInt()} ${it.z.toInt()})."
+            MinecraftHandler.getPlayerPosition(user.minecraft.name)?.let {
+                "${user.minecraft.name} is at (${it.x.toInt()} ${it.y.toInt()} ${it.z.toInt()})."
             } ?: ""
         }
     }

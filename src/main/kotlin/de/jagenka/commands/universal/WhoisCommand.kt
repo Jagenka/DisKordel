@@ -1,6 +1,7 @@
 package de.jagenka.commands.universal
 
 import de.jagenka.UserRegistry
+import de.jagenka.UserRegistry.prettyString
 
 
 object WhoisCommand : StringInStringOutCommand
@@ -17,6 +18,6 @@ object WhoisCommand : StringInStringOutCommand
 
     override fun process(input: String): String
     {
-        return UserRegistry.whoIsPrintable(input.trim())
+        return UserRegistry.find(input.trim()).joinToString(prefix = "Could be:\n", separator = "\n") { it.prettyString() }
     }
 }
