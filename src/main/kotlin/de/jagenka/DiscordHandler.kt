@@ -70,9 +70,8 @@ object DiscordHandler
 
     fun loadUsersFromFile()
     {
-        Config.loadConfig()
         UserRegistry.clear()
-        Config.configEntry.users.forEach { UserRegistry.register(it) }
+        Config.configEntry.registeredUsers.forEach { UserRegistry.register(it) }
     }
 
     fun String.markdownSafe(): String
