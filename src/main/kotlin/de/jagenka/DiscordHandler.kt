@@ -1,5 +1,6 @@
 package de.jagenka
 
+import de.jagenka.MinecraftHandler.logger
 import de.jagenka.commands.discord.*
 import de.jagenka.commands.discord.structure.Registry
 import de.jagenka.config.Config
