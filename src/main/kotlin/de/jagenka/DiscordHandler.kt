@@ -2,6 +2,7 @@ package de.jagenka
 
 import de.jagenka.MinecraftHandler.logger
 import de.jagenka.commands.discord.*
+import de.jagenka.commands.discord.structure.Registry
 import de.jagenka.config.Config
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
@@ -10,8 +11,6 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.ReactionEmoji
-import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.x.emoji.Emojis
@@ -36,16 +35,9 @@ object DiscordHandler
             guild = GuildBehavior(guildSnowflake, kord)
             channel = MessageChannelBehavior(channelSnowflake, kord)
 
-            loadUsersFromFile()
-
             registerCommands()
 
-            kord.on<MessageCreateEvent> {
-                // return if author is a bot or undefined
-                if (message.author?.isBot != false) return@on
-                if (message.channelId != channelSnowflake) return@on
-                DiscordCommandRegistry.handleCommand(this) //TODO: send to Minecraft if not a command
-            }
+            Registry.setup(kord)
 
             kord.login {// nicht sicher ob man für jeden link nen eigenen bot braucht mit der API
                 @OptIn(PrivilegedIntent::class)
@@ -56,16 +48,16 @@ object DiscordHandler
 
     private fun registerCommands()
     {
-        with(DiscordCommandRegistry)
+        with(Registry)
         {
-            register(HelpCommand)
+            register(HelpMessageCommand)
             register(ListCommand)
             register(RegisterCommand)
             register(UsersCommand)
             register(UpdateNamesCommand)
             register(PerfCommand)
             register(UnregisterCommand)
-            register(SyncDeathsCommand)
+            register(StatsCommand)
         }
     }
 
@@ -77,34 +69,10 @@ object DiscordHandler
         }
     }
 
-    //TODO: load every so often
-    suspend fun loadUsersFromFile()
+    fun loadUsersFromFile()
     {
-        Users.clear()
-
-        Config.configEntry.users.forEach { (discordId, minecraftName) ->
-            val memberSnowflake = Snowflake(discordId)
-            val member = guild.getMemberOrNull(memberSnowflake)
-            if (member != null) Users.put(member, minecraftName)
-            else handleNotAMember(memberSnowflake)
-        }
-    }
-
-    private suspend fun ensureWhitelist(snowflake: Snowflake)
-    {
-        val member = guild.getMemberOrNull(snowflake)
-        if (member == null)
-        {
-            handleNotAMember(snowflake)
-            return
-        }
-        if (!Users.containsKey(member)) sendMessage("Please register first with `!register minecraftName`")
-        else
-        {
-            val minecraftName = Users.getValueForKey(member).orEmpty()
-            MinecraftHandler.runWhitelistAdd(minecraftName)
-            sendMessage("Ensured whitelist for $minecraftName") //TODO: reaction
-        }
+        UserRegistry.clear()
+        Config.configEntry.registeredUsers.forEach { UserRegistry.register(it) }
     }
 
     fun String.markdownSafe(): String
@@ -119,9 +87,19 @@ object DiscordHandler
             .replace(">", "\\>")
     }
 
+    suspend fun getMemberOrSendError(id: Snowflake): Member?
+    {
+        guild.getMemberOrNull(id)?.let {
+            return it
+        }
+
+        handleNotAMember(id)
+        return null
+    }
+
     fun handleNotAMember(id: Snowflake)
     {
-        logger.error("user with id ${id.value} is not a member of configured guild!")
+        MinecraftHandler.logger.error("User with Snowflake $id is not a member of the configured guild!")
     }
 
     fun reactConfirmation(message: Message)
@@ -138,14 +116,11 @@ object DiscordHandler
         while (matcher.find())
         {
             val mention = matcher.group().substring(1, length - 1)
-            val member = Users.getDiscordMember(mention)
+            val member = UserRegistry.getDiscordMember(mention)
             if (member != null) newString = newString.replaceRange(matcher.start(), matcher.end(), "<@!${member.id.value}>")
         }
         return newString
     }
 
-    fun getPrettyMemberName(member: Member): String
-    {
-        return "@${member.username} (${member.displayName})"
-    }
+    fun Member.prettyName() = "${this.displayName} (${this.username})"
 }

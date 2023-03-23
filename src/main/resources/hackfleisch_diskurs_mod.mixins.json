@@ -5,7 +5,9 @@
   "compatibilityLevel": "JAVA_16",
   "mixins": [
     "PlayerManagerMixin",
-    "ServerPlayerEntityMixin"
+    "ServerLoginNetworkHandlerMixin",
+    "ServerPlayerEntityMixin",
+    "StatMixin"
   ],
   "client": [],
   "server": [],

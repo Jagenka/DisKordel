@@ -1,23 +1,20 @@
 package de.jagenka.commands.discord
 
 import de.jagenka.DiscordHandler
-import de.jagenka.Main
-import dev.kord.core.event.message.MessageCreateEvent
-import kotlinx.coroutines.launch
+import de.jagenka.commands.discord.structure.ArgumentCombination
+import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
+import de.jagenka.commands.discord.structure.MessageCommand
 
-object UpdateNamesCommand : DiscordCommand
+object UpdateNamesCommand : MessageCommand
 {
-    override val discordName: String
-        get() = "updatenames"
+    override val ids: List<String>
+        get() = listOf("updatenames")
     override val helpText: String
-        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName}`: Update Member names in registry."
-
-
-    override fun execute(event: MessageCreateEvent, args: String)
-    {
-        Main.scope.launch {
+        get() = "Update Member names in registry."
+    override val allowedArgumentCombinations: List<ArgumentCombination>
+        get() = listOf(empty(helpText) { event ->
             DiscordHandler.loadUsersFromFile()
             DiscordHandler.reactConfirmation(event.message)
-        }
-    }
+            true
+        })
 }

@@ -1,46 +1,52 @@
 package de.jagenka.commands.discord
 
 import de.jagenka.DiscordHandler
-import de.jagenka.DiscordHandler.getPrettyMemberName
-import de.jagenka.Main
+import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.MinecraftHandler
-import de.jagenka.Users
+import de.jagenka.UserRegistry
+import de.jagenka.commands.discord.structure.ArgumentCombination
+import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
+import de.jagenka.commands.discord.structure.MessageCommand
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.event.message.MessageCreateEvent
-import kotlinx.coroutines.launch
 
-object UnregisterCommand : DiscordCommand
+object UnregisterCommand : MessageCommand
 {
-    override val discordName: String
-        get() = "unregister"
+    override val ids: List<String>
+        get() = listOf("unregister")
     override val helpText: String
-        get() = "`${DiscordCommandRegistry.commandPrefix}${discordName}`: Unlink your current Discord User from the linked Minecraft Player."
-
-
-    override fun execute(event: MessageCreateEvent, args: String)
-    {
-        event.message.author?.let {
-            Main.scope.launch {
-                unregisterUser(it.id)
+        get() = "Unlink your current Discord User from the linked Minecraft Player."
+    override val allowedArgumentCombinations: List<ArgumentCombination>
+        get() = listOf(empty(helpText) { event ->
+            event.message.author?.let {
+                return@empty unregisterUser(it.id)
             }
-        }
-    }
+            true
+        })
 
-    private suspend fun unregisterUser(userId: Snowflake)
+    private suspend fun unregisterUser(userId: Snowflake): Boolean
     {
-        val member = DiscordHandler.guild.getMemberOrNull(userId)
-        if (member == null)
-        {
-            DiscordHandler.handleNotAMember(userId)
-            return
+        val member = DiscordHandler.getMemberOrSendError(userId) ?: return false
+
+        var response = ""
+
+        UserRegistry.findUser(userId)?.let { oldUser ->
+            MinecraftHandler.runWhitelistRemove(oldUser.minecraft.name)
+            response += "`${oldUser.minecraft.name}` is no longer whitelisted.\n"
         }
 
-        val minecraftName = Users.getValueForKey(member).orEmpty()
-        Users.unregisterUser(member)
-        MinecraftHandler.runWhitelistRemove(minecraftName)
-        DiscordHandler.sendMessage(
-            "${getPrettyMemberName(member)} now unregistered.\n" +
-                    if (minecraftName.isNotBlank()) "$minecraftName is no longer whitelisted" else ""
-        )
+        response +=
+            if (UserRegistry.unregister(userId))
+            {
+                "${member.prettyName()} now unregistered."
+            } else
+            {
+                "${member.prettyName()} was not registered."
+            }
+
+        DiscordHandler.sendMessage(response)
+
+        UserRegistry.saveToFile()
+
+        return true
     }
 }
