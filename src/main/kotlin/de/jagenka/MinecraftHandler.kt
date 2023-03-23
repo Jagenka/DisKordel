@@ -1,8 +1,6 @@
 package de.jagenka
 
 import de.jagenka.DiscordHandler.markdownSafe
-import de.jagenka.config.StatEntry
-import de.jagenka.config.StatManager
 import kotlinx.coroutines.launch
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -108,8 +106,7 @@ object MinecraftHandler
     @JvmStatic
     fun increaseDeathStat(playerName: String)
     {
-        StatManager.statEntries.getOrPut(playerName) { StatEntry(deaths = 0) }.deaths += 1
-        StatManager.store()
+
     }
 
     fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)

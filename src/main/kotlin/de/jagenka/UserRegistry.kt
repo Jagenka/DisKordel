@@ -73,6 +73,24 @@ object UserRegistry
     {
         return discordMembers.values.find { it.username == inputName || it.displayName == inputName }
     }
+
+    fun getAllUsers() = users.toList()
+
+    fun getAllUsersAsOutput(): String
+    {
+        return getAllUsers().joinToString(prefix = "Currently registered Users:\n", separator = "\n") { it.prettyString() }
+    }
+
+    fun getMinecraftProfiles() = minecraftProfiles.toSet()
+
+    fun find(name: String): List<User>
+    {
+        return users.filter {
+            discordMembers[it.discord]?.username?.contains(name, ignoreCase = true) ?: false
+                    || discordMembers[it.discord]?.displayName?.contains(name, ignoreCase = true) ?: false
+                    || it.minecraft.name.contains(name, ignoreCase = true)
+        }
+    }
     // endregion
 
     // region registration
@@ -128,26 +146,10 @@ object UserRegistry
     }
     // endregion
 
-    fun getAllUsers() = users.toList()
-
-    fun getAllUsersAsOutput(): String
-    {
-        return getAllUsers().joinToString(prefix = "Currently registered Users:\n", separator = "\n") { it.prettyString() }
-    }
-
     fun User.prettyString(): String
     {
         val member = discordMembers[this.discord] ?: return "~not a member~ aka `${this.minecraft.name}`"
         return "${member.prettyName()} aka `${this.minecraft.name}`"
-    }
-
-    fun find(name: String): List<User>
-    {
-        return users.filter {
-            discordMembers[it.discord]?.username?.contains(name, ignoreCase = true) ?: false
-                    || discordMembers[it.discord]?.displayName?.contains(name, ignoreCase = true) ?: false
-                    || it.minecraft.name.contains(name, ignoreCase = true)
-        }
     }
 
     fun List<User>.onlyMinecraftNames(): List<String> =
@@ -172,6 +174,7 @@ object UserRegistry
                     }
                 }
                 .forEach { uuid ->
+                    server.gameProfileRepo
                     server.userCache.getByUuid(uuid).unwrap()?.let { profile ->
                         if (profile.isComplete) minecraftProfiles.add(profile)
                     } ?: return@forEach

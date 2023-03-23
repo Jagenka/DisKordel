@@ -2,7 +2,6 @@ package de.jagenka.commands.universal
 
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
-import de.jagenka.config.StatManager
 
 object DeathsCommand : StringInStringOutCommand // TODO: remove
 {
@@ -30,17 +29,6 @@ object DeathsCommand : StringInStringOutCommand // TODO: remove
             val result = mutableListOf<Pair<String, Int>>()
 
             val possiblePlayers = UserRegistry.find(input)
-
-            StatManager.statEntries
-                .forEach {
-                    possiblePlayers.forEach { player ->
-                        if (it.key.equals(player.minecraft.name, ignoreCase = true))
-                        {
-                            result.add(it.key to it.value.deaths)
-                        }
-                    }
-                    if (it.key.equals(input, ignoreCase = true)) result.add(it.key to it.value.deaths)
-                }
 
             return result.toList().sortedByDescending { it.second }
         }

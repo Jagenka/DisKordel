@@ -24,9 +24,9 @@ object StatsCommand : MessageCommand
             ArgumentCombination(listOf(StatArgument(), string("stat")), "Get stat for all players.") { event, arguments ->
                 val (argType, argText) = arguments[0]
                 DiscordHandler.sendMessage(
-                    UserRegistry.getAllUsers().map {
-                        it.minecraft.name to handle(
-                            it.minecraft.uuid,
+                    UserRegistry.getMinecraftProfiles().map {
+                        it.name to handle(
+                            it.id,
                             (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
                             arguments[1].second
                         )

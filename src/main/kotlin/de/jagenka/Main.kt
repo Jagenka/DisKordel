@@ -8,7 +8,6 @@ import de.jagenka.commands.universal.WhereIsCommand
 import de.jagenka.commands.universal.WhoisCommand
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
-import de.jagenka.config.StatManager
 import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -47,7 +46,6 @@ object Main : ModInitializer
         }
 
         Config.loadConfig()
-        StatManager.loadStats()
 
         val token = configEntry.discordSettings.botToken
         val guildId = configEntry.discordSettings.guildId
