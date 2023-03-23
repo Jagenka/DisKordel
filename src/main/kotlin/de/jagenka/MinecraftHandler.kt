@@ -26,6 +26,7 @@ object MinecraftHandler
 
         DiscordHandler.loadUsersFromFile()
         UserRegistry.loadGameProfilesFromPlayerData()
+        UserRegistry.loadUserCache()
     }
 
     @JvmStatic

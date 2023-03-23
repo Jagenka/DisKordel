@@ -1,6 +1,8 @@
 package de.jagenka
 
+import de.jagenka.config.MinecraftUserSerializer
 import dev.kord.common.entity.Snowflake
+import kotlinx.serialization.Serializable
 import java.util.*
 
 data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
@@ -23,6 +25,7 @@ data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
     }
 }
 
+@Serializable(with = MinecraftUserSerializer::class)
 data class MinecraftUser(val name: String, val uuid: UUID)
 {
     override fun equals(other: Any?): Boolean

@@ -134,14 +134,32 @@ object UserRegistry
         }
     }
 
-    fun getForConfig(): List<UserEntry>
+    fun getRegisteredUsersForConfig(): List<UserEntry>
     {
         return users.map { UserEntry(it.discord.id.value.toLong(), it.minecraft.name) }
     }
 
+    fun saveToCache(gameProfile: GameProfile)
+    {
+        minecraftProfiles.put(gameProfile)
+        saveCacheToFile()
+    }
+
     fun saveToFile()
     {
-        Config.configEntry.users = getForConfig().toMutableList()
+        saveRegisteredUsersToFile()
+        saveCacheToFile()
+    }
+
+    fun saveRegisteredUsersToFile()
+    {
+        Config.configEntry.registeredUsers = getRegisteredUsersForConfig().toMutableList()
+        Config.store()
+    }
+
+    fun saveCacheToFile()
+    {
+        Config.configEntry.userCache = Config.configEntry.userCache.union(minecraftProfiles.map { MinecraftUser(it.name, it.id) }).toMutableSet()
         Config.store()
     }
     // endregion
@@ -179,6 +197,18 @@ object UserRegistry
                         if (profile.isComplete) minecraftProfiles.add(profile)
                     } ?: return@forEach
                 }
+
+            saveCacheToFile()
+        }
+    }
+
+    fun loadUserCache()
+    {
+        Config.configEntry.userCache.forEach { minecraftUser ->
+            if (minecraftProfiles.none { it.name.equals(minecraftUser.name, ignoreCase = true) })
+            {
+                findMinecraftProfileOrError(minecraftUser.name)
+            }
         }
     }
 
@@ -194,6 +224,7 @@ object UserRegistry
                     if (profile.isComplete)
                     {
                         minecraftProfiles.add(profile)
+                        saveCacheToFile()
                         found = true
                         return
                     } else
