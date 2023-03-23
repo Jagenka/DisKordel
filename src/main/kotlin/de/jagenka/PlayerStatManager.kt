@@ -14,7 +14,7 @@ object PlayerStatManager
 
     fun getStatHandlerForPlayer(playerName: String): ServerStatHandler?
     {
-        return getStatHandlerForPlayer(UserRegistry.getMinecraftUser(playerName)?.uuid ?: return null)
+        return getStatHandlerForPlayer(UserRegistry.getGameProfile(playerName)?.id ?: return null)
     }
 
     fun getStatHandlerForPlayer(uuid: UUID): ServerStatHandler?
@@ -47,15 +47,18 @@ object PlayerStatManager
             if (playerName.isNotBlank())
             {
                 val legacyPlayerStatFile = File(statsSavePath, "${playerName}.json")
-                val path: Path = legacyPlayerStatFile.toPath()
-                if (!playerStatFile.exists() && PathUtil.isNormal(path) && PathUtil.isAllowedName(path) && path.startsWith(statsSavePath.path) && legacyPlayerStatFile.isFile)
+                val legacyPath: Path = legacyPlayerStatFile.toPath()
+                if (!playerStatFile.exists() && PathUtil.isNormal(legacyPath) && PathUtil.isAllowedName(legacyPath) && legacyPath.startsWith(statsSavePath.path) && legacyPlayerStatFile.isFile)
                 {
                     legacyPlayerStatFile.renameTo(playerStatFile) //backwards compat to rename to UUID
                 }
             }
             try
             {
-                return ServerStatHandler(server, playerStatFile)
+                if (playerStatFile.exists())
+                {
+                    return ServerStatHandler(server, playerStatFile)
+                }
             } catch (_: Exception)
             {
                 logger.error("error parsing stat file, uuid might be invalid")

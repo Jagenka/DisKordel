@@ -1,5 +1,6 @@
 package de.jagenka.commands.discord
 
+import com.mojang.authlib.GameProfile
 import de.jagenka.DiscordHandler
 import de.jagenka.PlayerStatManager
 import de.jagenka.UserRegistry
@@ -24,30 +25,28 @@ object StatsCommand : MessageCommand
             ArgumentCombination(listOf(StatArgument(), string("stat")), "Get stat for all players.") { event, arguments ->
                 val (argType, argText) = arguments[0]
                 DiscordHandler.sendMessage(
-                    UserRegistry.getMinecraftProfiles().map {
-                        it.name to handle(
-                            it.id,
-                            (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
-                            arguments[1].second
-                        )
-                    }.filterNot { it.second == null }.sortedByDescending { it.second }.joinToString(separator = "\n") { "${it.first}: ${it.second}" }
-                        .ifBlank { "Nothing found!".also { return@ArgumentCombination false } }
+                    getReplyForAll(
+                        (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
+                        arguments[1].second
+                    )
                 )
                 true
             },
-            ArgumentCombination(listOf(string("playerName"), StatArgument(), string("stat")), "Get stat for one player.") { event, arguments ->
+            ArgumentCombination(listOf(string("partOfName"), StatArgument(), string("stat")), "Get stat for some players.") { event, arguments ->
                 val (_, playerName) = arguments.first()
                 val (argType, argText) = arguments[1]
                 DiscordHandler.sendMessage(
-                    handle(
-                        playerName,
+                    getReplyForSome(
+                        UserRegistry.findMinecraftProfiles(playerName),
                         (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
                         arguments[2].second
-                    )?.ifBlank { "Nothing found!" } ?: return@ArgumentCombination false
+                    )
                 )
                 true
             },
         )
+
+    private fun format(playerName: String, stat: Stat<*>, value: Int) = "${"$playerName:".padEnd(17, ' ')} ${stat.format(value)}" // max length of player name is 16 characters
 
     private fun handle(playerName: String, statType: StatType<Any>, id: String): String?
     {
@@ -57,6 +56,29 @@ object StatsCommand : MessageCommand
         } catch (_: Exception)
         {
             null
+        }
+    }
+
+    fun getReplyForAll(statType: StatType<Any>, id: String): String
+    {
+        return getReplyForSome(UserRegistry.getMinecraftProfiles(), statType, id)
+    }
+
+    fun getReplyForSome(collection: Collection<GameProfile>, statType: StatType<Any>, id: String): String
+    {
+        try
+        {
+            val stat = statType.getOrCreateStat(statType.registry.get(Identifier(id)))
+
+            return collection
+                .mapNotNull { it.name to (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null) }
+                .sortedByDescending { it.second }
+                .joinToString(prefix = "```", separator = "\n", postfix = "```") { format(it.first, stat, it.second) }
+                .replace("``````", "")
+                .ifBlank { "Nothing found!" }
+        } catch (_: Exception)
+        {
+            return "Nothing found!"
         }
     }
 

@@ -91,6 +91,13 @@ object UserRegistry
                     || it.minecraft.name.contains(name, ignoreCase = true)
         }
     }
+
+    fun findMinecraftProfiles(name: String): List<GameProfile>
+    {
+        return minecraftProfiles.filter {
+            it.name.contains(name, ignoreCase = true)
+        }
+    }
     // endregion
 
     // region registration

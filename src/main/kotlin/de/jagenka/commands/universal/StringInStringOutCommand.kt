@@ -26,7 +26,7 @@ interface StringInStringOutCommand : MinecraftCommand, MessageCommand
         dispatcher.register(
             CommandManager.literal(minecraftName)
                 .executes {
-                    val output = process(it.source.name)
+                    val output = process().removePrefix("```").removeSuffix("```")
                     output.lines().toSet().forEach { line ->
                         if (line.isBlank()) return@forEach
                         it.source.sendFeedback(Text.literal(line), false)
@@ -36,7 +36,7 @@ interface StringInStringOutCommand : MinecraftCommand, MessageCommand
                 .then(
                     CommandManager.argument("name", StringArgumentType.greedyString()).executes
                     {
-                        val output = process(StringArgumentType.getString(it, "name"))
+                        val output = process(StringArgumentType.getString(it, "name")).removePrefix("```").removeSuffix("```")
                         output.lines().forEach { line ->
                             if (line.isBlank()) return@forEach
                             it.source.sendFeedback(Text.literal(line), false)
@@ -62,5 +62,5 @@ interface StringInStringOutCommand : MinecraftCommand, MessageCommand
     /**
      * @param input if this is empty, command should give back all information
      */
-    fun process(input: String): String
+    fun process(input: String = ""): String
 }
