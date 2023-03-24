@@ -19,7 +19,7 @@ object StatsCommand : MessageCommand
     override val ids: List<String>
         get() = listOf("stats")
     override val helpText: String
-        get() = "Display Stats for players."
+        get() = "Display non-zero stats for players."
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(
             ArgumentCombination(listOf(StatArgument(), string("stat")), "Get stat for all players.") { event, arguments ->
@@ -73,6 +73,7 @@ object StatsCommand : MessageCommand
             return collection
                 .mapNotNull { it.name to (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null) }
                 .sortedByDescending { it.second }
+                .filterNot { it.second == 0 }
                 .joinToString(prefix = "```", separator = "\n", postfix = "```") { format(it.first, stat, it.second) }
                 .replace("``````", "")
                 .ifBlank { "Nothing found!" }
