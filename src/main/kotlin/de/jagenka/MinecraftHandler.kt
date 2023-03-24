@@ -104,12 +104,6 @@ object MinecraftHandler
         return null
     }
 
-    @JvmStatic
-    fun increaseDeathStat(playerName: String)
-    {
-
-    }
-
     fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)
     {
         player.sendMessage(Text.of(text))
