@@ -32,15 +32,15 @@ object MinecraftHandler
     @JvmStatic
     fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity?)
     {
-        Main.scope.launch { DiscordHandler.sendMessage("<${sender?.name?.string}> ${message.string.markdownSafe()}") }
+        Main.scope.launch { DiscordHandler.sendMessage("`<${sender?.name?.string}> ${message.string.markdownSafe()}`") }
     }
 
     @JvmStatic
     fun handleMinecraftSystemMessage(message: Text)
     {
         Main.scope.launch {
-            if (message.string.startsWith(">")) return@launch
-            DiscordHandler.sendMessage(message.string.markdownSafe())
+            if (message.string.startsWith(">")) return@launch // this is a message coming from discord
+            DiscordHandler.sendMessage("```fix${message.string.markdownSafe()}```")
         }
     }
 
