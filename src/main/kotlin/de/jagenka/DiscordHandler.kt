@@ -1,6 +1,5 @@
 package de.jagenka
 
-import de.jagenka.MinecraftHandler.logger
 import de.jagenka.commands.discord.*
 import de.jagenka.commands.discord.structure.Registry
 import de.jagenka.config.Config
@@ -69,22 +68,21 @@ object DiscordHandler
         }
     }
 
+    fun sendCodeBlock(formatId: String, content: String)
+    {
+        sendMessage("```$formatId\n${content.preventCodeBlockEscape()}\n```")
+    }
+
     fun loadUsersFromFile()
     {
         UserRegistry.clear()
         Config.configEntry.registeredUsers.forEach { UserRegistry.register(it) }
     }
 
-    fun String.markdownSafe(): String
+    private fun String.preventCodeBlockEscape(): String
     {
         return this
-            .replace("\\", "\\\\")
-            .replace("*", "\\*")
-            .replace("_", "\\_")
-            .replace("~", "\\~")
-            .replace("`", "\\`")
-            .replace("|", "\\|")
-            .replace(">", "\\>")
+            .replace("```", "\\`\\`\\`")
     }
 
     suspend fun getMemberOrSendError(id: Snowflake): Member?
