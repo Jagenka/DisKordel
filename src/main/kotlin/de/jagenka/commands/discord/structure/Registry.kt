@@ -1,5 +1,6 @@
 package de.jagenka.commands.discord.structure
 
+import de.jagenka.MinecraftHandler
 import dev.kord.core.Kord
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
@@ -31,24 +32,29 @@ object Registry
     fun setup(kord: Kord)
     {
         kord.on<MessageCreateEvent> {
-            if (interactsWithBots)
-            {
-                // return if author is self or undefined
-                if (message.author?.id == kord.selfId) return@on
-            } else
-            {
-                // return if author is a bot or undefined
-                if (message.author?.isBot != false) return@on
+            let {
+                if (interactsWithBots)
+                {
+                    // return if author is self or undefined
+                    if (message.author?.id == kord.selfId) return@let
+                } else
+                {
+                    // return if author is a bot or undefined
+                    if (message.author?.isBot != false) return@let
+                }
+
+                if (!message.content.startsWith(messageCommandPrefix)) return@let
+
+                val args = this.message.content.split(" ")
+                val firstWord = args.getOrNull(0) ?: return@let
+
+                val command = commands[firstWord.removePrefix(messageCommandPrefix)] ?: return@let
+
+                if (command.run(this, args)) return@on
             }
 
-            if (!message.content.startsWith(messageCommandPrefix)) return@on
-
-            val args = this.message.content.split(" ")
-            val firstWord = args.getOrNull(0) ?: return@on
-
-            val command = commands[firstWord.removePrefix(messageCommandPrefix)] ?: return@on
-
-            command.run(this, args)
+            if (message.author?.id != kord.selfId)
+                MinecraftHandler.sendMessage(this.member?.displayName ?: "EWWOW", this.message.content)
         }
     }
 
