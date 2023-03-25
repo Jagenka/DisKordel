@@ -1,6 +1,8 @@
 package de.jagenka
 
 import com.mojang.brigadier.CommandDispatcher
+import de.jagenka.MinecraftHandler.handleMinecraftChatMessage
+import de.jagenka.MinecraftHandler.handleMinecraftSystemMessage
 import de.jagenka.MinecraftHandler.logger
 import de.jagenka.commands.universal.DeathsCommand
 import de.jagenka.commands.universal.PlaytimeCommand
@@ -15,6 +17,7 @@ import kotlinx.coroutines.launch
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
@@ -38,6 +41,20 @@ object Main : ModInitializer
         //register onServerLoaded
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             MinecraftHandler.onServerLoaded(server)
+        }
+
+        //register chat message
+        ServerMessageEvents.CHAT_MESSAGE.register { message, sender, params ->
+            scope.launch {
+                handleMinecraftChatMessage(message.content, sender)
+            }
+        }
+
+        //register system message
+        ServerMessageEvents.GAME_MESSAGE.register { server, message, overlay ->
+            scope.launch {
+                handleMinecraftSystemMessage(message)
+            }
         }
 
         //register commands
