@@ -40,7 +40,12 @@ object MinecraftHandler
     {
         Main.scope.launch {
             if (message.string.startsWith(">")) return@launch // this is a message coming from discord
-            DiscordHandler.sendMessage("```fix\n${message.string.markdownSafe()}```")
+            DiscordHandler.sendMessage(
+                "```ansi\n" +
+                        "\u001B[2;33m${message.string.markdownSafe()}\u001B[0m\n" +
+                        "\n" +
+                        "```"
+            )
         }
     }
 
