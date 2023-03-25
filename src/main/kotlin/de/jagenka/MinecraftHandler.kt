@@ -1,6 +1,6 @@
 package de.jagenka
 
-import de.jagenka.DiscordHandler.markdownSafe
+import de.jagenka.Util.unwrap
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.minecraft.server.MinecraftServer
@@ -10,6 +10,7 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.Position
 import org.slf4j.LoggerFactory
+import java.util.*
 import kotlin.math.min
 
 object MinecraftHandler
@@ -47,29 +48,50 @@ object MinecraftHandler
         }
     }
 
-    @JvmStatic
-    fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity?)
+    private fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity)
     {
         Main.scope.launch {
-            DiscordHandler.sendMessage(
-                "```ansi\n" +
-                        "<\u001B[1;2m${sender?.name?.string}\u001B[0m> ${message.string.markdownSafe()}\n" +
-                        "\n" +
-                        "```"
+            DiscordHandler.sendCodeBlock(
+                "ansi", "<\u001B[1;2m${sender.name.string}\u001B[0m> ${message.string}"
             )
         }
     }
 
-    @JvmStatic
-    fun handleMinecraftSystemMessage(message: Text)
+    private fun handleMinecraftSystemMessage(message: Text)
     {
         Main.scope.launch {
             if (message.string.startsWith(">")) return@launch // this is a message coming from discord
-            DiscordHandler.sendMessage(
-                "```ansi\n" +
-                        "\u001B[2;33m${message.string.markdownSafe()}\u001B[0m\n" +
-                        "\n" +
-                        "```"
+
+            val colorName = message.visit({ style, string ->
+                val color = style.color ?: return@visit Optional.empty()
+                if (color.name != color.hexCode) return@visit Optional.of(color.name)
+                Optional.empty()
+            }, Style.EMPTY).unwrap()
+
+            DiscordHandler.sendCodeBlock(
+                "ansi",
+                when (colorName)
+                {
+                    "yellow" -> // yellow text
+                    {
+                        "\u001B[2;33m${message.string}\u001B[0m"
+                    }
+
+                    "green" -> // green text
+                    {
+                        "\u001B[2;32m${message.string}\u001B[0m"
+                    }
+
+                    "dark_purple" -> // purple text
+                    {
+                        "\u001B[2;35m${message.string}\u001B[0m"
+                    }
+
+                    else -> // red text
+                    {
+                        "\u001B[2;31m${message.string}\u001B[0m"
+                    }
+                }
             )
         }
     }
