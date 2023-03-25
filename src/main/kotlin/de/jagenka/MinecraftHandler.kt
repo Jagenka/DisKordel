@@ -2,6 +2,7 @@ package de.jagenka
 
 import de.jagenka.DiscordHandler.markdownSafe
 import kotlinx.coroutines.launch
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Style
@@ -27,6 +28,23 @@ object MinecraftHandler
         DiscordHandler.loadUsersFromFile()
         UserRegistry.loadGameProfilesFromPlayerData()
         UserRegistry.loadUserCache()
+    }
+
+    fun registerMixins()
+    {
+        //register chat message
+        ServerMessageEvents.CHAT_MESSAGE.register { message, sender, params ->
+            Main.scope.launch {
+                handleMinecraftChatMessage(message.content, sender)
+            }
+        }
+
+        //register system message
+        ServerMessageEvents.GAME_MESSAGE.register { server, message, overlay ->
+            Main.scope.launch {
+                handleMinecraftSystemMessage(message)
+            }
+        }
     }
 
     @JvmStatic
