@@ -15,6 +15,7 @@ val mavenGroup: String by project
 group = mavenGroup
 repositories {
     mavenCentral()
+    maven("https://oss.sonatype.org/content/repositories/snapshots")
 }
 dependencies {
     val minecraft_version: String by project
@@ -31,8 +32,8 @@ dependencies {
     //kord
     implementation("dev.kord:kord-core:0.8.0")
     shadow("dev.kord:kord-core:0.8.0")
-    implementation("dev.kord.x:emoji:0.6.0")
-    shadow("dev.kord.x:emoji:0.6.0")
+    implementation("dev.kord.x:emoji:0.5.0")
+    shadow("dev.kord.x:emoji:0.5.0")
 
     implementation("io.netty:netty-all:4.1.79.Final")
 }
