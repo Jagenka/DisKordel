@@ -32,7 +32,14 @@ object MinecraftHandler
     @JvmStatic
     fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity?)
     {
-        Main.scope.launch { DiscordHandler.sendMessage("`<${sender?.name?.string}> ${message.string.markdownSafe()}`") }
+        Main.scope.launch {
+            DiscordHandler.sendMessage(
+                "```ansi\n" +
+                        "<\u001B[1;2m${sender?.name?.string}\u001B[0m> ${message.string.markdownSafe()}\n" +
+                        "\n" +
+                        "```"
+            )
+        }
     }
 
     @JvmStatic
