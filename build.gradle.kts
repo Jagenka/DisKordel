@@ -15,6 +15,7 @@ val mavenGroup: String by project
 group = mavenGroup
 repositories {
     mavenCentral()
+    maven("https://oss.sonatype.org/content/repositories/snapshots")
 }
 dependencies {
     val minecraft_version: String by project
@@ -28,9 +29,9 @@ dependencies {
     val fabricKotlinVersion: String by project
     modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
 
-    //discord4j
-    implementation("dev.kord:kord-core:0.8.0-M16")
-    shadow("dev.kord:kord-core:0.8.0-M16")
+    //kord
+    implementation("dev.kord:kord-core:0.8.0")
+    shadow("dev.kord:kord-core:0.8.0")
     implementation("dev.kord.x:emoji:0.5.0")
     shadow("dev.kord.x:emoji:0.5.0")
 
