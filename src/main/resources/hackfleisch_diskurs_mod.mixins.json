@@ -4,9 +4,7 @@
   "package": "de.jagenka.mixin",
   "compatibilityLevel": "JAVA_16",
   "mixins": [
-    "PlayerManagerMixin",
     "ServerLoginNetworkHandlerMixin",
-    "ServerPlayerEntityMixin",
     "StatMixin"
   ],
   "client": [],

@@ -2,6 +2,7 @@ package de.jagenka
 
 import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.MinecraftHandler.logger
+import de.jagenka.MinecraftHandler.registerMixins
 import de.jagenka.commands.universal.DeathsCommand
 import de.jagenka.commands.universal.PlaytimeCommand
 import de.jagenka.commands.universal.WhereIsCommand
@@ -39,6 +40,8 @@ object Main : ModInitializer
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             MinecraftHandler.onServerLoaded(server)
         }
+
+        registerMixins()
 
         //register commands
         CommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<ServerCommandSource>, _: CommandRegistryAccess, _: CommandManager.RegistrationEnvironment ->

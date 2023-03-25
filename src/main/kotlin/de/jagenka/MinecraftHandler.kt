@@ -2,6 +2,7 @@ package de.jagenka
 
 import de.jagenka.DiscordHandler.markdownSafe
 import kotlinx.coroutines.launch
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Style
@@ -29,18 +30,47 @@ object MinecraftHandler
         UserRegistry.loadUserCache()
     }
 
+    fun registerMixins()
+    {
+        //register chat message
+        ServerMessageEvents.CHAT_MESSAGE.register { message, sender, params ->
+            Main.scope.launch {
+                handleMinecraftChatMessage(message.content, sender)
+            }
+        }
+
+        //register system message
+        ServerMessageEvents.GAME_MESSAGE.register { server, message, overlay ->
+            Main.scope.launch {
+                handleMinecraftSystemMessage(message)
+            }
+        }
+    }
+
     @JvmStatic
     fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity?)
     {
-        Main.scope.launch { DiscordHandler.sendMessage("<${sender?.name?.string}> ${message.string.markdownSafe()}") }
+        Main.scope.launch {
+            DiscordHandler.sendMessage(
+                "```ansi\n" +
+                        "<\u001B[1;2m${sender?.name?.string}\u001B[0m> ${message.string.markdownSafe()}\n" +
+                        "\n" +
+                        "```"
+            )
+        }
     }
 
     @JvmStatic
     fun handleMinecraftSystemMessage(message: Text)
     {
         Main.scope.launch {
-            if (message.string.startsWith(">")) return@launch
-            DiscordHandler.sendMessage(message.string.markdownSafe())
+            if (message.string.startsWith(">")) return@launch // this is a message coming from discord
+            DiscordHandler.sendMessage(
+                "```ansi\n" +
+                        "\u001B[2;33m${message.string.markdownSafe()}\u001B[0m\n" +
+                        "\n" +
+                        "```"
+            )
         }
     }
 
@@ -102,12 +132,6 @@ object MinecraftHandler
             return player.pos
         }
         return null
-    }
-
-    @JvmStatic
-    fun increaseDeathStat(playerName: String)
-    {
-
     }
 
     fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)
