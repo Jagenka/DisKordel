@@ -32,14 +32,14 @@ object StatsCommand : MessageCommand
                 )
                 true
             },
-            ArgumentCombination(listOf(string("partOfName"), StatArgument(), string("stat")), "Get stat for some players.") { event, arguments ->
-                val (_, playerName) = arguments.first()
-                val (argType, argText) = arguments[1]
+            ArgumentCombination(listOf(StatArgument(), string("stat"), string("partOfName")), "Get stat for some players.") { event, arguments ->
+                val (_, playerName) = arguments[2]
+                val (argType, argText) = arguments[0]
                 DiscordHandler.sendMessage(
                     getReplyForSome(
                         UserRegistry.findMinecraftProfiles(playerName),
                         (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
-                        arguments[2].second
+                        arguments[1].second
                     )
                 )
                 true
