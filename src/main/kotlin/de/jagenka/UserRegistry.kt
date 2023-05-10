@@ -200,7 +200,7 @@ object UserRegistry
                 }
                 .forEach { uuid ->
                     server.gameProfileRepo
-                    server.userCache.getByUuid(uuid).unwrap()?.let { profile ->
+                    server.userCache?.getByUuid(uuid)?.unwrap()?.let { profile ->
                         if (profile.isComplete) minecraftProfiles.add(profile)
                     } ?: return@forEach
                 }
