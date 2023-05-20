@@ -29,7 +29,7 @@ interface StringInStringOutCommand : MinecraftCommand, MessageCommand
                     val output = process().removePrefix("```").removeSuffix("```")
                     output.lines().toSet().forEach { line ->
                         if (line.isBlank()) return@forEach
-                        it.source.sendFeedback(Text.literal(line), false)
+                        it.source.sendFeedback({ Text.literal(line) }, false)
                     }
                     return@executes 0
                 }
@@ -39,7 +39,7 @@ interface StringInStringOutCommand : MinecraftCommand, MessageCommand
                         val output = process(StringArgumentType.getString(it, "name")).removePrefix("```").removeSuffix("```")
                         output.lines().forEach { line ->
                             if (line.isBlank()) return@forEach
-                            it.source.sendFeedback(Text.literal(line), false)
+                            it.source.sendFeedback({ Text.literal(line) }, false)
                         }
                         return@executes 0
                     })
