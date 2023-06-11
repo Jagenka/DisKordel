@@ -18,6 +18,10 @@ object WhoisCommand : StringInStringOutCommand
 
     override fun process(input: String): String
     {
-        return UserRegistry.find(input.trim()).joinToString(prefix = "Could be:\n", separator = "\n") { it.prettyString() }
+        val possibleUsers = UserRegistry.find(input.trim())
+
+        if (possibleUsers.isEmpty()) return "No-one found!"
+
+        return possibleUsers.joinToString(prefix = "Could be:\n", separator = "\n") { it.prettyString() }
     }
 }
