@@ -4,7 +4,7 @@ import java.util.*
 
 object Util
 {
-    fun Double.trim(digits: Int): String
+    fun Double.trimDecimals(digits: Int): String
     {
         return "%.${digits}f".format(this)
     }

@@ -57,6 +57,7 @@ object DiscordHandler
             register(PerfCommand)
             register(UnregisterCommand)
             register(StatsCommand)
+            register(RelativeStatsCommand)
         }
     }
 
