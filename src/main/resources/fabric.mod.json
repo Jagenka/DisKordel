@@ -26,6 +26,7 @@
   "mixins": [
     "hackfleisch_diskurs_mod.mixins.json"
   ],
+  "accessWidener": "hackfleisch_diskurs_mod.accesswidener",
   "depends": {
     "fabricloader": ">=0.14.9",
     "fabric": "*",

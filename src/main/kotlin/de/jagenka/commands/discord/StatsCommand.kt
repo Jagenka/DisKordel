@@ -4,7 +4,6 @@ import com.mojang.authlib.GameProfile
 import de.jagenka.DiscordHandler
 import de.jagenka.PlayerStatManager
 import de.jagenka.UserRegistry
-import de.jagenka.Util.trimDecimals
 import de.jagenka.commands.discord.structure.Argument
 import de.jagenka.commands.discord.structure.Argument.Companion.string
 import de.jagenka.commands.discord.structure.ArgumentCombination
@@ -47,9 +46,7 @@ object StatsCommand : MessageCommand
             },
         )
 
-    private fun format(playerName: String, stat: Stat<*>, value: Int) = "${"$playerName:".padEnd(17, ' ')} ${stat.format(value)}" // max length of player name is 16 characters
-    private fun formatForRelative(playerName: String, stat: Stat<*>, value: Double) =
-        "${"$playerName:".padEnd(17, ' ')} ${value.trimDecimals(2)}/h" // max length of player name is 16 characters
+    private fun format(playerName: String, stat: Stat<*>, value: Int) = "${"$playerName:".padEnd(17, ' ')} ${stat.format(value)}" // max length of player name is 16 character
 
     private fun handle(playerName: String, statType: StatType<Any>, id: String): String?
     {
@@ -78,35 +75,6 @@ object StatsCommand : MessageCommand
                 .sortedByDescending { it.second }
                 .filterNot { it.second == 0 }
                 .joinToString(prefix = "```", separator = "\n", postfix = "```") { format(it.first, stat, it.second) }
-                .replace("``````", "")
-                .ifBlank { "Nothing found!" }
-        } catch (_: Exception)
-        {
-            return "Nothing found!"
-        }
-    }
-
-    fun getRelativeReplyForAll(statType: StatType<Any>, id: String): String
-    {
-        return getRelativeReplyForSome(UserRegistry.getMinecraftProfiles(), statType, id)
-    }
-
-    fun getRelativeReplyForSome(collection: Collection<GameProfile>, statType: StatType<Any>, id: String): String
-    {
-        try
-        {
-            val stat = statType.getOrCreateStat(statType.registry.get(Identifier(id)))
-            val playtimeStat = Stats.CUSTOM.getOrCreateStat(Stats.CUSTOM.registry.get(Identifier("play_time")))
-
-            return collection
-                .mapNotNull {
-                    it.name to ((PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null).toDouble()
-                            / ((PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(playtimeStat)
-                        ?: return@mapNotNull null) / (20.0 * 60.0 * 60.0))) // converts ticks to hours
-                }
-                .sortedByDescending { it.second }
-                .filterNot { it.second == 0.0 }
-                .joinToString(prefix = "```", separator = "\n", postfix = "```") { formatForRelative(it.first, stat, it.second) }
                 .replace("``````", "")
                 .ifBlank { "Nothing found!" }
         } catch (_: Exception)
