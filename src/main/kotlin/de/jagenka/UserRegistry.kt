@@ -71,7 +71,7 @@ object UserRegistry
 
     fun getDiscordMember(inputName: String): Member?
     {
-        return discordMembers.values.find { it.username == inputName || it.displayName == inputName }
+        return discordMembers.values.find { it.username == inputName || it.effectiveName == inputName }
     }
 
     fun getAllUsers() = users.toList()
@@ -87,7 +87,7 @@ object UserRegistry
     {
         return users.filter {
             discordMembers[it.discord]?.username?.contains(name, ignoreCase = true) ?: false
-                    || discordMembers[it.discord]?.displayName?.contains(name, ignoreCase = true) ?: false
+                    || discordMembers[it.discord]?.effectiveName?.contains(name, ignoreCase = true) ?: false
                     || it.minecraft.name.contains(name, ignoreCase = true)
         }
     }
