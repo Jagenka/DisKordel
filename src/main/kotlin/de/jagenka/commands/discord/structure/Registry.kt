@@ -1,5 +1,6 @@
 package de.jagenka.commands.discord.structure
 
+import de.jagenka.DiscordHandler
 import de.jagenka.MinecraftHandler
 import dev.kord.core.Kord
 import dev.kord.core.event.message.MessageCreateEvent
@@ -32,6 +33,11 @@ object Registry
     fun setup(kord: Kord)
     {
         kord.on<MessageCreateEvent> {
+            if (message.getChannelOrNull()?.id != DiscordHandler.channel.id)
+            {
+                // return if message was not sent in set channel
+                return@on
+            }
             let {
                 if (interactsWithBots)
                 {
