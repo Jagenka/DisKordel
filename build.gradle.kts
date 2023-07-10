@@ -38,6 +38,10 @@ dependencies {
     implementation("io.netty:netty-all:4.1.79.Final")
 }
 
+loom {
+    accessWidenerPath.set(file("src/main/resources/hackfleisch_diskurs_mod.accesswidener"))
+}
+
 tasks.remapJar {
     dependsOn(tasks.shadowJar)
     inputFile.set(tasks.shadowJar.get().archiveFile)
