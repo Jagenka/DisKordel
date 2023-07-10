@@ -120,5 +120,5 @@ object DiscordHandler
         return newString
     }
 
-    fun Member.prettyName() = "${this.displayName} (${this.username})"
+    fun Member.prettyName() = "${this.effectiveName} (${this.username})"
 }
