@@ -10,6 +10,7 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.ReactionEmoji
+import dev.kord.core.exception.KordInitializationException
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.x.emoji.Emojis
@@ -28,7 +29,13 @@ object DiscordHandler
 
     suspend fun init(token: String, guildSnowflake: Snowflake, channelSnowflake: Snowflake)
     {
-        kord = Kord(token)
+        try
+        {
+            kord = Kord(token)
+        } catch (e: KordInitializationException)
+        {
+            throw BotInitializationException(e)
+        }
 
         kord?.let { kord ->
             guild = GuildBehavior(guildSnowflake, kord)
@@ -42,7 +49,7 @@ object DiscordHandler
                 @OptIn(PrivilegedIntent::class)
                 intents += Intent.MessageContent
             }
-        } ?: error("error initializing bot")
+        } ?: throw BotInitializationException("Error initializing bot.")
     }
 
     private fun registerCommands()

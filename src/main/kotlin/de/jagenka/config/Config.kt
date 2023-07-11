@@ -1,5 +1,7 @@
 package de.jagenka.config
 
+import de.jagenka.InvalidConfigException
+import de.jagenka.MissingConfigException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.fabricmc.loader.api.FabricLoader
@@ -25,8 +27,16 @@ object Config
         {
             Files.createFile(pathToConfigFile)
             Files.writeString(pathToConfigFile, serializer.encodeToString(BaseConfigEntry()))
+
+            throw MissingConfigException("Config file was missing. Please enter bot token, guild id and channel id under discordSettings into ${pathToConfigFile.fileName}.")
         }
-        configEntry = serializer.decodeFromString(pathToConfigFile.toFile().readText())
+        try
+        {
+            configEntry = serializer.decodeFromString(pathToConfigFile.toFile().readText())
+        } catch (_: Exception)
+        {
+            throw InvalidConfigException("Error loading config. Please enter valid data under discordSettings. Delete file for new template.")
+        }
     }
 
     fun store()
