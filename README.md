@@ -134,4 +134,4 @@ directly with use, when leather armor is washed in a cauldron, and instances men
 
 - requires entity (e.g. `enderman`, `wither_skeleton`)
 
-(some parts are taken from [Statistics](..%2F..%2FAppData%2FLocal%2FTemp%2FStatistics%20%96%20Minecraft%20Wiki.url), accessed July 2023)
+(some parts are taken from [Statistics](https://minecraft.fandom.com/wiki/Statistics), accessed July 2023)
