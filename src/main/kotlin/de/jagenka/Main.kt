@@ -60,7 +60,7 @@ object Main : ModInitializer
             DiscordHandler.init(token, Snowflake(guildId), Snowflake(channelId))
         }
 
-        logger.info("hackfleisch-diskurs-mod has been initialized.")
+        logger.info("DisKordel has been initialized.")
     }
 }
 

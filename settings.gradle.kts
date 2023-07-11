@@ -1,4 +1,4 @@
-rootProject.name = "hackfleisch-diskurs-mod"
+rootProject.name = "diskordel"
 
 pluginManagement {
     repositories {

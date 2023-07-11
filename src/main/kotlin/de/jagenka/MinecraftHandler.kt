@@ -15,7 +15,7 @@ import kotlin.math.min
 
 object MinecraftHandler
 {
-    val logger = LoggerFactory.getLogger("hackfleisch_diskurs_mod")
+    val logger = LoggerFactory.getLogger("diskordel")
 
     var minecraftServer: MinecraftServer? = null
 
