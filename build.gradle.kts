@@ -39,7 +39,7 @@ dependencies {
 }
 
 loom {
-    accessWidenerPath.set(file("src/main/resources/hackfleisch_diskurs_mod.accesswidener"))
+    accessWidenerPath.set(file("src/main/resources/diskordel.accesswidener"))
 }
 
 tasks.remapJar {

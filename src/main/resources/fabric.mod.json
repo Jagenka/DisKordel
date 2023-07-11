@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "hackfleisch_diskurs_mod",
+  "id": "diskordel",
   "version": "${version}",
-  "name": "Hackfleisch Diskurs Mod",
-  "description": "Hackfleisch Diskurs Integration",
+  "name": "DisKordel",
+  "description": "Integration with Discord",
   "authors": [
     "Jagenka"
   ],
@@ -13,7 +13,7 @@
     "sources": ""
   },
   "license": "GNU General Public License version 3 (GPLv3)",
-  "icon": "assets/hackfleisch_diskurs_mod/icon.png",
+  "icon": "assets/diskordel/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
@@ -24,9 +24,9 @@
     ]
   },
   "mixins": [
-    "hackfleisch_diskurs_mod.mixins.json"
+    "diskordel.mixins.json"
   ],
-  "accessWidener": "hackfleisch_diskurs_mod.accesswidener",
+  "accessWidener": "diskordel.accesswidener",
   "depends": {
     "fabricloader": ">=0.14.9",
     "fabric": "*",

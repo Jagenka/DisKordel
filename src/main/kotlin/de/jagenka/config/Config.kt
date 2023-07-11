@@ -1,6 +1,5 @@
 package de.jagenka.config
 
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.fabricmc.loader.api.FabricLoader
@@ -21,7 +20,7 @@ object Config
 
     fun loadConfig()
     {
-        pathToConfigFile = FabricLoader.getInstance().configDir.resolve("hackfleisch-diskurs.json")
+        pathToConfigFile = FabricLoader.getInstance().configDir.resolve("diskordel.json")
         if (!Files.exists(pathToConfigFile))
         {
             Files.createFile(pathToConfigFile)
