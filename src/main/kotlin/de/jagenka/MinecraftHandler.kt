@@ -1,6 +1,7 @@
 package de.jagenka
 
 import de.jagenka.Util.unwrap
+import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.minecraft.server.MinecraftServer
@@ -60,7 +61,7 @@ object MinecraftHandler
     private fun handleMinecraftSystemMessage(message: Text)
     {
         Main.scope.launch {
-            if (message.string.startsWith(">")) return@launch // this is a message coming from discord
+            if (message.string.startsWith(">") || message.string.startsWith("@")) return@launch // this is a message coming from discord
 
             val colorName = message.visit({ style, string ->
                 val color = style.color ?: return@visit Optional.empty()
@@ -96,9 +97,15 @@ object MinecraftHandler
         }
     }
 
-    fun sendMessage(sender: String, text: String)
+    suspend fun sendMessage(event: MessageCreateEvent)
     {
-        sendChatMessage(Text.literal(">$sender< $text").getWithStyle(Style.EMPTY.withFormatting(Formatting.BLUE))[0])
+
+        var text = event.message.referencedMessage?.getAuthorAsMemberOrNull()?.let {
+            "@${it.effectiveName} "
+        } ?: ""
+        text += ">${event.message.getAuthorAsMemberOrNull()?.effectiveName ?: "noname"}< ${event.message.content}"
+
+        sendChatMessage(Text.literal(text).getWithStyle(Style.EMPTY.withFormatting(Formatting.BLUE))[0])
     }
 
     fun getOnlinePlayers(): List<String>
@@ -110,11 +117,6 @@ object MinecraftHandler
         }
 
         return emptyList()
-    }
-
-    fun doThing()
-    {
-
     }
 
     fun runCommand(cmd: String)
