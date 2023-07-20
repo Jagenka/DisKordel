@@ -60,7 +60,9 @@ object Registry
             }
 
             if (message.author?.id != kord.selfId)
-                MinecraftHandler.sendMessage(this.member?.effectiveName ?: "EWWOW", this.message.content)
+            {
+                MinecraftHandler.sendMessage(this)
+            }
         }
     }
 
