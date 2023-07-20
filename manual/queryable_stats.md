@@ -9,6 +9,7 @@ With the `stats`/`rstats` commands, you can query every players' personal stats,
     - player name is optional - lists all players when empty
 - `!rstats [category] [stat_name] (part_of_player_name)`
     - same as above, just relates stat to hours played in world (`play_time`)
+    - playtime for each player is shown in round brackets
 
 ## categories:
 
