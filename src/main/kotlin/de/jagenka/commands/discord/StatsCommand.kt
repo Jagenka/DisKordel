@@ -17,7 +17,7 @@ import java.util.*
 object StatsCommand : MessageCommand
 {
     override val ids: List<String>
-        get() = listOf("stats")
+        get() = listOf("stat", "stats")
     override val helpText: String
         get() = "Display non-zero stats for players."
     override val allowedArgumentCombinations: List<ArgumentCombination>

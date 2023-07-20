@@ -17,7 +17,7 @@ import net.minecraft.util.Identifier
 object RelativeStatsCommand : MessageCommand
 {
     override val ids: List<String>
-        get() = listOf("relativestats", "rstats")
+        get() = listOf("rstat", "rstats")
     override val helpText: String
         get() = "display non-zero stats in relation to the player's playtime"
     override val allowedArgumentCombinations: List<ArgumentCombination>
