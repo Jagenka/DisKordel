@@ -6,7 +6,7 @@ object Util
 {
     fun Double.trimDecimals(digits: Int): String
     {
-        return "%.${digits}f".format(this)
+        return "%.${digits}f".format(Locale.US, this)
     }
 
     fun <T> Optional<T>.unwrap(): T? = orElse(null)
