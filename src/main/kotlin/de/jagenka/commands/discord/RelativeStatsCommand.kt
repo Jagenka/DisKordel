@@ -4,6 +4,7 @@ import com.mojang.authlib.GameProfile
 import de.jagenka.DiscordHandler
 import de.jagenka.PlayerStatManager
 import de.jagenka.UserRegistry
+import de.jagenka.Util
 import de.jagenka.Util.trimDecimals
 import de.jagenka.commands.discord.structure.Argument
 import de.jagenka.commands.discord.structure.ArgumentCombination
@@ -60,13 +61,15 @@ object RelativeStatsCommand : MessageCommand
 
             return collection
                 .mapNotNull {
-                    it.name to ((PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null).toDouble()
-                            / ((PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(playtimeStat)
-                        ?: return@mapNotNull null) / 72000.0)) // converts ticks to hours 20*60*60
+                    RStatData(
+                        it.name,
+                        (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null),
+                        (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(playtimeStat) ?: return@mapNotNull null)
+                    )
                 }
-                .sortedByDescending { it.second }
-                .filterNot { it.second == 0.0 }
-                .joinToString(prefix = "```", separator = "\n", postfix = "```") { format(it.first, stat, it.second) }
+                .sortedByDescending { it.relStat }
+                .filter { it.relStat > 0.0 }
+                .joinToString(prefix = "```", separator = "\n", postfix = "```") { format(it, stat) }
                 .replace("``````", "")
                 .ifBlank { "Nothing found!" }
         } catch (_: Exception)
@@ -75,22 +78,39 @@ object RelativeStatsCommand : MessageCommand
         }
     }
 
-    private fun format(playerName: String, stat: Stat<*>, value: Double): String
+    private fun format(data: RStatData, stat: Stat<*>): String
     {
-        var result = "${"$playerName:".padEnd(17, ' ')} " // max length of player name is 16 characters
+        var result = "${"${data.playerName}:".padEnd(17, ' ')} " // max length of player name is 16 characters
 
         result +=
-            if (stat.formatter == StatFormatter.TIME)
+            when (stat.formatter)
             {
-                "${(value / 720.0).trimDecimals(2)}%" // converts ticks to hours but then to percent (value*100)/(20*60*60)
-            } else if (stat.formatter == StatFormatter.DISTANCE)
-            {
-                "${(value / 100_000.0).trimDecimals(2)} km/h" // converts cm to km value/(100*1000)
-            } else
-            {
-                "${value.trimDecimals(2)}/h"
+                StatFormatter.TIME ->
+                {
+                    "${(data.relStat / 720.0).trimDecimals(2)}%" // converts tick stats to hours but then to percent ((value*100)/(20*60*60))
+                }
+
+                StatFormatter.DISTANCE ->
+                {
+                    "${(data.relStat / 100_000.0).trimDecimals(2)} km/h" // converts cm stats to km (value/(100*1000))
+                }
+
+                else ->
+                {
+                    "${data.relStat.trimDecimals(2)}/h"
+                }
             }
 
+        result = result.padEnd(32, ' ') // 17 from above plus 15 (should be enough spacing)
+
+        result += " (${Util.ticksToPrettyString(data.playtime)})"
+
         return result
+    }
+
+    data class RStatData(val playerName: String, val stat: Int, val playtime: Int)
+    {
+        val relStat: Double
+            get() = (stat.toDouble() * 72_000.0) / playtime.toDouble() // converts ticks to hours (20*60*60)
     }
 }
