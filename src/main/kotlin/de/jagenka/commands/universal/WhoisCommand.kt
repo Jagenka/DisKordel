@@ -18,7 +18,7 @@ object WhoisCommand : StringInStringOutCommand
 
     override fun process(input: String): String
     {
-        val possibleUsers = UserRegistry.find(input.trim())
+        val possibleUsers = UserRegistry.findRegistered(input.trim())
 
         if (possibleUsers.isEmpty()) return "No-one found!"
 

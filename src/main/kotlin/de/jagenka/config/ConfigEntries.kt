@@ -30,13 +30,17 @@ object MinecraftUserSerializer : KSerializer<MinecraftUser>
 
     override fun serialize(encoder: Encoder, value: MinecraftUser)
     {
-        encoder.encodeString("${value.name} ${value.uuid}")
+        encoder.encodeString("${value.name} ${value.uuid} ${value.skinURL} ${value.lastURLUpdate}")
     }
 
     override fun deserialize(decoder: Decoder): MinecraftUser
     {
-        val (name, uuid) = decoder.decodeString().split(" ")
-        return MinecraftUser(name, UUID.fromString(uuid))
+        val columns = decoder.decodeString().split(" ")
+        val name = columns.getOrNull(0) ?: ""
+        val uuid = columns.getOrNull(1) ?: ""
+        val url = columns.getOrNull(2) ?: ""
+        val lastUpdate = columns.getOrNull(3) ?: "0"
+        return MinecraftUser(name, UUID.fromString(uuid), url, lastUpdate.toLong())
     }
 }
 

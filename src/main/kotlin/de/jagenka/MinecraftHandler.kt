@@ -8,6 +8,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Style
 import net.minecraft.text.Text
+import net.minecraft.text.Texts
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.Position
 import org.slf4j.LoggerFactory
@@ -27,9 +28,12 @@ object MinecraftHandler
 
         minecraftServer.playerManager.isWhitelistEnabled = true
 
-        DiscordHandler.loadUsersFromFile()
-        UserRegistry.loadGameProfilesFromPlayerData()
+        DiscordHandler.loadRegisteredUsersFromFile()
         UserRegistry.loadUserCache()
+        UserRegistry.loadGameProfilesFromPlayerData()
+        Main.scope.launch {
+            UserRegistry.updateAllSkins()
+        }
     }
 
     fun registerMixins()
@@ -52,22 +56,29 @@ object MinecraftHandler
     private fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity)
     {
         Main.scope.launch {
-            DiscordHandler.sendCodeBlock(
-                "ansi", "<\u001B[1;2m${sender.name.string}\u001B[0m> ${message.string}"
-            )
+            val user = UserRegistry.getMinecraftUser(sender.uuid) ?: return@launch
+
+            val webhook = Util.getOrCreateWebhook("diskordel_chat_messages")
+            DiscordHandler.kord?.apply {
+                rest.webhook.executeWebhook(webhookId = webhook.id, token = webhook.token.value ?: "") {
+                    this.username = user.name
+                    this.avatarUrl = user.getSkinURL()
+                    this.content = message.string
+                }
+            }
         }
     }
 
     private fun handleMinecraftSystemMessage(message: Text)
     {
         Main.scope.launch {
-            if (message.string.startsWith(">") || message.string.startsWith("@")) return@launch // this is a message coming from discord
-
             val colorName = message.visit({ style, string ->
                 val color = style.color ?: return@visit Optional.empty()
                 if (color.name != color.hexCode) return@visit Optional.of(color.name)
                 Optional.empty()
             }, Style.EMPTY).unwrap()
+
+            if (colorName == "blue" && message.string.startsWith("[")) return@launch // this is a message coming from discord
 
             DiscordHandler.sendCodeBlock(
                 "ansi",
@@ -97,15 +108,21 @@ object MinecraftHandler
         }
     }
 
-    suspend fun sendMessage(event: MessageCreateEvent)
+    suspend fun sendMessageFromDiscord(event: MessageCreateEvent)
     {
-
-        var text = event.message.referencedMessage?.getAuthorAsMemberOrNull()?.let {
+        val referencedName = event.message.referencedMessage?.getAuthorAsMemberOrNull()?.let {
             "@${it.effectiveName} "
+        } ?: event.message.referencedMessage?.data?.author?.username?.let {
+            "@$it "
         } ?: ""
-        text += ">${event.message.getAuthorAsMemberOrNull()?.effectiveName ?: "noname"}< ${event.message.content}"
 
-        sendChatMessage(Text.literal(text).getWithStyle(Style.EMPTY.withFormatting(Formatting.BLUE))[0])
+        val name = Text.of(
+            "[${event.message.getAuthorAsMemberOrNull()?.effectiveName ?: "noname"}] $referencedName"
+        ).getWithStyle(Style.EMPTY.withFormatting(Formatting.BLUE))[0]
+
+        val content = Text.of(event.message.content)
+
+        sendChatMessage(Texts.join(listOf(name, content), Text.of("")))
     }
 
     fun getOnlinePlayers(): List<String>

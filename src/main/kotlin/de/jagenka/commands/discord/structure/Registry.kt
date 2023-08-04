@@ -1,7 +1,6 @@
 package de.jagenka.commands.discord.structure
 
 import de.jagenka.DiscordHandler
-import de.jagenka.MinecraftHandler
 import dev.kord.core.Kord
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
@@ -59,10 +58,7 @@ object Registry
                 if (command.run(this, args)) return@on
             }
 
-            if (message.author?.id != kord.selfId)
-            {
-                MinecraftHandler.sendMessage(this)
-            }
+            DiscordHandler.handleNotACommand(this)
         }
     }
 

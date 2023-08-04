@@ -7,3 +7,5 @@ class BotInitializationException : RuntimeException
     constructor(s: String) : super(s)
     constructor(e: Exception) : super(e)
 }
+
+class KordInstanceMissingException(s: String) : RuntimeException(s)
