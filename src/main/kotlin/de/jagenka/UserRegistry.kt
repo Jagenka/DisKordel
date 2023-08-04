@@ -18,35 +18,36 @@ import java.util.*
 
 object UserRegistry
 {
-    private val users = mutableSetOf<User>()
+    private val registeredUsers = mutableSetOf<User>()
 
     private val discordMembers = mutableMapOf<DiscordUser, Member>() //TODO: load Members every so often (?)
+    private var userCache = mutableSetOf<MinecraftUser>()
     private val minecraftProfiles = mutableSetOf<GameProfile>()
 
     // region getter
     fun findUser(minecraftName: String): User?
     {
-        return users.find { it.minecraft.name.equals(minecraftName, ignoreCase = true) }
+        return registeredUsers.find { it.minecraft.name.equals(minecraftName, ignoreCase = true) }
     }
 
     fun findUser(uuid: UUID): User?
     {
-        return users.find { it.minecraft.uuid == uuid }
+        return registeredUsers.find { it.minecraft.uuid == uuid }
     }
 
     fun findUser(snowflake: Snowflake): User?
     {
-        return users.find { it.discord.id == snowflake }
+        return registeredUsers.find { it.discord.id == snowflake }
     }
 
     fun getMinecraftUser(name: String): MinecraftUser?
     {
-        return findUser(name)?.minecraft
+        return userCache.find { it.name == name }
     }
 
     fun getMinecraftUser(uuid: UUID): MinecraftUser?
     {
-        return findUser(uuid)?.minecraft
+        return userCache.find { it.uuid == uuid }
     }
 
     fun getGameProfile(name: String): GameProfile?
@@ -74,18 +75,18 @@ object UserRegistry
         return discordMembers.values.find { it.username == inputName || it.effectiveName == inputName }
     }
 
-    fun getAllUsers() = users.toList()
+    fun getAllRegisteredUsers() = registeredUsers.toList()
 
     fun getAllUsersAsOutput(): String
     {
-        return getAllUsers().joinToString(prefix = "Currently registered Users:\n", separator = "\n") { it.prettyString() }
+        return getAllRegisteredUsers().joinToString(prefix = "Currently registered Users:\n", separator = "\n") { it.prettyString() }
     }
 
     fun getMinecraftProfiles() = minecraftProfiles.toSet()
 
-    fun find(name: String): List<User>
+    fun findRegistered(name: String): List<User>
     {
-        return users.filter {
+        return registeredUsers.filter {
             discordMembers[it.discord]?.username?.contains(name, ignoreCase = true) ?: false
                     || discordMembers[it.discord]?.effectiveName?.contains(name, ignoreCase = true) ?: false
                     || it.minecraft.name.contains(name, ignoreCase = true)
@@ -107,30 +108,30 @@ object UserRegistry
         if (!findDiscordMemberOrError(snowflake)) return false
 
         val gameProfile = getGameProfile(minecraftName) ?: return false
-        users.put(User(DiscordUser(snowflake), MinecraftUser(gameProfile.name, gameProfile.id)))
+        registeredUsers.put(User(DiscordUser(snowflake), MinecraftUser(gameProfile.name, gameProfile.id)))
         return true
     }
 
     fun unregister(minecraftName: String): Boolean
     {
-        return users.removeAll { it.minecraft == getMinecraftUser(minecraftName) }
+        return registeredUsers.removeAll { it.minecraft == getMinecraftUser(minecraftName) }
     }
 
     fun unregister(uuid: UUID): Boolean
     {
-        return users.removeAll { it.minecraft == getMinecraftUser(uuid) }
+        return registeredUsers.removeAll { it.minecraft == getMinecraftUser(uuid) }
     }
 
     fun unregister(snowflake: Snowflake): Boolean
     {
-        return users.removeAll { it.discord == getDiscordUser(snowflake) }
+        return registeredUsers.removeAll { it.discord == getDiscordUser(snowflake) }
     }
     // endregion
 
     // region config stuffs
-    fun clear()
+    fun clearRegistered()
     {
-        users.clear()
+        registeredUsers.clear()
     }
 
     fun register(userEntry: UserEntry)
@@ -143,19 +144,26 @@ object UserRegistry
 
     fun getRegisteredUsersForConfig(): List<UserEntry>
     {
-        return users.map { UserEntry(it.discord.id.value.toLong(), it.minecraft.name) }
+        return registeredUsers.map { UserEntry(it.discord.id.value.toLong(), it.minecraft.name) }
     }
 
     fun saveToCache(gameProfile: GameProfile)
     {
+        if (userCache.none { it.name == gameProfile.name && it.uuid == gameProfile.id })
+        {
+            userCache.add(MinecraftUser(gameProfile.name, gameProfile.id))
+        }
         minecraftProfiles.put(gameProfile)
-        saveCacheToFile()
+        Main.scope.launch { saveCacheToFile() }
+
     }
 
     fun saveToFile()
     {
-        saveRegisteredUsersToFile()
-        saveCacheToFile()
+        Main.scope.launch {
+            saveRegisteredUsersToFile()
+            saveCacheToFile()
+        }
     }
 
     fun saveRegisteredUsersToFile()
@@ -164,9 +172,9 @@ object UserRegistry
         Config.store()
     }
 
-    fun saveCacheToFile()
+    suspend fun saveCacheToFile()
     {
-        Config.configEntry.userCache = Config.configEntry.userCache.union(minecraftProfiles.map { MinecraftUser(it.name, it.id) }).toMutableSet()
+        Config.configEntry.userCache = userCache.toMutableSet()
         Config.store()
     }
     // endregion
@@ -201,17 +209,16 @@ object UserRegistry
                 .forEach { uuid ->
                     server.gameProfileRepo // this seems to do nothing (?)
                     server.userCache?.getByUuid(uuid)?.unwrap()?.let { profile ->
-                        if (profile.isComplete) minecraftProfiles.add(profile)
+                        if (profile.isComplete) saveToCache(profile)
                     } ?: return@forEach
                 }
-
-            saveCacheToFile()
         }
     }
 
     fun loadUserCache()
     {
-        Config.configEntry.userCache.forEach { minecraftUser ->
+        userCache = Config.configEntry.userCache
+        userCache.forEach { minecraftUser ->
             if (minecraftProfiles.none { it.name.equals(minecraftUser.name, ignoreCase = true) })
             {
                 findMinecraftProfileOrError(minecraftUser.name)
@@ -230,8 +237,7 @@ object UserRegistry
                 profile?.let {
                     if (profile.isComplete)
                     {
-                        minecraftProfiles.add(profile)
-                        saveCacheToFile()
+                        saveToCache(profile)
                         found = true
                         return
                     } else
@@ -261,6 +267,13 @@ object UserRegistry
     {
         this.remove(element)
         this.add(element)
+    }
+
+    suspend fun updateAllSkins()
+    {
+        userCache.forEach { it.getSkinURL() }
+
+        saveToFile()
     }
 }
 

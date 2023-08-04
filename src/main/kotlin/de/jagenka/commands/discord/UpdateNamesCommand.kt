@@ -13,7 +13,7 @@ object UpdateNamesCommand : MessageCommand
         get() = "Update Member names in registry."
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(empty(helpText) { event ->
-            DiscordHandler.loadUsersFromFile()
+            DiscordHandler.loadRegisteredUsersFromFile()
             DiscordHandler.reactConfirmation(event.message)
             true
         })

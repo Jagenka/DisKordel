@@ -3,19 +3,34 @@ package de.jagenka
 import de.jagenka.commands.discord.*
 import de.jagenka.commands.discord.structure.Registry
 import de.jagenka.config.Config
+import dev.kord.common.entity.MessageFlag
+import dev.kord.common.entity.MessageFlags
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
+import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.ReactionEmoji
+import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.exception.KordInitializationException
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
+import dev.kord.rest.builder.message.create.addFile
 import dev.kord.x.emoji.Emojis
+import io.ktor.client.request.forms.*
+import io.ktor.utils.io.jvm.javaio.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.nio.file.Path
 import java.util.regex.Pattern
+import javax.imageio.ImageIO
 
 object DiscordHandler
 {
@@ -65,14 +80,18 @@ object DiscordHandler
             register(UnregisterCommand)
             register(StatsCommand)
             register(RelativeStatsCommand)
+            register(TestCommand)
         }
     }
 
-    fun sendMessage(text: String)
+    fun sendMessage(text: String, silent: Boolean = false)
     {
         Main.scope.launch {
             if (text.isBlank()) return@launch
-            channel.createMessage(text)
+            channel.createMessage {
+                this.content = text
+                if (silent) this.flags = MessageFlags(MessageFlag.SuppressNotifications)
+            }
         }
     }
 
@@ -81,9 +100,35 @@ object DiscordHandler
         sendMessage("```$formatId\n${content.preventCodeBlockEscape()}\n```")
     }
 
-    fun loadUsersFromFile()
+    suspend fun sendImage(path: Path, silent: Boolean = false): Message
     {
-        UserRegistry.clear()
+        return channel.createMessage {
+            this.addFile(path)
+            if (silent) flags = MessageFlags(MessageFlag.SuppressNotifications)
+        }
+    }
+
+    suspend fun sendImage(fileName: String, inputStream: InputStream, silent: Boolean = false): Message
+    {
+        return channel.createMessage {
+            this.addFile(fileName, ChannelProvider { inputStream.toByteReadChannel() })
+            if (silent) flags = MessageFlags(MessageFlag.SuppressNotifications)
+        }
+    }
+
+    suspend fun sendImage(fileName: String, bufferedImage: BufferedImage, silent: Boolean = false): Message
+    {
+        val outputStream = ByteArrayOutputStream()
+        withContext(Dispatchers.IO) {
+            ImageIO.write(bufferedImage, "png", outputStream)
+        }
+        val inputStream = ByteArrayInputStream(outputStream.toByteArray())
+        return sendImage(fileName, inputStream, silent)
+    }
+
+    fun loadRegisteredUsersFromFile()
+    {
+        UserRegistry.clearRegistered()
         Config.configEntry.registeredUsers.forEach { UserRegistry.register(it) }
     }
 
@@ -129,4 +174,10 @@ object DiscordHandler
     }
 
     fun Member.prettyName() = "${this.effectiveName} (${this.username})"
+    suspend fun handleNotACommand(event: MessageCreateEvent)
+    {
+        if (event.message.author?.id == kord?.selfId || event.message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return
+
+        MinecraftHandler.sendMessageFromDiscord(event)
+    }
 }
