@@ -9,3 +9,5 @@ class BotInitializationException : RuntimeException
 }
 
 class KordInstanceMissingException(s: String) : RuntimeException(s)
+
+class WebhookInitException(s: String) : RuntimeException(s)

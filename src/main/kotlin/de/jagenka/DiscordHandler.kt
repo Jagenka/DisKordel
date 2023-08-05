@@ -2,7 +2,6 @@ package de.jagenka
 
 import de.jagenka.commands.discord.*
 import de.jagenka.commands.discord.structure.Registry
-import de.jagenka.config.Config
 import dev.kord.common.entity.MessageFlag
 import dev.kord.common.entity.MessageFlags
 import dev.kord.common.entity.Snowflake
@@ -80,7 +79,6 @@ object DiscordHandler
             register(UnregisterCommand)
             register(StatsCommand)
             register(RelativeStatsCommand)
-            register(TestCommand)
         }
     }
 
@@ -124,12 +122,6 @@ object DiscordHandler
         }
         val inputStream = ByteArrayInputStream(outputStream.toByteArray())
         return sendImage(fileName, inputStream, silent)
-    }
-
-    fun loadRegisteredUsersFromFile()
-    {
-        UserRegistry.clearRegistered()
-        Config.configEntry.registeredUsers.forEach { UserRegistry.register(it) }
     }
 
     private fun String.preventCodeBlockEscape(): String
