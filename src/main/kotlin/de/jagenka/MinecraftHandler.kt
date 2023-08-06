@@ -28,11 +28,10 @@ object MinecraftHandler
 
         minecraftServer.playerManager.isWhitelistEnabled = true
 
-        DiscordHandler.loadRegisteredUsersFromFile()
-        UserRegistry.loadUserCache()
-        UserRegistry.loadGameProfilesFromPlayerData()
         Main.scope.launch {
-            UserRegistry.updateAllSkins()
+            UserRegistry.loadUserCache()
+            UserRegistry.loadRegisteredUsersFromFile()
+            UserRegistry.loadGameProfilesFromPlayerData()
         }
     }
 

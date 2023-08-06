@@ -9,7 +9,7 @@ import java.awt.image.BufferedImage
 import java.net.URL
 import java.util.*
 import javax.imageio.ImageIO
-import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 
 data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
 {
@@ -30,38 +30,41 @@ data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
 }
 
 @Serializable(with = MinecraftUserSerializer::class)
-data class MinecraftUser(val name: String, val uuid: UUID, var skinURL: String = "", var lastURLUpdate: Long = 0)
+data class MinecraftUser(var name: String, val uuid: UUID, var skinURL: String = "", var lastURLUpdate: Long = 0)
 {
     suspend fun getSkinURL(): String
     {
-        updateSkin(this)
+        updateSkin()
         return this.skinURL
     }
 
-    private suspend fun updateSkin(user: MinecraftUser)
+    private suspend fun updateSkin()
     {
-        if (user.skinURL.isNotBlank() && System.currentTimeMillis() < user.lastURLUpdate + 1.days.inWholeMilliseconds) return
+        if (skinURL.isBlank() || System.currentTimeMillis() > lastURLUpdate + 4.hours.inWholeMilliseconds)
+        {
+            val profile = UserRegistry.getGameProfile(uuid) ?: return
+            MinecraftHandler.minecraftServer?.apply {
+                sessionService.fillProfileProperties(profile, false)
+                val texture = sessionService.getTextures(profile, false)[MinecraftProfileTexture.Type.SKIN] ?: return
 
-        val profile = UserRegistry.getGameProfile(user.uuid) ?: return
-        MinecraftHandler.minecraftServer?.apply {
-            sessionService.fillProfileProperties(profile, false)
-            val texture = sessionService.getTextures(profile, false)[MinecraftProfileTexture.Type.SKIN] ?: return
+                val skin = ImageIO.read(URL(texture.url))
+                val layer1 = skin.getSubimage(8, 8, 8, 8)
+                val layer2 = skin.getSubimage(40, 8, 8, 8)
+                val head = BufferedImage(48, 48, BufferedImage.TYPE_INT_ARGB)
+                val g = head.createGraphics()
+                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR)
+                g.drawImage(layer1, 4, 4, 40, 40, null)
+                g.drawImage(layer2, 0, 0, 48, 48, null)
 
-            val skin = ImageIO.read(URL(texture.url))
-            val layer1 = skin.getSubimage(8, 8, 8, 8)
-            val layer2 = skin.getSubimage(40, 8, 8, 8)
-            val head = BufferedImage(48, 48, BufferedImage.TYPE_INT_ARGB)
-            val g = head.createGraphics()
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR)
-            g.drawImage(layer1, 4, 4, 40, 40, null)
-            g.drawImage(layer2, 0, 0, 48, 48, null)
+                val imageMessage = DiscordHandler.sendImage("${profile.id}.png", head, silent = true)
+                val imageUrl = imageMessage.data.attachments.first().url
+                imageMessage.delete()
 
-            val imageMessage = DiscordHandler.sendImage("${profile.id}.png", head, silent = true)
-            val imageUrl = imageMessage.data.attachments.first().url
-            imageMessage.delete()
+                skinURL = imageUrl
+                lastURLUpdate = System.currentTimeMillis()
 
-            user.skinURL = imageUrl
-            user.lastURLUpdate = System.currentTimeMillis()
+                UserRegistry.saveCacheToFile()
+            }
         }
     }
 

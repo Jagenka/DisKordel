@@ -2,6 +2,7 @@ package de.jagenka
 
 import dev.kord.common.entity.DiscordWebhook
 import dev.kord.common.entity.Snowflake
+import dev.kord.rest.request.KtorRequestException
 import java.util.*
 
 object Util
@@ -39,8 +40,16 @@ object Util
     {
         return webhookCache.getOrPut(name) {
             DiscordHandler.kord?.apply {
-                return@getOrPut rest.webhook.getChannelWebhooks(DiscordHandler.channel.id).find { it.name == name }
-                    ?: rest.webhook.createWebhook(DiscordHandler.channel.id, name) {}
+                try
+                {
+                    return@getOrPut rest.webhook.getChannelWebhooks(DiscordHandler.channel.id).find { it.name == name } ?: rest.webhook.createWebhook(
+                        DiscordHandler.channel.id,
+                        name
+                    ) {}
+                } catch (_: KtorRequestException)
+                {
+                    return@getOrPut rest.webhook.createWebhook(DiscordHandler.channel.id, name) {}
+                }
             }
 
             throw KordInstanceMissingException("kord instance missing while getting/creating webhook")
