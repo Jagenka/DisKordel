@@ -1,11 +1,13 @@
 package de.jagenka
 
 import de.jagenka.Util.unwrap
+import dev.kord.core.entity.effectiveName
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.HoverEvent
 import net.minecraft.text.Style
 import net.minecraft.text.Text
 import net.minecraft.text.Texts
@@ -109,19 +111,38 @@ object MinecraftHandler
 
     suspend fun sendMessageFromDiscord(event: MessageCreateEvent)
     {
-        val referencedName = event.message.referencedMessage?.getAuthorAsMemberOrNull()?.let {
-            "@${it.effectiveName} "
-        } ?: event.message.referencedMessage?.data?.author?.username?.let {
-            "@$it "
-        } ?: ""
+        val author = event.message.author
+        val authorName = event.message.getAuthorAsMemberOrNull()?.effectiveName ?: author?.effectiveName ?: "unknown user"
+        val associatedUser = UserRegistry.findUser(author?.id)
 
-        val name = Text.of(
-            "[${event.message.getAuthorAsMemberOrNull()?.effectiveName ?: "noname"}] $referencedName"
-        ).getWithStyle(Style.EMPTY.withFormatting(Formatting.BLUE))[0]
+        val authorText = Text.of(
+            "[$authorName]"
+        ).getWithStyle(
+            Style.EMPTY
+                .withFormatting(Formatting.BLUE)
+                .withHoverEvent(associatedUser?.minecraft?.name?.let { HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of(it)) })
+        ).firstOrNull()
+
+        val referencedAuthorText = Text.of(
+            event.message.referencedMessage?.getAuthorAsMemberOrNull()?.let {
+                "@${it.effectiveName}"
+            } ?: event.message.referencedMessage?.data?.author?.username?.let {
+                "@$it"
+            } ?: ""
+        ).getWithStyle(
+            Style.EMPTY
+                .withFormatting(Formatting.BLUE)
+                .withHoverEvent(
+                    HoverEvent(
+                        HoverEvent.Action.SHOW_TEXT,
+                        Text.of(event.message.referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.name })
+                    )
+                )
+        ).firstOrNull()
 
         val content = Text.of(event.message.content)
 
-        sendChatMessage(Texts.join(listOf(name, content), Text.of("")))
+        sendChatMessage(Texts.join(listOfNotNull(authorText, referencedAuthorText, content), Text.of(" ")))
     }
 
     fun getOnlinePlayers(): List<String>
