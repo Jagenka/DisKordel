@@ -35,8 +35,9 @@ object UserRegistry
         return registeredUsers.find { it.minecraft.uuid == uuid }
     }
 
-    fun findUser(snowflake: Snowflake): User?
+    fun findUser(snowflake: Snowflake?): User?
     {
+        if (snowflake == null) return null
         return registeredUsers.find { it.discord.id == snowflake }
     }
 
