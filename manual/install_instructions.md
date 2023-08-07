@@ -8,6 +8,8 @@
 (ideally latest versions)
 
 ## setup
-Just put the jar file, alongside the required mods, into the mods folder. The mod will then generate a config file, where you will have to enter a Discord Bot Token controlling a bot with message read/write permissions, as well as the channel and guild (server) ID where all messages should be relayed to and from. (aquireable within discord by enabling developer mode and right-clicking server/channel)
+Just put the jar file, alongside the required mods, into the mods folder. The mod will then generate a config file, where you will have to enter a Discord bot token as well as the Channel and Guild (Server) ID where all messages should be relayed to and from. (aquireable within Discord by enabling developer mode and right-clicking Server/Channel)
+
+The bot needs to have message read/write and manage webhook permissions (permissions integer `137976138816` is the minimum, see [here](https://discord.com/developers/applications) for more info).
 
 Check out [available commands](./commands.md) to get started.
