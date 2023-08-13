@@ -107,7 +107,7 @@ object UserRegistry
     {
         findDiscordMember(snowflake)
         val gameProfile = getGameProfile(minecraftName) ?: findMinecraftProfileOrError(minecraftName) ?: return false
-        registeredUsers.put(User(DiscordUser(snowflake), MinecraftUser(gameProfile.name, gameProfile.id)))
+        registeredUsers.put(User(discord = DiscordUser(snowflake), minecraft = MinecraftUser(gameProfile.name, gameProfile.id)))
         return true
     }
 
@@ -131,8 +131,8 @@ object UserRegistry
     fun loadRegisteredUsersFromFile()
     {
         clearRegistered()
-        Config.configEntry.registeredUsers.forEach { register(it) }
         findMinecraftProfilesOrError(Config.configEntry.registeredUsers.map { it.minecraftName }.toList())
+        Config.configEntry.registeredUsers.forEach { register(it) }
     }
 
     fun clearRegistered()
@@ -222,7 +222,8 @@ object UserRegistry
 
     fun loadUserCache()
     {
-        val foundProfiles = findMinecraftProfilesOrError(Config.configEntry.userCache.toMutableSet().map { it.name })
+        // filter is, so that no double-request is made
+        val foundProfiles = findMinecraftProfilesOrError(Config.configEntry.userCache.toMutableSet().filter { it !in this.userCache }.map { it.name })
 
         Config.configEntry.userCache.toMutableSet().forEach { userFromConfig ->
             val gameProfile = foundProfiles.find { it.id == userFromConfig.uuid } ?: return@forEach
@@ -232,30 +233,38 @@ object UserRegistry
 
     private fun findMinecraftProfilesOrError(names: List<String>): List<GameProfile>
     {
+        if (names.isEmpty()) return emptyList()
+
         val result = mutableListOf<GameProfile>()
 
-        minecraftServer?.gameProfileRepo?.findProfilesByNames(names.toTypedArray(), Agent.MINECRAFT, object : ProfileLookupCallback
+        try
         {
-            override fun onProfileLookupSucceeded(profile: GameProfile?)
+            minecraftServer?.gameProfileRepo?.findProfilesByNames(names.shuffled().toTypedArray(), Agent.MINECRAFT, object : ProfileLookupCallback
             {
-                profile?.let {
-                    if (profile.isComplete)
-                    {
-                        minecraftProfiles.add(profile)
-                        result.add(profile)
-                        return
-                    } else
-                    {
-                        logger.error("profile for ${profile.name} not complete even though lookup succeeded")
-                    }
-                } ?: logger.error("profile null even though lookup succeeded")
-            }
+                override fun onProfileLookupSucceeded(profile: GameProfile?)
+                {
+                    profile?.let {
+                        if (profile.isComplete)
+                        {
+                            minecraftProfiles.add(profile)
+                            result.add(profile)
+                            return
+                        } else
+                        {
+                            logger.error("profile for ${profile.name} not complete even though lookup succeeded")
+                        }
+                    } ?: logger.error("profile null even though lookup succeeded")
+                }
 
-            override fun onProfileLookupFailed(profile: GameProfile?, exception: java.lang.Exception?)
-            {
-                logger.error("no profile found for ${profile?.name}")
-            }
-        })
+                override fun onProfileLookupFailed(profile: GameProfile?, exception: java.lang.Exception?)
+                {
+                    logger.error("no profile found for ${profile?.name}")
+                }
+            })
+        } catch (e: Exception)
+        {
+            logger.error("error finding game profiles for $names")
+        }
 
         return result.toList()
     }
@@ -264,29 +273,35 @@ object UserRegistry
     {
         var found = false
 
-        minecraftServer?.gameProfileRepo?.findProfilesByNames(arrayOf(minecraftName), Agent.MINECRAFT, object : ProfileLookupCallback
+        try
         {
-            override fun onProfileLookupSucceeded(profile: GameProfile?)
+            minecraftServer?.gameProfileRepo?.findProfilesByNames(arrayOf(minecraftName), Agent.MINECRAFT, object : ProfileLookupCallback
             {
-                profile?.let {
-                    if (profile.isComplete)
-                    {
-                        minecraftProfiles.add(profile)
-                        found = true
-                        return
-                    } else
-                    {
-                        logger.error("profile for $minecraftName not complete even though lookup succeeded")
-                    }
-                } ?: logger.error("profile for $minecraftName null even though lookup succeeded")
-            }
+                override fun onProfileLookupSucceeded(profile: GameProfile?)
+                {
+                    profile?.let {
+                        if (profile.isComplete)
+                        {
+                            minecraftProfiles.add(profile)
+                            found = true
+                            return
+                        } else
+                        {
+                            logger.error("profile for $minecraftName not complete even though lookup succeeded")
+                        }
+                    } ?: logger.error("profile for $minecraftName null even though lookup succeeded")
+                }
 
-            override fun onProfileLookupFailed(profile: GameProfile?, exception: java.lang.Exception?)
-            {
-                found = false
-                logger.error("no profile found for $minecraftName")
-            }
-        })
+                override fun onProfileLookupFailed(profile: GameProfile?, exception: java.lang.Exception?)
+                {
+                    found = false
+                    logger.error("no profile found for $minecraftName")
+                }
+            })
+        } catch (e: Exception)
+        {
+            logger.error("error finding game profile for $minecraftName")
+        }
 
         return if (found) getGameProfile(minecraftName) else null
     }
