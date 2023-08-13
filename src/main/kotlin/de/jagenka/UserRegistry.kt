@@ -132,6 +132,7 @@ object UserRegistry
     {
         clearRegistered()
         Config.configEntry.registeredUsers.forEach { register(it) }
+        findMinecraftProfilesOrError(Config.configEntry.registeredUsers.map { it.minecraftName }.toList())
     }
 
     fun clearRegistered()
