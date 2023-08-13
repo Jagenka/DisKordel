@@ -178,6 +178,7 @@ object UserRegistry
 
     fun saveCacheToFile()
     {
+        userCache.addAll(minecraftProfiles.map { MinecraftUser(it.name, it.id) })
         Config.configEntry.userCache = userCache.toMutableSet()
         Config.store()
     }
@@ -192,7 +193,7 @@ object UserRegistry
     fun List<User>.onlyMinecraftNames(): List<String> =
         this.map { it.minecraft.name }
 
-    suspend fun loadGameProfilesFromPlayerData()
+    fun loadGameProfilesFromPlayerData()
     {
         minecraftServer?.let { server ->
             // has to be this complicated, because user cache does not allow getting all profiles...
@@ -223,9 +224,9 @@ object UserRegistry
     {
         val foundProfiles = findMinecraftProfilesOrError(Config.configEntry.userCache.toMutableSet().map { it.name })
 
-        Config.configEntry.userCache.toMutableSet().forEach { minecraftUser ->
-            val gameProfile = foundProfiles.find { it.id == minecraftUser.uuid } ?: return@forEach
-            userCache.put(MinecraftUser(gameProfile.name, gameProfile.id, minecraftUser.skinURL, minecraftUser.lastURLUpdate))
+        Config.configEntry.userCache.toMutableSet().forEach { userFromConfig ->
+            val gameProfile = foundProfiles.find { it.id == userFromConfig.uuid } ?: return@forEach
+            userCache.put(MinecraftUser(gameProfile.name, gameProfile.id, userFromConfig.skinURL, userFromConfig.lastURLUpdate))
         }
     }
 
