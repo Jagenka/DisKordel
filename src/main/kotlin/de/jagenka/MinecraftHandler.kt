@@ -31,9 +31,10 @@ object MinecraftHandler
         minecraftServer.playerManager.isWhitelistEnabled = true
 
         Main.scope.launch {
-            UserRegistry.loadUserCache()
             UserRegistry.loadRegisteredUsersFromFile()
+            UserRegistry.loadUserCache()
             UserRegistry.loadGameProfilesFromPlayerData()
+            UserRegistry.saveCacheToFile()
         }
     }
 
