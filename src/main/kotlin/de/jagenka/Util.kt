@@ -55,4 +55,11 @@ object Util
             throw KordInstanceMissingException("kord instance missing while getting/creating webhook")
         }
     }
+
+    fun getNewRandomUUID(taken: List<UUID>): UUID
+    {
+        var uuid = UUID.randomUUID()
+        while (uuid in taken) uuid = UUID.randomUUID()
+        return uuid
+    }
 }

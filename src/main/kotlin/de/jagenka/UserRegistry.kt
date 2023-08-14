@@ -106,7 +106,13 @@ object UserRegistry
     fun register(snowflake: Snowflake, minecraftName: String): Boolean
     {
         findDiscordMember(snowflake)
-        val gameProfile = getGameProfile(minecraftName) ?: findMinecraftProfileOrError(minecraftName) ?: return false
+        val gameProfile =
+            getGameProfile(minecraftName)
+                ?: findMinecraftProfileOrError(minecraftName)
+                ?: GameProfile(
+                    userCache.find { it.name.equals(minecraftName, ignoreCase = true) }?.uuid ?: Util.getNewRandomUUID(userCache.map { it.uuid }),
+                    minecraftName
+                )
         registeredUsers.put(User(discord = DiscordUser(snowflake), minecraft = MinecraftUser(gameProfile.name, gameProfile.id)))
         return true
     }
@@ -131,7 +137,9 @@ object UserRegistry
     fun loadRegisteredUsersFromFile()
     {
         clearRegistered()
-        findMinecraftProfilesOrError(Config.configEntry.registeredUsers.map { it.minecraftName }.toList())
+        findMinecraftProfilesOrError(Config.configEntry.registeredUsers.map { it.minecraftName }
+            .filter { !userCache.map { it.name.lowercase() }.contains(it.lowercase()) }
+            .toList())
         Config.configEntry.registeredUsers.forEach { register(it) }
     }
 
@@ -156,7 +164,12 @@ object UserRegistry
         val user = MinecraftUser(gameProfile.name, gameProfile.id)
         userCache.find { it.uuid == gameProfile.id }?.apply {
             this.name = gameProfile.name
-        } ?: userCache.add(user)
+        }
+            ?: userCache.find { it.name.equals(gameProfile.name, ignoreCase = true) }?.apply {
+                this.name = gameProfile.name
+                this.uuid = gameProfile.id
+            }
+            ?: userCache.add(user)
 
         minecraftProfiles.add(gameProfile)
         saveCacheToFile()
