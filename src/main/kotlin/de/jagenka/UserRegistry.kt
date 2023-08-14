@@ -12,6 +12,8 @@ import de.jagenka.config.UserEntry
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import kotlinx.coroutines.launch
+import net.minecraft.server.WhitelistEntry
+import net.minecraft.util.Uuids
 import net.minecraft.util.WorldSavePath
 import java.nio.file.Files
 import java.util.*
@@ -103,18 +105,21 @@ object UserRegistry
     // endregion
 
     // region registration
-    fun register(snowflake: Snowflake, minecraftName: String): Boolean
+    fun register(snowflake: Snowflake, minecraftName: String, callback: (success: Boolean) -> Unit = {})
     {
         findDiscordMember(snowflake)
         val gameProfile =
             getGameProfile(minecraftName)
                 ?: findMinecraftProfileOrError(minecraftName)
+                ?: minecraftServer?.playerManager?.whitelist?.values()?.map { it.key }?.find { it?.name?.equals(minecraftName, ignoreCase = true) ?: false }
                 ?: GameProfile(
-                    userCache.find { it.name.equals(minecraftName, ignoreCase = true) }?.uuid ?: Util.getNewRandomUUID(userCache.map { it.uuid }),
+                    userCache.find { it.name.equals(minecraftName, ignoreCase = true) }?.uuid ?: Uuids.getOfflinePlayerUuid(minecraftName),
                     minecraftName
                 )
         registeredUsers.put(User(discord = DiscordUser(snowflake), minecraft = MinecraftUser(gameProfile.name, gameProfile.id)))
-        return true
+        saveToCache(gameProfile)
+
+        callback.invoke(true)
     }
 
     fun unregister(minecraftName: String): Boolean
@@ -141,6 +146,24 @@ object UserRegistry
             .filter { !userCache.map { it.name.lowercase() }.contains(it.lowercase()) }
             .toList())
         Config.configEntry.registeredUsers.forEach { register(it) }
+
+        minecraftServer?.playerManager?.whitelist?.apply {
+            // remove players from whitelist, if they are not registered
+            this.values().toList().forEach { onWhitelist ->
+                if (onWhitelist.key?.id !in registeredUsers.map { it.minecraft.uuid })
+                {
+                    this.remove(onWhitelist)
+                }
+            }
+            // add players to whitelist if not already happened
+            registeredUsers.forEach { inRegistry ->
+                val gameProfile = getGameProfile(inRegistry.minecraft.uuid) ?: return@forEach
+                if (!this.isAllowed(gameProfile))
+                {
+                    this.add(WhitelistEntry(gameProfile))
+                }
+            }
+        }
     }
 
     fun clearRegistered()

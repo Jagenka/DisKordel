@@ -32,23 +32,24 @@ object RegisterCommand : MessageCommand
 
         val oldUser = UserRegistry.findUser(userId)
 
-        if (UserRegistry.register(userId, minecraftName))
-        {
-            oldUser?.let {
-                MinecraftHandler.runWhitelistRemove(oldUser.minecraft.name)
-                response += "`${oldUser.minecraft.name}` is no longer whitelisted.\n"
+        UserRegistry.register(userId, minecraftName) { success ->
+            if (success)
+            {
+                oldUser?.let {
+                    MinecraftHandler.runWhitelistRemove(oldUser.minecraft.name)
+                    response += "`${oldUser.minecraft.name}` is no longer whitelisted.\n"
+                }
+
+                val realName = UserRegistry.findUser(userId)?.minecraft?.name ?: minecraftName
+
+                MinecraftHandler.runWhitelistAdd(realName)
+
+                response += "`$realName` now assigned to ${member.prettyName()}.\n" +
+                        "`$realName` is now whitelisted."
+            } else
+            {
+                response += "Error registering."
             }
-
-            val realName = UserRegistry.findUser(userId)?.minecraft?.name ?: minecraftName
-
-            MinecraftHandler.runWhitelistAdd(realName)
-
-            response += "`$realName` now assigned to ${member.prettyName()}.\n" +
-                    "`$realName` is now whitelisted."
-
-        } else
-        {
-            response += "Error registering."
         }
 
         DiscordHandler.sendMessage(response)
