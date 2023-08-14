@@ -30,7 +30,7 @@ data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
 }
 
 @Serializable(with = MinecraftUserSerializer::class)
-data class MinecraftUser(var name: String, val uuid: UUID, var skinURL: String = "", var lastURLUpdate: Long = 0)
+data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String = "", var lastURLUpdate: Long = 0)
 {
     suspend fun getSkinURL(): String
     {
