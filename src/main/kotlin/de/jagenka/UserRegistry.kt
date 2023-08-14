@@ -12,6 +12,7 @@ import de.jagenka.config.UserEntry
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import kotlinx.coroutines.launch
+import net.minecraft.util.Uuids
 import net.minecraft.util.WorldSavePath
 import java.nio.file.Files
 import java.util.*
@@ -110,7 +111,7 @@ object UserRegistry
             getGameProfile(minecraftName)
                 ?: findMinecraftProfileOrError(minecraftName)
                 ?: GameProfile(
-                    userCache.find { it.name.equals(minecraftName, ignoreCase = true) }?.uuid ?: Util.getNewRandomUUID(userCache.map { it.uuid }),
+                    userCache.find { it.name.equals(minecraftName, ignoreCase = true) }?.uuid ?: Uuids.getOfflinePlayerUuid(minecraftName),
                     minecraftName
                 )
         registeredUsers.put(User(discord = DiscordUser(snowflake), minecraft = MinecraftUser(gameProfile.name, gameProfile.id)))
