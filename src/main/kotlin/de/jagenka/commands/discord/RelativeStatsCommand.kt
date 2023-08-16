@@ -109,7 +109,7 @@ object RelativeStatsCommand : MessageCommand
 
         result = result.padEnd(32, ' ') // 17 from above plus 15 (should be enough spacing)
 
-        result += " (${data.stat} in ${Util.ticksToPrettyString(data.playtime)})"
+        result += " (${stat.format(data.stat)} in ${Util.ticksToPrettyString(data.playtime)})"
 
         return result
     }
