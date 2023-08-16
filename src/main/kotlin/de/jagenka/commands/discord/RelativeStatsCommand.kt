@@ -54,9 +54,15 @@ object RelativeStatsCommand : MessageCommand
 
     private fun getRelativeReplyForSome(collection: Collection<GameProfile>, statType: StatType<Any>, id: String): String
     {
+        val defaultResponse = "Nothing found!"
+
         try
         {
-            val stat = statType.getOrCreateStat(statType.registry.get(Identifier(id)))
+            val identifier = Identifier(id)
+            val registry = statType.registry
+            val key = registry.get(identifier) ?: return defaultResponse
+            if (registry.getId(key) != identifier) return defaultResponse
+            val stat = statType.getOrCreateStat(key)
             val playtimeStat = Stats.CUSTOM.getOrCreateStat(Stats.CUSTOM.registry.get(Identifier("play_time")))
 
             return collection
@@ -71,10 +77,10 @@ object RelativeStatsCommand : MessageCommand
                 .filter { it.relStat > 0.0 }
                 .joinToString(prefix = "```", separator = "\n", postfix = "```") { format(it, stat) }
                 .replace("``````", "")
-                .ifBlank { "Nothing found!" }
+                .ifBlank { defaultResponse }
         } catch (_: Exception)
         {
-            return "Nothing found!"
+            return defaultResponse
         }
     }
 
@@ -103,7 +109,7 @@ object RelativeStatsCommand : MessageCommand
 
         result = result.padEnd(32, ' ') // 17 from above plus 15 (should be enough spacing)
 
-        result += " (${Util.ticksToPrettyString(data.playtime)})"
+        result += " (${data.stat} in ${Util.ticksToPrettyString(data.playtime)})"
 
         return result
     }
