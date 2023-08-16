@@ -66,9 +66,15 @@ object StatsCommand : MessageCommand
 
     fun getReplyForSome(collection: Collection<GameProfile>, statType: StatType<Any>, id: String): String
     {
+        val defaultResponse = "Nothing found!"
+
         try
         {
-            val stat = statType.getOrCreateStat(statType.registry.get(Identifier(id)))
+            val identifier = Identifier(id)
+            val registry = statType.registry
+            val key = registry.get(identifier) ?: return defaultResponse
+            if (registry.getId(key) != identifier) return defaultResponse
+            val stat = statType.getOrCreateStat(key)
 
             return collection
                 .mapNotNull { it.name to (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null) }
@@ -76,10 +82,10 @@ object StatsCommand : MessageCommand
                 .filterNot { it.second == 0 }
                 .joinToString(prefix = "```", separator = "\n", postfix = "```") { format(it.first, stat, it.second) }
                 .replace("``````", "")
-                .ifBlank { "Nothing found!" }
+                .ifBlank { defaultResponse }
         } catch (_: Exception)
         {
-            return "Nothing found!"
+            return defaultResponse
         }
     }
 
