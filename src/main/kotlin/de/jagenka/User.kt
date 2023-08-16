@@ -13,6 +13,14 @@ import kotlin.time.Duration.Companion.hours
 
 data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
 {
+    fun isLikely(name: String): Boolean
+    {
+        val discordMembers = UserRegistry.getDiscordMembers()
+        return this.minecraft.name.contains(name, ignoreCase = true)
+                || discordMembers[this.discord]?.username?.contains(name, ignoreCase = true) ?: false
+                || discordMembers[this.discord]?.effectiveName?.contains(name, ignoreCase = true) ?: false
+    }
+
     override fun equals(other: Any?): Boolean
     {
         if (this === other) return true

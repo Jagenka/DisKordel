@@ -27,6 +27,11 @@ object UserRegistry
     private val minecraftProfiles = mutableSetOf<GameProfile>()
 
     // region getter
+    fun getDiscordMembers(): Map<DiscordUser, Member>
+    {
+        return discordMembers.toMap()
+    }
+
     fun findUser(minecraftName: String): User?
     {
         return registeredUsers.find { it.minecraft.name.equals(minecraftName, ignoreCase = true) }
@@ -90,16 +95,16 @@ object UserRegistry
     fun findRegistered(name: String): List<User>
     {
         return registeredUsers.filter {
-            discordMembers[it.discord]?.username?.contains(name, ignoreCase = true) ?: false
-                    || discordMembers[it.discord]?.effectiveName?.contains(name, ignoreCase = true) ?: false
-                    || it.minecraft.name.contains(name, ignoreCase = true)
+            it.isLikely(name)
         }
     }
 
     fun findMinecraftProfiles(name: String): List<GameProfile>
     {
-        return minecraftProfiles.filter {
-            it.name.contains(name, ignoreCase = true)
+        val possibleRegisteredUsers = findRegistered(name)
+        return minecraftProfiles.filter { gameProfile ->
+            gameProfile.name.contains(name, ignoreCase = true)
+                    || possibleRegisteredUsers.find { user -> user.minecraft.name.equals(gameProfile.name, ignoreCase = true) } != null
         }
     }
     // endregion
