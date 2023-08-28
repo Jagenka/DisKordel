@@ -22,7 +22,7 @@ object PlayerStatManager
         // if player is online, get stathandler from playermanager
         MinecraftHandler.minecraftServer?.let { server ->
             server.playerManager.getPlayer(uuid)?.let { serverPlayerEntity ->
-                val statHandler = server.playerManager.createStatHandler(serverPlayerEntity)
+                val statHandler = serverPlayerEntity.statHandler
                 this.statisticsMap[uuid] = statHandler
                 return statHandler
             }
