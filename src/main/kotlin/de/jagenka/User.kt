@@ -52,7 +52,7 @@ data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String =
         {
             val profile = UserRegistry.getGameProfile(uuid) ?: return
             MinecraftHandler.minecraftServer?.apply {
-                sessionService.fillProfileProperties(profile, false)
+                sessionService.fetchProfile(profile.id, false)
                 val texture = sessionService.getTextures(profile, false)[MinecraftProfileTexture.Type.SKIN] ?: return
 
                 val skin = ImageIO.read(URL(texture.url))
