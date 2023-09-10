@@ -3,10 +3,10 @@ package de.jagenka.mixin;
 import com.mojang.authlib.GameProfile;
 import de.jagenka.PlayerStatManager;
 import de.jagenka.UserRegistry;
-import net.minecraft.class_8792;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.ServerStatHandler;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,7 +30,7 @@ public class PlayerManagerMixin
     }
 
     @Inject(method = "onPlayerConnect", at = @At("HEAD"))
-    void saveNewPlayersProfileToCache(ClientConnection connection, ServerPlayerEntity player, class_8792 arg, CallbackInfo ci)
+    void saveNewPlayersProfileToCache(ClientConnection connection, ServerPlayerEntity player, ConnectedClientData clientData, CallbackInfo ci)
     {
         GameProfile profile = player.getGameProfile();
 
