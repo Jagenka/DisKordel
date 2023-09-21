@@ -63,6 +63,7 @@ object MinecraftHandler
         DiscordHandler.sendWebhookMessage(username = user.name, avatarURL = user.getSkinURL(), text = message.string)
     }
 
+    // TODO: remove
     private suspend fun handleMinecraftSystemMessage(message: Text)
     {
         val colorName = message.visit({ style, string ->
