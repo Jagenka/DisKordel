@@ -24,8 +24,8 @@ object StatsCommand : MessageCommand
         get() = listOf(
             ArgumentCombination(listOf(StatArgument(), string("stat")), "Get stat for all players.") { event, arguments ->
                 val (argType, argText) = arguments[0]
-                DiscordHandler.sendMessage(
-                    getReplyForAll(
+                DiscordHandler.sendCodeBlock(
+                    text = getReplyForAll(
                         (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
                         arguments[1].second
                     )
@@ -35,8 +35,8 @@ object StatsCommand : MessageCommand
             ArgumentCombination(listOf(StatArgument(), string("stat"), string("partOfName")), "Get stat for some players.") { event, arguments ->
                 val (_, playerName) = arguments[2]
                 val (argType, argText) = arguments[0]
-                DiscordHandler.sendMessage(
-                    getReplyForSome(
+                DiscordHandler.sendCodeBlock(
+                    text = getReplyForSome(
                         UserRegistry.findMinecraftProfiles(playerName),
                         (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
                         arguments[1].second
@@ -80,7 +80,7 @@ object StatsCommand : MessageCommand
                 .mapNotNull { it.name to (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null) }
                 .sortedByDescending { it.second }
                 .filterNot { it.second == 0 }
-                .joinToString(prefix = "```", separator = "\n", postfix = "```") { format(it.first, stat, it.second) }
+                .joinToString(separator = "\n") { format(it.first, stat, it.second) }
                 .replace("``````", "")
                 .ifBlank { defaultResponse }
         } catch (_: Exception)

@@ -25,8 +25,8 @@ object RelativeStatsCommand : MessageCommand
         get() = listOf(
             ArgumentCombination(listOf(StatArgument(), Argument.string("stat")), "Get stat for all players.") { event, arguments ->
                 val (argType, argText) = arguments[0]
-                DiscordHandler.sendMessage(
-                    getRelativeReplyForAll(
+                DiscordHandler.sendCodeBlock(
+                    text = getRelativeReplyForAll(
                         (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
                         arguments[1].second
                     )
@@ -36,8 +36,8 @@ object RelativeStatsCommand : MessageCommand
             ArgumentCombination(listOf(StatArgument(), Argument.string("stat"), Argument.string("partOfName")), "Get stat for some players.") { event, arguments ->
                 val (_, playerName) = arguments[2]
                 val (argType, argText) = arguments[0]
-                DiscordHandler.sendMessage(
-                    getRelativeReplyForSome(
+                DiscordHandler.sendCodeBlock(
+                    text = getRelativeReplyForSome(
                         UserRegistry.findMinecraftProfiles(playerName),
                         (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
                         arguments[1].second
@@ -75,7 +75,7 @@ object RelativeStatsCommand : MessageCommand
                 }
                 .sortedByDescending { it.relStat }
                 .filter { it.relStat > 0.0 }
-                .joinToString(prefix = "```", separator = "\n", postfix = "```") { format(it, stat) }
+                .joinToString(separator = "\n") { format(it, stat) }
                 .replace("``````", "")
                 .ifBlank { defaultResponse }
         } catch (_: Exception)
@@ -117,6 +117,6 @@ object RelativeStatsCommand : MessageCommand
     data class RStatData(val playerName: String, val stat: Int, val playtime: Int)
     {
         val relStat: Double
-            get() = (stat.toDouble() * 72_000.0) / playtime.toDouble() // converts ticks to hours (20*60*60)
+            get() = (if (playtime == 0) 0.0 else (stat.toDouble() * 72_000.0)) / playtime.toDouble() // converts ticks to hours (20*60*60)
     }
 }

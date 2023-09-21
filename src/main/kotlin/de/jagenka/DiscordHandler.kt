@@ -86,16 +86,32 @@ object DiscordHandler
     {
         Main.scope.launch {
             if (text.isBlank()) return@launch
+
+            var toSend = text
+
+            if (text.length > 2000)
+            {
+                toSend = text.substring(0, 1997) + "..." // trim to 2000 characters as per discord api limit
+            }
+
             channel.createMessage {
-                this.content = text
+                this.content = toSend
                 if (silent) this.flags = MessageFlags(MessageFlag.SuppressNotifications)
             }
         }
     }
 
-    fun sendCodeBlock(formatId: String, content: String)
+    fun sendCodeBlock(formatId: String = "", text: String)
     {
-        sendMessage("```$formatId\n${content.preventCodeBlockEscape()}\n```")
+        val content = ("$formatId\n" + text.preventCodeBlockEscape())
+        var toSend = content
+
+        if (content.length > 1993)
+        {
+            toSend = content.substring(0, 1990) + "..."
+        }
+
+        sendMessage("```$toSend\n```")
     }
 
     suspend fun sendImage(path: Path, silent: Boolean = false): Message
