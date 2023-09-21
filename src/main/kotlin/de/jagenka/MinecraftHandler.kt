@@ -6,6 +6,7 @@ import dev.kord.core.entity.effectiveName
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
+import net.minecraft.advancement.Advancement
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.HoverEvent
@@ -137,6 +138,14 @@ object MinecraftHandler
     {
         Main.scope.launch {
             val text = player.damageTracker.deathMessage
+            DiscordHandler.sendWebhookMessage("Server Name", "", text.string)
+        }
+    }
+
+    fun handleAdvancementMessage(advancement: Advancement, player: ServerPlayerEntity)
+    {
+        Main.scope.launch {
+            val text = Text.translatable("chat.type.advancement." + advancement.display?.frame?.id, player.getDisplayName(), advancement.toHoverableText())
             DiscordHandler.sendWebhookMessage("Server Name", "", text.string)
         }
     }
