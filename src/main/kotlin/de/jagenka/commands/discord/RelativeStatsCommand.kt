@@ -117,6 +117,6 @@ object RelativeStatsCommand : MessageCommand
     data class RStatData(val playerName: String, val stat: Int, val playtime: Int)
     {
         val relStat: Double
-            get() = (stat.toDouble() * 72_000.0) / playtime.toDouble() // converts ticks to hours (20*60*60)
+            get() = (if (playtime == 0) 0.0 else (stat.toDouble() * 72_000.0)) / playtime.toDouble() // converts ticks to hours (20*60*60)
     }
 }
