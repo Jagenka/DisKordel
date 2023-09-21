@@ -114,6 +114,18 @@ object DiscordHandler
         sendMessage("```$toSend\n```")
     }
 
+    suspend fun sendWebhookMessage(username: String, avatarURL: String, text: String)
+    {
+        val webhook = Util.getOrCreateWebhook("diskordel_chat_messages")
+        kord?.apply {
+            rest.webhook.executeWebhook(webhookId = webhook.id, token = webhook.token.value ?: "") {
+                this.username = username
+                this.avatarUrl = avatarURL
+                this.content = text.let { if (it.length > 2000) it.substring(0, 1997) + "..." else it } // trim as per API limit
+            }
+        }
+    }
+
     suspend fun sendImage(path: Path, silent: Boolean = false): Message
     {
         return channel.createMessage {

@@ -1,5 +1,6 @@
 package de.jagenka
 
+import com.mojang.authlib.GameProfile
 import de.jagenka.Util.unwrap
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.event.message.MessageCreateEvent
@@ -55,58 +56,72 @@ object MinecraftHandler
         }
     }
 
-    private fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity)
+    private suspend fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity)
     {
-        Main.scope.launch {
-            val user = UserRegistry.getMinecraftUser(sender.uuid) ?: return@launch
-
-            val webhook = Util.getOrCreateWebhook("diskordel_chat_messages")
-            DiscordHandler.kord?.apply {
-                rest.webhook.executeWebhook(webhookId = webhook.id, token = webhook.token.value ?: "") {
-                    this.username = user.name
-                    this.avatarUrl = user.getSkinURL()
-                    this.content = message.string
-                }
-            }
-        }
+        val user = UserRegistry.getMinecraftUser(sender.uuid) ?: return
+        DiscordHandler.sendWebhookMessage(username = user.name, avatarURL = user.getSkinURL(), text = message.string)
     }
 
-    private fun handleMinecraftSystemMessage(message: Text)
+    private suspend fun handleMinecraftSystemMessage(message: Text)
+    {
+        val colorName = message.visit({ style, string ->
+            val color = style.color ?: return@visit Optional.empty()
+            if (color.name != color.hexCode) return@visit Optional.of(color.name)
+            Optional.empty()
+        }, Style.EMPTY).unwrap()
+
+        if (colorName == "blue" && message.string.startsWith("[")) return // this is a message coming from discord
+
+        DiscordHandler.sendCodeBlock(
+            "ansi",
+            when (colorName)
+            {
+                "yellow" -> // yellow text
+                {
+                    "\u001B[2;33m${message.string}\u001B[0m"
+                }
+
+                "green" -> // green text
+                {
+                    "\u001B[2;32m${message.string}\u001B[0m"
+                }
+
+                "dark_purple" -> // purple text
+                {
+                    "\u001B[2;35m${message.string}\u001B[0m"
+                }
+
+                else -> // red text
+                {
+                    "\u001B[2;31m${message.string}\u001B[0m"
+                }
+            }
+        )
+    }
+
+    fun handleLoginMessage(player: ServerPlayerEntity, server: MinecraftServer)
     {
         Main.scope.launch {
-            val colorName = message.visit({ style, string ->
-                val color = style.color ?: return@visit Optional.empty()
-                if (color.name != color.hexCode) return@visit Optional.of(color.name)
-                Optional.empty()
-            }, Style.EMPTY).unwrap()
+            // copy pasta from source
+            val gameProfile = player.gameProfile
+            val cachedName = server.userCache?.let { userCache ->
+                val optional = userCache.getByUuid(gameProfile.id)
+                optional.map { obj: GameProfile -> obj.name }.orElse(gameProfile.name)
+            } ?: gameProfile.name
 
-            if (colorName == "blue" && message.string.startsWith("[")) return@launch // this is a message coming from discord
-
-            DiscordHandler.sendCodeBlock(
-                "ansi",
-                when (colorName)
+            val mutableText =
+                if (player.gameProfile.name.equals(cachedName, ignoreCase = true))
                 {
-                    "yellow" -> // yellow text
-                    {
-                        "\u001B[2;33m${message.string}\u001B[0m"
-                    }
-
-                    "green" -> // green text
-                    {
-                        "\u001B[2;32m${message.string}\u001B[0m"
-                    }
-
-                    "dark_purple" -> // purple text
-                    {
-                        "\u001B[2;35m${message.string}\u001B[0m"
-                    }
-
-                    else -> // red text
-                    {
-                        "\u001B[2;31m${message.string}\u001B[0m"
-                    }
+                    Text.translatable("multiplayer.player.joined", player.getDisplayName())
+                } else
+                {
+                    Text.translatable(
+                        "multiplayer.player.joined.renamed", player.getDisplayName(), cachedName
+                    )
                 }
-            )
+            // until here
+
+            DiscordHandler.sendWebhookMessage("Server Name", "", mutableText.string)
         }
     }
 
