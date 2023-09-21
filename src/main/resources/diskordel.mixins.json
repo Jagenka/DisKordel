@@ -6,6 +6,8 @@
   "mixins": [
     "PlayerManagerMixin",
     "ServerLoginNetworkHandlerMixin",
+    "ServerPlayerEntityMixin",
+    "ServerPlayNetworkHandlerMixin",
     "StatMixin"
   ],
   "client": [],

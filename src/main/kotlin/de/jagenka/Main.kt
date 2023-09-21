@@ -13,6 +13,7 @@ import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -39,6 +40,12 @@ object Main : ModInitializer
         //register onServerLoaded
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             MinecraftHandler.onServerLoaded(server)
+            scope.launch { DiscordHandler.sendWebhookMessage("Server Name", "", "Server started.") }
+        }
+
+        //register onServerStopped
+        ServerLifecycleEvents.SERVER_STOPPED.register { server ->
+            runBlocking { DiscordHandler.sendWebhookMessage("Server Name", "", "Server stopped.") }
         }
 
         registerMixins()

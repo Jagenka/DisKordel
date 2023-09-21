@@ -125,6 +125,22 @@ object MinecraftHandler
         }
     }
 
+    fun handleLogoutMessage(player: ServerPlayerEntity)
+    {
+        Main.scope.launch {
+            val text = Text.translatable("multiplayer.player.left", player.getDisplayName())
+            DiscordHandler.sendWebhookMessage("Server Name", "", text.string)
+        }
+    }
+
+    fun handleDeathMessage(player: ServerPlayerEntity)
+    {
+        Main.scope.launch {
+            val text = player.damageTracker.deathMessage
+            DiscordHandler.sendWebhookMessage("Server Name", "", text.string)
+        }
+    }
+
     suspend fun sendMessageFromDiscord(event: MessageCreateEvent)
     {
         val author = event.message.author
