@@ -51,8 +51,9 @@ data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String =
     {
         if (skinURL.isBlank() || System.currentTimeMillis() > lastURLUpdate + 4.hours.inWholeMilliseconds)
         {
+            val profile = UserRegistry.getGameProfile(uuid) ?: return
             MinecraftHandler.minecraftServer?.apply {
-                val profile = sessionService.fetchProfile(uuid, false)?.profile ?: MinecraftHandler.logger.error("no profile found for UUID $uuid").run { return }
+                sessionService.fillProfileProperties(profile, false)
                 val texture = sessionService.getTextures(profile, false)[MinecraftProfileTexture.Type.SKIN] ?: return
 
                 val skin = ImageIO.read(URL(texture.url))

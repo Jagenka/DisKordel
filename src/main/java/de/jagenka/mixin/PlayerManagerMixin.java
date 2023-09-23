@@ -10,7 +10,6 @@ import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.stat.ServerStatHandler;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +40,7 @@ public class PlayerManagerMixin
     }
 
     @Inject(method = "onPlayerConnect", at = @At("HEAD"))
-    void saveNewPlayersProfileToCache(ClientConnection connection, ServerPlayerEntity player, ConnectedClientData clientData, CallbackInfo ci)
+    void saveNewPlayersProfileToCache(ClientConnection connection, ServerPlayerEntity player, CallbackInfo ci)
     {
         GameProfile profile = player.getGameProfile();
 
