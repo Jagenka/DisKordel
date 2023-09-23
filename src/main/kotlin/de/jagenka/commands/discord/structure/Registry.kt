@@ -26,7 +26,7 @@ object Registry
     }
 
     var isSenderAdmin: suspend (event: MessageCreateEvent) -> Boolean = {
-        it.member?.isOwner() == true // TODO: adminRole
+        it.member?.isOwner() == true
     }
 
     fun setup(kord: Kord)

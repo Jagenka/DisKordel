@@ -1,22 +1,18 @@
 package de.jagenka
 
-import com.mojang.authlib.GameProfile
-import de.jagenka.Util.unwrap
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
-import net.minecraft.advancement.Advancement
+import net.minecraft.network.message.MessageType
+import net.minecraft.network.message.SignedMessage
+import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.Style
-import net.minecraft.text.Text
-import net.minecraft.text.Texts
+import net.minecraft.text.*
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.Position
 import org.slf4j.LoggerFactory
-import java.util.*
 import kotlin.math.min
 
 object MinecraftHandler
@@ -63,92 +59,81 @@ object MinecraftHandler
         DiscordHandler.sendWebhookMessage(username = user.name, avatarURL = user.getSkinURL(), text = message.string)
     }
 
-    // TODO: remove
     private suspend fun handleMinecraftSystemMessage(message: Text)
     {
-        val colorName = message.visit({ style, string ->
-            val color = style.color ?: return@visit Optional.empty()
-            if (color.name != color.hexCode) return@visit Optional.of(color.name)
-            Optional.empty()
-        }, Style.EMPTY).unwrap()
+        val key = (message.content as? TranslatableTextContent)?.key ?: return
 
-        if (colorName == "blue" && message.string.startsWith("[")) return // this is a message coming from discord
+        if (key.startsWith("multiplayer.player.joined"))
+        {
+            handleLoginMessage(message)
+        } else if (key.startsWith("multiplayer.player.left"))
+        {
+            handleLogoutMessage(message)
+        } else if (key.startsWith("death."))
+        {
+            handleDeathMessage(message)
+        } else if (key.startsWith("chat.type.advancement."))
+        {
+            handleAdvancementMessage(message)
+        }
+    }
 
-        DiscordHandler.sendCodeBlock(
-            "ansi",
-            when (colorName)
+    fun handleSayCommand(message: SignedMessage, params: MessageType.Parameters)
+    {
+        Main.scope.launch {
+            if (params.type == minecraftServer?.registryManager?.get(RegistryKeys.MESSAGE_TYPE)?.get(MessageType.SAY_COMMAND))
             {
-                "yellow" -> // yellow text
-                {
-                    "\u001B[2;33m${message.string}\u001B[0m"
-                }
+                val user = UserRegistry.getMinecraftUser(message.sender)
+                val text = message.content
 
-                "green" -> // green text
-                {
-                    "\u001B[2;32m${message.string}\u001B[0m"
-                }
-
-                "dark_purple" -> // purple text
-                {
-                    "\u001B[2;35m${message.string}\u001B[0m"
-                }
-
-                else -> // red text
-                {
-                    "\u001B[2;31m${message.string}\u001B[0m"
-                }
+                DiscordHandler.sendWebhookMessage(
+                    username = "Server",
+                    avatarURL = user?.getSkinURL() ?: "",
+                    text = if (user != null) "[${user.name}] ${text.string}" else text.string,
+                    escapeMarkdown = false
+                )
             }
+        }
+    }
+
+    /**
+     * sends a message looking like it came from a player, but stylized with > and cursive text.
+     * if the first word is not a known player name, the message is sent as "Server"
+     */
+    private suspend fun sendSystemMessageAsPlayer(text: Text)
+    {
+        val string = text.string
+        val firstWord = string.split(" ").firstOrNull()
+        val user = firstWord?.let { playerName ->
+            UserRegistry.getMinecraftUser(playerName)
+        }
+
+        DiscordHandler.sendWebhookMessage(
+            username = user?.name ?: "Server",
+            avatarURL = user?.getSkinURL() ?: "",
+            text = if (user != null) "> *${string.removePrefix(firstWord).trim()}*" else "> *$string*",
+            escapeMarkdown = false
         )
     }
 
-    fun handleLoginMessage(player: ServerPlayerEntity, server: MinecraftServer)
+    private suspend fun handleLoginMessage(text: Text)
     {
-        Main.scope.launch {
-            // copy pasta from source
-            val gameProfile = player.gameProfile
-            val cachedName = server.userCache?.let { userCache ->
-                val optional = userCache.getByUuid(gameProfile.id)
-                optional.map { obj: GameProfile -> obj.name }.orElse(gameProfile.name)
-            } ?: gameProfile.name
-
-            val mutableText =
-                if (player.gameProfile.name.equals(cachedName, ignoreCase = true))
-                {
-                    Text.translatable("multiplayer.player.joined", player.getDisplayName())
-                } else
-                {
-                    Text.translatable(
-                        "multiplayer.player.joined.renamed", player.getDisplayName(), cachedName
-                    )
-                }
-            // until here
-
-            DiscordHandler.sendWebhookMessage("Server Name", "", mutableText.string)
-        }
+        sendSystemMessageAsPlayer(text)
     }
 
-    fun handleLogoutMessage(player: ServerPlayerEntity)
+    private suspend fun handleLogoutMessage(text: Text)
     {
-        Main.scope.launch {
-            val text = Text.translatable("multiplayer.player.left", player.getDisplayName())
-            DiscordHandler.sendWebhookMessage("Server Name", "", text.string)
-        }
+        sendSystemMessageAsPlayer(text)
     }
 
-    fun handleDeathMessage(player: ServerPlayerEntity)
+    private suspend fun handleDeathMessage(text: Text)
     {
-        Main.scope.launch {
-            val text = player.damageTracker.deathMessage
-            DiscordHandler.sendWebhookMessage("Server Name", "", text.string)
-        }
+        sendSystemMessageAsPlayer(text)
     }
 
-    fun handleAdvancementMessage(advancement: Advancement, player: ServerPlayerEntity)
+    private suspend fun handleAdvancementMessage(text: Text)
     {
-        Main.scope.launch {
-            val text = Text.translatable("chat.type.advancement." + advancement.display?.frame?.id, player.getDisplayName(), advancement.toHoverableText())
-            DiscordHandler.sendWebhookMessage("Server Name", "", text.string)
-        }
+        sendSystemMessageAsPlayer(text)
     }
 
     suspend fun sendMessageFromDiscord(event: MessageCreateEvent)
