@@ -1,5 +1,6 @@
 package de.jagenka
 
+import de.jagenka.config.Config
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.launch
@@ -87,8 +88,8 @@ object MinecraftHandler
                 val text = message.content
 
                 DiscordHandler.sendWebhookMessage(
-                    username = "Server",
-                    avatarURL = user?.getSkinURL() ?: "",
+                    username = Config.configEntry.discordSettings.serverName,
+                    avatarURL = "",
                     text = if (user != null) "[${user.name}] ${text.string}" else text.string,
                     escapeMarkdown = false
                 )
@@ -97,8 +98,8 @@ object MinecraftHandler
     }
 
     /**
-     * sends a message looking like it came from a player, but stylized with > and cursive text.
-     * if the first word is not a known player name, the message is sent as "Server"
+     * Sends a message looking like it came from a player, but stylized with > and cursive text.
+     * If the first word is not a known player name, the message is sent as whatever is set as `serverName` in Config
      */
     private suspend fun sendSystemMessageAsPlayer(text: Text)
     {
@@ -109,7 +110,7 @@ object MinecraftHandler
         }
 
         DiscordHandler.sendWebhookMessage(
-            username = user?.name ?: "Server",
+            username = user?.name ?: Config.configEntry.discordSettings.serverName,
             avatarURL = user?.getSkinURL() ?: "",
             text = if (user != null) "> *${string.removePrefix(firstWord).trim()}*" else "> *$string*",
             escapeMarkdown = false
