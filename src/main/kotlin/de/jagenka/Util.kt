@@ -1,9 +1,14 @@
 package de.jagenka
 
+import dev.kord.common.entity.DiscordWebhook
+import dev.kord.common.entity.Snowflake
+import dev.kord.rest.request.KtorRequestException
 import java.util.*
 
 object Util
 {
+    private val webhookCache = mutableMapOf<String, DiscordWebhook>()
+
     fun Double.trimDecimals(digits: Int): String
     {
         return "%.${digits}f".format(Locale.US, this)
@@ -24,5 +29,37 @@ object Util
         else sb.append("0h 0min 0s")
 
         return sb.toString().trim()
+    }
+
+    fun findWebhookBySnowflake(id: Snowflake): DiscordWebhook?
+    {
+        return webhookCache.values.find { it.id == id }
+    }
+
+    suspend fun getOrCreateWebhook(name: String): DiscordWebhook
+    {
+        return webhookCache.getOrPut(name) {
+            DiscordHandler.kord?.apply {
+                try
+                {
+                    return@getOrPut rest.webhook.getChannelWebhooks(DiscordHandler.channel.id).find { it.name == name } ?: rest.webhook.createWebhook(
+                        DiscordHandler.channel.id,
+                        name
+                    ) {}
+                } catch (_: KtorRequestException)
+                {
+                    return@getOrPut rest.webhook.createWebhook(DiscordHandler.channel.id, name) {}
+                }
+            }
+
+            throw KordInstanceMissingException("kord instance missing while getting/creating webhook")
+        }
+    }
+
+    fun getNewRandomUUID(taken: List<UUID>): UUID
+    {
+        var uuid = UUID.randomUUID()
+        while (uuid in taken) uuid = UUID.randomUUID()
+        return uuid
     }
 }

@@ -1,12 +1,27 @@
 package de.jagenka
 
+import com.mojang.authlib.minecraft.MinecraftProfileTexture
 import de.jagenka.config.MinecraftUserSerializer
 import dev.kord.common.entity.Snowflake
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
+import java.net.URL
 import java.util.*
+import javax.imageio.ImageIO
+import kotlin.time.Duration.Companion.hours
 
 data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
 {
+    fun isLikely(name: String): Boolean
+    {
+        val discordMembers = UserRegistry.getDiscordMembers()
+        return this.minecraft.name.contains(name, ignoreCase = true)
+                || discordMembers[this.discord]?.username?.contains(name, ignoreCase = true) ?: false
+                || discordMembers[this.discord]?.effectiveName?.contains(name, ignoreCase = true) ?: false
+    }
+
     override fun equals(other: Any?): Boolean
     {
         if (this === other) return true
@@ -14,9 +29,7 @@ data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
 
         other as User
 
-        if (discord != other.discord) return false
-
-        return true
+        return discord == other.discord
     }
 
     override fun hashCode(): Int
@@ -26,8 +39,45 @@ data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
 }
 
 @Serializable(with = MinecraftUserSerializer::class)
-data class MinecraftUser(val name: String, val uuid: UUID)
+data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String = "", var lastURLUpdate: Long = 0)
 {
+    suspend fun getSkinURL(): String
+    {
+        updateSkin()
+        return this.skinURL
+    }
+
+    private suspend fun updateSkin()
+    {
+        if (skinURL.isBlank() || System.currentTimeMillis() > lastURLUpdate + 4.hours.inWholeMilliseconds)
+        {
+            MinecraftHandler.minecraftServer?.apply {
+                val profile = sessionService.fetchProfile(uuid, false)?.profile ?: MinecraftHandler.logger.error("no profile found for UUID $uuid").run { return }
+                val texture = sessionService.getTextures(profile, false)[MinecraftProfileTexture.Type.SKIN] ?: return
+
+                val skin = ImageIO.read(URL(texture.url))
+                val layer1 = skin.getSubimage(8, 8, 8, 8)
+                val layer2 = skin.getSubimage(40, 8, 8, 8)
+                val head = BufferedImage(48, 48, BufferedImage.TYPE_INT_ARGB)
+                val g = head.createGraphics()
+                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR)
+                g.drawImage(layer1, 4, 4, 40, 40, null)
+                g.drawImage(layer2, 0, 0, 48, 48, null)
+
+                val imageMessage = DiscordHandler.sendImage("${profile.id}.png", head, silent = true)
+                val imageUrl = imageMessage.data.attachments.first().url
+                imageMessage.delete()
+
+                skinURL = imageUrl
+                lastURLUpdate = System.currentTimeMillis()
+
+                Main.scope.launch {
+                    UserRegistry.saveCacheToFile()
+                }
+            }
+        }
+    }
+
     override fun equals(other: Any?): Boolean
     {
         if (this === other) return true
@@ -35,9 +85,7 @@ data class MinecraftUser(val name: String, val uuid: UUID)
 
         other as MinecraftUser
 
-        if (uuid != other.uuid) return false
-
-        return true
+        return uuid == other.uuid
     }
 
     override fun hashCode(): Int

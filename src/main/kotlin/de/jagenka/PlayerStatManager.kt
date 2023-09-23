@@ -1,6 +1,8 @@
 package de.jagenka
 
 import de.jagenka.MinecraftHandler.logger
+import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.server.PlayerManager
 import net.minecraft.stat.ServerStatHandler
 import net.minecraft.util.PathUtil
 import net.minecraft.util.WorldSavePath
@@ -22,7 +24,7 @@ object PlayerStatManager
         // if player is online, get stathandler from playermanager
         MinecraftHandler.minecraftServer?.let { server ->
             server.playerManager.getPlayer(uuid)?.let { serverPlayerEntity ->
-                val statHandler = server.playerManager.createStatHandler(serverPlayerEntity)
+                val statHandler = server.playerManager.getOrCreateStatHandler(serverPlayerEntity)
                 this.statisticsMap[uuid] = statHandler
                 return statHandler
             }
@@ -37,6 +39,16 @@ object PlayerStatManager
 
         return statisticsMap[uuid]
     }
+
+    /**
+     * this method should be called whenever there might be a change to a StatHandler, e.g. on creation of a new one (login)
+     */
+    fun updateStatHandler(uuid: UUID, serverStatHandler: ServerStatHandler)
+    {
+        statisticsMap[uuid] = serverStatHandler
+    }
+
+    fun PlayerManager.getOrCreateStatHandler(player: PlayerEntity): ServerStatHandler = this.createStatHandler(player) // just an alias to better represent what this method does
 
     // code largely copied from original minecraft source
     private fun loadStatHandlerFromFile(uuid: UUID, playerName: String = ""): ServerStatHandler?

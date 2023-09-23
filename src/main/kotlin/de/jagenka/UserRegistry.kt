@@ -1,6 +1,5 @@
 package de.jagenka
 
-import com.mojang.authlib.Agent
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.ProfileLookupCallback
 import de.jagenka.DiscordHandler.prettyName
@@ -12,41 +11,50 @@ import de.jagenka.config.UserEntry
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import kotlinx.coroutines.launch
+import net.minecraft.server.WhitelistEntry
+import net.minecraft.util.Uuids
 import net.minecraft.util.WorldSavePath
 import java.nio.file.Files
 import java.util.*
 
 object UserRegistry
 {
-    private val users = mutableSetOf<User>()
+    private val registeredUsers = mutableSetOf<User>()
 
     private val discordMembers = mutableMapOf<DiscordUser, Member>() //TODO: load Members every so often (?)
+    private var userCache = mutableSetOf<MinecraftUser>()
     private val minecraftProfiles = mutableSetOf<GameProfile>()
 
     // region getter
+    fun getDiscordMembers(): Map<DiscordUser, Member>
+    {
+        return discordMembers.toMap()
+    }
+
     fun findUser(minecraftName: String): User?
     {
-        return users.find { it.minecraft.name.equals(minecraftName, ignoreCase = true) }
+        return registeredUsers.find { it.minecraft.name.equals(minecraftName, ignoreCase = true) }
     }
 
     fun findUser(uuid: UUID): User?
     {
-        return users.find { it.minecraft.uuid == uuid }
+        return registeredUsers.find { it.minecraft.uuid == uuid }
     }
 
-    fun findUser(snowflake: Snowflake): User?
+    fun findUser(snowflake: Snowflake?): User?
     {
-        return users.find { it.discord.id == snowflake }
+        if (snowflake == null) return null
+        return registeredUsers.find { it.discord.id == snowflake }
     }
 
     fun getMinecraftUser(name: String): MinecraftUser?
     {
-        return findUser(name)?.minecraft
+        return userCache.find { it.name == name }
     }
 
     fun getMinecraftUser(uuid: UUID): MinecraftUser?
     {
-        return findUser(uuid)?.minecraft
+        return userCache.find { it.uuid == uuid }
     }
 
     fun getGameProfile(name: String): GameProfile?
@@ -74,88 +82,132 @@ object UserRegistry
         return discordMembers.values.find { it.username == inputName || it.effectiveName == inputName }
     }
 
-    fun getAllUsers() = users.toList()
+    fun getAllRegisteredUsers() = registeredUsers.toList()
 
     fun getAllUsersAsOutput(): String
     {
-        return getAllUsers().joinToString(prefix = "Currently registered Users:\n", separator = "\n") { it.prettyString() }
+        return getAllRegisteredUsers().joinToString(prefix = "Currently registered Users:\n", separator = "\n") { it.prettyString() }
     }
 
     fun getMinecraftProfiles() = minecraftProfiles.toSet()
 
-    fun find(name: String): List<User>
+    fun findRegistered(name: String): List<User>
     {
-        return users.filter {
-            discordMembers[it.discord]?.username?.contains(name, ignoreCase = true) ?: false
-                    || discordMembers[it.discord]?.effectiveName?.contains(name, ignoreCase = true) ?: false
-                    || it.minecraft.name.contains(name, ignoreCase = true)
+        return registeredUsers.filter {
+            it.isLikely(name)
         }
     }
 
     fun findMinecraftProfiles(name: String): List<GameProfile>
     {
-        return minecraftProfiles.filter {
-            it.name.contains(name, ignoreCase = true)
+        val possibleRegisteredUsers = findRegistered(name)
+        return minecraftProfiles.filter { gameProfile ->
+            gameProfile.name.contains(name, ignoreCase = true)
+                    || possibleRegisteredUsers.find { user -> user.minecraft.name.equals(gameProfile.name, ignoreCase = true) } != null
         }
     }
     // endregion
 
     // region registration
-    suspend fun register(snowflake: Snowflake, minecraftName: String): Boolean
+    fun register(snowflake: Snowflake, minecraftName: String, callback: (success: Boolean) -> Unit = {})
     {
-        if (!findMinecraftProfileOrError(minecraftName)) return false
-        if (!findDiscordMemberOrError(snowflake)) return false
+        findDiscordMember(snowflake)
+        val gameProfile =
+            getGameProfile(minecraftName)
+                ?: findMinecraftProfileOrError(minecraftName)
+                ?: minecraftServer?.playerManager?.whitelist?.values()?.map { it.key }?.find { it?.name?.equals(minecraftName, ignoreCase = true) ?: false }
+                ?: GameProfile(
+                    userCache.find { it.name.equals(minecraftName, ignoreCase = true) }?.uuid ?: Uuids.getOfflinePlayerUuid(minecraftName),
+                    minecraftName
+                )
+        registeredUsers.put(User(discord = DiscordUser(snowflake), minecraft = MinecraftUser(gameProfile.name, gameProfile.id)))
+        saveToCache(gameProfile)
 
-        val gameProfile = getGameProfile(minecraftName) ?: return false
-        users.put(User(DiscordUser(snowflake), MinecraftUser(gameProfile.name, gameProfile.id)))
-        return true
+        callback.invoke(true)
     }
 
     fun unregister(minecraftName: String): Boolean
     {
-        return users.removeAll { it.minecraft == getMinecraftUser(minecraftName) }
+        return registeredUsers.removeAll { it.minecraft == getMinecraftUser(minecraftName) }
     }
 
     fun unregister(uuid: UUID): Boolean
     {
-        return users.removeAll { it.minecraft == getMinecraftUser(uuid) }
+        return registeredUsers.removeAll { it.minecraft == getMinecraftUser(uuid) }
     }
 
     fun unregister(snowflake: Snowflake): Boolean
     {
-        return users.removeAll { it.discord == getDiscordUser(snowflake) }
+        return registeredUsers.removeAll { it.discord == getDiscordUser(snowflake) }
     }
     // endregion
 
     // region config stuffs
-    fun clear()
+    fun loadRegisteredUsersFromFile()
     {
-        users.clear()
+        clearRegistered()
+        findMinecraftProfilesOrError(Config.configEntry.registeredUsers.map { it.minecraftName }
+            .filter { !userCache.map { it.name.lowercase() }.contains(it.lowercase()) }
+            .toList())
+        Config.configEntry.registeredUsers.forEach { register(it) }
+
+        minecraftServer?.playerManager?.whitelist?.apply {
+            // remove players from whitelist, if they are not registered
+            this.values().toList().forEach { onWhitelist ->
+                if (onWhitelist.key?.id !in registeredUsers.map { it.minecraft.uuid })
+                {
+                    this.remove(onWhitelist)
+                }
+            }
+            // add players to whitelist if not already happened
+            registeredUsers.forEach { inRegistry ->
+                val gameProfile = getGameProfile(inRegistry.minecraft.uuid) ?: return@forEach
+                if (!this.isAllowed(gameProfile))
+                {
+                    this.add(WhitelistEntry(gameProfile))
+                }
+            }
+        }
+    }
+
+    fun clearRegistered()
+    {
+        registeredUsers.clear()
     }
 
     fun register(userEntry: UserEntry)
     {
         val (snowflake, minecraftName) = userEntry
-        Main.scope.launch {
-            register(Snowflake(snowflake), minecraftName)
-        }
+        register(Snowflake(snowflake), minecraftName)
     }
 
     fun getRegisteredUsersForConfig(): List<UserEntry>
     {
-        return users.map { UserEntry(it.discord.id.value.toLong(), it.minecraft.name) }
+        return registeredUsers.map { UserEntry(it.discord.id.value.toLong(), it.minecraft.name) }
     }
 
     fun saveToCache(gameProfile: GameProfile)
     {
-        minecraftProfiles.put(gameProfile)
+        val user = MinecraftUser(gameProfile.name, gameProfile.id)
+        userCache.find { it.uuid == gameProfile.id }?.apply {
+            this.name = gameProfile.name
+        }
+            ?: userCache.find { it.name.equals(gameProfile.name, ignoreCase = true) }?.apply {
+                this.name = gameProfile.name
+                this.uuid = gameProfile.id
+            }
+            ?: userCache.add(user)
+
+        minecraftProfiles.add(gameProfile)
         saveCacheToFile()
     }
 
     fun saveToFile()
     {
-        saveRegisteredUsersToFile()
-        saveCacheToFile()
+        Main.scope.launch {
+            saveRegisteredUsersToFile()
+            saveCacheToFile()
+        }
     }
 
     fun saveRegisteredUsersToFile()
@@ -166,7 +218,8 @@ object UserRegistry
 
     fun saveCacheToFile()
     {
-        Config.configEntry.userCache = Config.configEntry.userCache.union(minecraftProfiles.map { MinecraftUser(it.name, it.id) }).toMutableSet()
+        userCache.addAll(minecraftProfiles.map { MinecraftUser(it.name, it.id) })
+        Config.configEntry.userCache = userCache.toMutableSet()
         Config.store()
     }
     // endregion
@@ -199,62 +252,91 @@ object UserRegistry
                     }
                 }
                 .forEach { uuid ->
-                    server.gameProfileRepo
+                    server.gameProfileRepo // this seems to do nothing (?)
                     server.userCache?.getByUuid(uuid)?.unwrap()?.let { profile ->
-                        if (profile.isComplete) minecraftProfiles.add(profile)
+                        saveToCache(profile)
                     } ?: return@forEach
                 }
-
-            saveCacheToFile()
         }
     }
 
     fun loadUserCache()
     {
-        Config.configEntry.userCache.forEach { minecraftUser ->
-            if (minecraftProfiles.none { it.name.equals(minecraftUser.name, ignoreCase = true) })
-            {
-                findMinecraftProfileOrError(minecraftUser.name)
-            }
+        // filter is, so that no double-request is made
+        val foundProfiles = findMinecraftProfilesOrError(Config.configEntry.userCache.toMutableSet().filter { it !in this.userCache }.map { it.name })
+
+        Config.configEntry.userCache.toMutableSet().forEach { userFromConfig ->
+            val gameProfile = foundProfiles.find { it.id == userFromConfig.uuid } ?: return@forEach
+            userCache.put(MinecraftUser(gameProfile.name, gameProfile.id, userFromConfig.skinURL, userFromConfig.lastURLUpdate))
         }
     }
 
-    private fun findMinecraftProfileOrError(minecraftName: String): Boolean
+    private fun findMinecraftProfilesOrError(names: List<String>): List<GameProfile>
+    {
+        if (names.isEmpty()) return emptyList()
+
+        val result = mutableListOf<GameProfile>()
+
+        try
+        {
+            minecraftServer?.gameProfileRepo?.findProfilesByNames(names.shuffled().toTypedArray(), object : ProfileLookupCallback
+            {
+                override fun onProfileLookupSucceeded(profile: GameProfile?)
+                {
+                    profile?.let {
+                        minecraftProfiles.add(profile)
+                        result.add(profile)
+                        return
+                    } ?: logger.error("profile null even though lookup succeeded")
+                }
+
+                override fun onProfileLookupFailed(profileName: String?, exception: java.lang.Exception?)
+                {
+                    logger.error("no profile found for $profileName")
+                }
+            })
+        } catch (e: Exception)
+        {
+            logger.error("error finding game profiles for $names")
+        }
+
+        return result.toList()
+    }
+
+    private fun findMinecraftProfileOrError(minecraftName: String): GameProfile?
     {
         var found = false
 
-        minecraftServer?.gameProfileRepo?.findProfilesByNames(arrayOf(minecraftName), Agent.MINECRAFT, object : ProfileLookupCallback
+        try
         {
-            override fun onProfileLookupSucceeded(profile: GameProfile?)
+            minecraftServer?.gameProfileRepo?.findProfilesByNames(arrayOf(minecraftName), object : ProfileLookupCallback
             {
-                profile?.let {
-                    if (profile.isComplete)
-                    {
+                override fun onProfileLookupSucceeded(profile: GameProfile?)
+                {
+                    profile?.let {
                         minecraftProfiles.add(profile)
-                        saveCacheToFile()
                         found = true
                         return
-                    } else
-                    {
-                        logger.error("profile for $minecraftName not complete even though lookup succeeded")
-                    }
-                } ?: logger.error("profile for $minecraftName null even though lookup succeeded")
-            }
+                    } ?: logger.error("profile for $minecraftName null even though lookup succeeded")
+                }
 
-            override fun onProfileLookupFailed(profile: GameProfile?, exception: java.lang.Exception?)
-            {
-                found = false
-                logger.error("no profile found for $minecraftName")
-            }
-        })
+                override fun onProfileLookupFailed(profileName: String?, exception: java.lang.Exception?)
+                {
+                    found = false
+                    logger.error("no profile found for $minecraftName")
+                }
+            })
+        } catch (e: Exception)
+        {
+            logger.error("error finding game profile for $minecraftName")
+        }
 
-        return found
+        return if (found) getGameProfile(minecraftName) else null
     }
 
-    private suspend fun findDiscordMemberOrError(snowflake: Snowflake): Boolean
+    private fun findDiscordMember(snowflake: Snowflake)
     {
-        discordMembers[DiscordUser(snowflake)] = DiscordHandler.getMemberOrSendError(snowflake) ?: return false
-        return true
+        Main.scope.launch { discordMembers[DiscordUser(snowflake)] = DiscordHandler.getMemberOrSendError(snowflake) ?: return@launch }
     }
 
     fun <V> MutableSet<V>.put(element: V)
