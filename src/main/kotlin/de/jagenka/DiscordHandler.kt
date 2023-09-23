@@ -183,18 +183,12 @@ object DiscordHandler
         }
     }
 
-    fun String.markdownEscaped(): String
+    /**
+     * prevents messages from looking like a system message, as implemented [MinecraftHandler.sendSystemMessageAsPlayer]
+     */
+    private fun String.markdownEscaped(): String
     {
-        return this
-            .replace("""\""", """\\""")
-            .replace("""*""", """\*""")
-            .replace("""_""", """\_""")
-            .replace("""~""", """\~""")
-            .replace("""`""", """\`""")
-            .replace("""|""", """\|""")
-            .replace(""">""", """\>""")
-            .replace("""-""", """\-""")
-            .replace("""#""", """\#""")
+        return this.replace("""> """, """\> """)
     }
 
     fun Member.prettyName() = "${this.effectiveName} (${this.username})"
