@@ -11,10 +11,11 @@ import kotlinx.serialization.encoding.Encoder
 import java.util.*
 
 @Serializable
-class BotConfigEntry(
+class DiscordSettingsEntry(
     var botToken: String = "BOT_TOKEN",
     var guildId: Long = 123456789,
-    var channelId: Long = 123456789
+    var channelId: Long = 123456789,
+    var serverName: String = "Server"
 )
 
 @Serializable
@@ -46,7 +47,7 @@ object MinecraftUserSerializer : KSerializer<MinecraftUser>
 
 @Serializable
 class BaseConfigEntry(
-    var discordSettings: BotConfigEntry = BotConfigEntry(),
+    var discordSettings: DiscordSettingsEntry = DiscordSettingsEntry(),
     var registeredUsers: MutableList<UserEntry> = mutableListOf(),
     var userCache: MutableSet<MinecraftUser> = mutableSetOf(),
 )

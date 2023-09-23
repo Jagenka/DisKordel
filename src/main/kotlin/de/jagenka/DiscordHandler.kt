@@ -28,7 +28,6 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.nio.file.Path
-import java.util.regex.Pattern
 import javax.imageio.ImageIO
 
 object DiscordHandler
@@ -114,6 +113,22 @@ object DiscordHandler
         sendMessage("```$toSend\n```")
     }
 
+    suspend fun sendWebhookMessage(username: String, avatarURL: String, text: String, escapeMarkdown: Boolean = true)
+    {
+        if (text.isBlank()) return
+
+        val webhook = Util.getOrCreateWebhook("diskordel_chat_messages")
+        kord?.apply {
+            rest.webhook.executeWebhook(webhookId = webhook.id, token = webhook.token.value ?: "") {
+                this.username = username
+                this.avatarUrl = avatarURL
+                this.content =
+                    text.let { if (it.length > 2000) it.substring(0, 1997) + "..." else it } // trim as per API limit
+                        .let { if (escapeMarkdown) it.markdownEscaped() else it }
+            }
+        }
+    }
+
     suspend fun sendImage(path: Path, silent: Boolean = false): Message
     {
         return channel.createMessage {
@@ -168,20 +183,25 @@ object DiscordHandler
         }
     }
 
-    fun String.convertMentions(): String // TODO: integrate
+    fun String.markdownEscaped(): String
     {
-        var newString = this
-        val matcher = Pattern.compile("@.*@").matcher(this)
-        while (matcher.find())
-        {
-            val mention = matcher.group().substring(1, length - 1)
-            val member = UserRegistry.getDiscordMember(mention)
-            if (member != null) newString = newString.replaceRange(matcher.start(), matcher.end(), "<@!${member.id.value}>")
-        }
-        return newString
+        return this
+            .replace("""\""", """\\""")
+            .replace("""*""", """\*""")
+            .replace("""_""", """\_""")
+            .replace("""~""", """\~""")
+            .replace("""`""", """\`""")
+            .replace("""|""", """\|""")
+            .replace(""">""", """\>""")
+            .replace("""-""", """\-""")
+            .replace("""#""", """\#""")
     }
 
     fun Member.prettyName() = "${this.effectiveName} (${this.username})"
+
+    /**
+     * this is called, if a message is not a command, so if it is a chat message
+     */
     suspend fun handleNotACommand(event: MessageCreateEvent)
     {
         if (event.message.author?.id == kord?.selfId || event.message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return

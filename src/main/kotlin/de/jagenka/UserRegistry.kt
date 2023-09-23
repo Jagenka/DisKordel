@@ -21,7 +21,7 @@ object UserRegistry
 {
     private val registeredUsers = mutableSetOf<User>()
 
-    private val discordMembers = mutableMapOf<DiscordUser, Member>() //TODO: load Members every so often (?)
+    private val discordMembers = mutableMapOf<DiscordUser, Member>()
     private var userCache = mutableSetOf<MinecraftUser>()
     private val minecraftProfiles = mutableSetOf<GameProfile>()
 

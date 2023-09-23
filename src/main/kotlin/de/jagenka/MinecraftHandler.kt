@@ -1,20 +1,19 @@
 package de.jagenka
 
-import de.jagenka.Util.unwrap
+import de.jagenka.config.Config
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
+import net.minecraft.network.message.MessageType
+import net.minecraft.network.message.SignedMessage
+import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.Style
-import net.minecraft.text.Text
-import net.minecraft.text.Texts
+import net.minecraft.text.*
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.Position
 import org.slf4j.LoggerFactory
-import java.util.*
 import kotlin.math.min
 
 object MinecraftHandler
@@ -55,59 +54,87 @@ object MinecraftHandler
         }
     }
 
-    private fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity)
+    private suspend fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity)
+    {
+        val user = UserRegistry.getMinecraftUser(sender.uuid) ?: return
+        DiscordHandler.sendWebhookMessage(username = user.name, avatarURL = user.getSkinURL(), text = message.string)
+    }
+
+    private suspend fun handleMinecraftSystemMessage(message: Text)
+    {
+        val key = (message.content as? TranslatableTextContent)?.key ?: return
+
+        if (key.startsWith("multiplayer.player.joined"))
+        {
+            handleLoginMessage(message)
+        } else if (key.startsWith("multiplayer.player.left"))
+        {
+            handleLogoutMessage(message)
+        } else if (key.startsWith("death."))
+        {
+            handleDeathMessage(message)
+        } else if (key.startsWith("chat.type.advancement."))
+        {
+            handleAdvancementMessage(message)
+        }
+    }
+
+    fun handleSayCommand(message: SignedMessage, params: MessageType.Parameters)
     {
         Main.scope.launch {
-            val user = UserRegistry.getMinecraftUser(sender.uuid) ?: return@launch
+            if (params.type == minecraftServer?.registryManager?.get(RegistryKeys.MESSAGE_TYPE)?.get(MessageType.SAY_COMMAND))
+            {
+                val user = UserRegistry.getMinecraftUser(message.sender)
+                val text = message.content
 
-            val webhook = Util.getOrCreateWebhook("diskordel_chat_messages")
-            DiscordHandler.kord?.apply {
-                rest.webhook.executeWebhook(webhookId = webhook.id, token = webhook.token.value ?: "") {
-                    this.username = user.name
-                    this.avatarUrl = user.getSkinURL()
-                    this.content = message.string
-                }
+                DiscordHandler.sendWebhookMessage(
+                    username = Config.configEntry.discordSettings.serverName,
+                    avatarURL = "",
+                    text = if (user != null) "[${user.name}] ${text.string}" else text.string,
+                    escapeMarkdown = false
+                )
             }
         }
     }
 
-    private fun handleMinecraftSystemMessage(message: Text)
+    /**
+     * Sends a message looking like it came from a player, but stylized with > and cursive text.
+     * If the first word is not a known player name, the message is sent as whatever is set as `serverName` in Config
+     */
+    private suspend fun sendSystemMessageAsPlayer(text: Text)
     {
-        Main.scope.launch {
-            val colorName = message.visit({ style, string ->
-                val color = style.color ?: return@visit Optional.empty()
-                if (color.name != color.hexCode) return@visit Optional.of(color.name)
-                Optional.empty()
-            }, Style.EMPTY).unwrap()
-
-            if (colorName == "blue" && message.string.startsWith("[")) return@launch // this is a message coming from discord
-
-            DiscordHandler.sendCodeBlock(
-                "ansi",
-                when (colorName)
-                {
-                    "yellow" -> // yellow text
-                    {
-                        "\u001B[2;33m${message.string}\u001B[0m"
-                    }
-
-                    "green" -> // green text
-                    {
-                        "\u001B[2;32m${message.string}\u001B[0m"
-                    }
-
-                    "dark_purple" -> // purple text
-                    {
-                        "\u001B[2;35m${message.string}\u001B[0m"
-                    }
-
-                    else -> // red text
-                    {
-                        "\u001B[2;31m${message.string}\u001B[0m"
-                    }
-                }
-            )
+        val string = text.string
+        val firstWord = string.split(" ").firstOrNull()
+        val user = firstWord?.let { playerName ->
+            UserRegistry.getMinecraftUser(playerName)
         }
+
+        DiscordHandler.sendWebhookMessage(
+            username = user?.name ?: Config.configEntry.discordSettings.serverName,
+            avatarURL = user?.getSkinURL() ?: "",
+            text = if (user != null) "> *${string.removePrefix(firstWord).trim()}*" else "> *$string*",
+            escapeMarkdown = false
+        )
+    }
+
+    private suspend fun handleLoginMessage(text: Text)
+    {
+        sendSystemMessageAsPlayer(text)
+    }
+
+    private suspend fun handleLogoutMessage(text: Text)
+    {
+        sendSystemMessageAsPlayer(text)
+    }
+
+    private suspend fun handleDeathMessage(text: Text)
+    {
+        sendSystemMessageAsPlayer(text)
+    }
+
+    private suspend fun handleAdvancementMessage(text: Text)
+    {
+        sendSystemMessageAsPlayer(text)
     }
 
     suspend fun sendMessageFromDiscord(event: MessageCreateEvent)
