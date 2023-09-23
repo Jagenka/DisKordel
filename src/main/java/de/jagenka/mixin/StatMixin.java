@@ -15,7 +15,7 @@ public class StatMixin
 {
     @Shadow
     @Final
-    private StatFormatter formatter;
+    public StatFormatter formatter;
 
     @Inject(method = "format", at = @At("HEAD"), cancellable = true)
     private void formatTimeDifferently(int value, CallbackInfoReturnable<String> cir)

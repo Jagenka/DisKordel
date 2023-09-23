@@ -1,6 +1,5 @@
 package de.jagenka
 
-import com.mojang.authlib.Agent
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.ProfileLookupCallback
 import de.jagenka.DiscordHandler.prettyName
@@ -255,7 +254,7 @@ object UserRegistry
                 .forEach { uuid ->
                     server.gameProfileRepo // this seems to do nothing (?)
                     server.userCache?.getByUuid(uuid)?.unwrap()?.let { profile ->
-                        if (profile.isComplete) saveToCache(profile)
+                        saveToCache(profile)
                     } ?: return@forEach
                 }
         }
@@ -280,26 +279,20 @@ object UserRegistry
 
         try
         {
-            minecraftServer?.gameProfileRepo?.findProfilesByNames(names.shuffled().toTypedArray(), Agent.MINECRAFT, object : ProfileLookupCallback
+            minecraftServer?.gameProfileRepo?.findProfilesByNames(names.shuffled().toTypedArray(), object : ProfileLookupCallback
             {
                 override fun onProfileLookupSucceeded(profile: GameProfile?)
                 {
                     profile?.let {
-                        if (profile.isComplete)
-                        {
-                            minecraftProfiles.add(profile)
-                            result.add(profile)
-                            return
-                        } else
-                        {
-                            logger.error("profile for ${profile.name} not complete even though lookup succeeded")
-                        }
+                        minecraftProfiles.add(profile)
+                        result.add(profile)
+                        return
                     } ?: logger.error("profile null even though lookup succeeded")
                 }
 
-                override fun onProfileLookupFailed(profile: GameProfile?, exception: java.lang.Exception?)
+                override fun onProfileLookupFailed(profileName: String?, exception: java.lang.Exception?)
                 {
-                    logger.error("no profile found for ${profile?.name}")
+                    logger.error("no profile found for $profileName")
                 }
             })
         } catch (e: Exception)
@@ -316,24 +309,18 @@ object UserRegistry
 
         try
         {
-            minecraftServer?.gameProfileRepo?.findProfilesByNames(arrayOf(minecraftName), Agent.MINECRAFT, object : ProfileLookupCallback
+            minecraftServer?.gameProfileRepo?.findProfilesByNames(arrayOf(minecraftName), object : ProfileLookupCallback
             {
                 override fun onProfileLookupSucceeded(profile: GameProfile?)
                 {
                     profile?.let {
-                        if (profile.isComplete)
-                        {
-                            minecraftProfiles.add(profile)
-                            found = true
-                            return
-                        } else
-                        {
-                            logger.error("profile for $minecraftName not complete even though lookup succeeded")
-                        }
+                        minecraftProfiles.add(profile)
+                        found = true
+                        return
                     } ?: logger.error("profile for $minecraftName null even though lookup succeeded")
                 }
 
-                override fun onProfileLookupFailed(profile: GameProfile?, exception: java.lang.Exception?)
+                override fun onProfileLookupFailed(profileName: String?, exception: java.lang.Exception?)
                 {
                     found = false
                     logger.error("no profile found for $minecraftName")

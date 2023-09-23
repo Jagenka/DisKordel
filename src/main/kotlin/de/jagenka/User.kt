@@ -3,6 +3,7 @@ package de.jagenka
 import com.mojang.authlib.minecraft.MinecraftProfileTexture
 import de.jagenka.config.MinecraftUserSerializer
 import dev.kord.common.entity.Snowflake
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
@@ -50,9 +51,8 @@ data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String =
     {
         if (skinURL.isBlank() || System.currentTimeMillis() > lastURLUpdate + 4.hours.inWholeMilliseconds)
         {
-            val profile = UserRegistry.getGameProfile(uuid) ?: return
             MinecraftHandler.minecraftServer?.apply {
-                sessionService.fillProfileProperties(profile, false)
+                val profile = sessionService.fetchProfile(uuid, false)?.profile ?: MinecraftHandler.logger.error("no profile found for UUID $uuid").run { return }
                 val texture = sessionService.getTextures(profile, false)[MinecraftProfileTexture.Type.SKIN] ?: return
 
                 val skin = ImageIO.read(URL(texture.url))
@@ -71,7 +71,9 @@ data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String =
                 skinURL = imageUrl
                 lastURLUpdate = System.currentTimeMillis()
 
-                UserRegistry.saveCacheToFile()
+                Main.scope.launch {
+                    UserRegistry.saveCacheToFile()
+                }
             }
         }
     }
