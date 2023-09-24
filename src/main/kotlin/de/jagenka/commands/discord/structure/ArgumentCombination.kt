@@ -6,7 +6,7 @@ class ArgumentCombination(
     internal val arguments: List<Argument<*>>,
     internal val helpText: String,
     internal val needsAdmin: Boolean = false,
-    private val executes: suspend (event: MessageCreateEvent, arguments: List<Pair<Argument<*>, String>>) -> Boolean // TODO: move List<Pair... to class
+    private val executes: suspend (event: MessageCreateEvent, arguments: List<Pair<Argument<*>, String>>) -> Boolean
 ) : Comparable<ArgumentCombination>
 {
     constructor(

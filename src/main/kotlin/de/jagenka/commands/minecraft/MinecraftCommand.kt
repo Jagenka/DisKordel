@@ -3,7 +3,7 @@ package de.jagenka.commands.minecraft
 import com.mojang.brigadier.CommandDispatcher
 import net.minecraft.server.command.ServerCommandSource
 
-interface MinecraftCommand // TODO: Discord part
+interface MinecraftCommand
 {
     val minecraftName: String
 
