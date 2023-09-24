@@ -38,12 +38,12 @@ object Main : ModInitializer
         //register onServerLoaded
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             MinecraftHandler.onServerLoaded(server)
-            scope.launch { DiscordHandler.sendWebhookMessage(Config.configEntry.discordSettings.serverName, "", "Server started") }
+            scope.launch { DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "Server started") }
         }
 
         //register onServerStopped
-        ServerLifecycleEvents.SERVER_STOPPED.register { server ->
-            runBlocking { DiscordHandler.sendWebhookMessage(Config.configEntry.discordSettings.serverName, "", "Server stopped") }
+        ServerLifecycleEvents.SERVER_STOPPING.register { server ->
+            runBlocking { DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "Server stopping") }
         }
 
         registerMixins()
