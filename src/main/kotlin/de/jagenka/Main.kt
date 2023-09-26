@@ -13,7 +13,6 @@ import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -43,7 +42,7 @@ object Main : ModInitializer
 
         //register onServerStopped
         ServerLifecycleEvents.SERVER_STOPPING.register { server ->
-            runBlocking { DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "Server stopping") }
+            scope.launch { DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "Server stopping") }
         }
 
         registerMixins()
