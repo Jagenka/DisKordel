@@ -20,8 +20,8 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
+import kotlin.system.exitProcess
 
-@Suppress("UNUSED")
 object Main : ModInitializer
 {
     val scope: CoroutineScope = CoroutineScope(SupervisorJob())
@@ -43,7 +43,11 @@ object Main : ModInitializer
 
         //register onServerStopped
         ServerLifecycleEvents.SERVER_STOPPED.register { server ->
-            runBlocking { DiscordHandler.sendWebhookMessage(Config.configEntry.discordSettings.serverName, "", "Server stopped") }
+            scope.launch {
+                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "Server stopped")
+                scope.cancel("Server is shutting down.")
+                exitProcess(0)
+            }
         }
 
         registerMixins()
