@@ -38,14 +38,21 @@ object Main : ModInitializer
         //register onServerLoaded
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             MinecraftHandler.onServerLoaded(server)
-            scope.launch { DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "Server started") }
+            scope.launch {
+                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "> *Server started!*", escapeMarkdown = false)
+            }
+        }
+
+        //register onServerStopping
+        ServerLifecycleEvents.SERVER_STOPPING.register { server ->
+            scope.launch {
+                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "> *Server stopping...*", escapeMarkdown = false)
+            }
         }
 
         //register onServerStopped
         ServerLifecycleEvents.SERVER_STOPPED.register { server ->
             scope.launch {
-                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "Server stopped")
-                scope.cancel("Server is shutting down.")
                 exitProcess(0)
             }
         }
