@@ -10,21 +10,20 @@ import de.jagenka.commands.universal.WhoisCommand
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
 import dev.kord.common.entity.Snowflake
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
+import kotlin.system.exitProcess
 
-@Suppress("UNUSED")
 object Main : ModInitializer
 {
     val scope: CoroutineScope = CoroutineScope(SupervisorJob())
+
+    var stoppingTask: Job? = null
 
     private val minecraftCommands = listOf(
         WhoisCommand,
@@ -38,12 +37,27 @@ object Main : ModInitializer
         //register onServerLoaded
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             MinecraftHandler.onServerLoaded(server)
-            scope.launch { DiscordHandler.sendWebhookMessage(Config.configEntry.discordSettings.serverName, "", "Server started") }
+            scope.launch {
+                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "> *Server started!*", escapeMarkdown = false)
+            }
+        }
+
+        //register onServerStopping
+        ServerLifecycleEvents.SERVER_STOPPING.register { server ->
+            stoppingTask = scope.launch {
+                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "> *Server stopping...*", escapeMarkdown = false)
+                stoppingTask?.cancel("done")
+            }
         }
 
         //register onServerStopped
         ServerLifecycleEvents.SERVER_STOPPED.register { server ->
-            runBlocking { DiscordHandler.sendWebhookMessage(Config.configEntry.discordSettings.serverName, "", "Server stopped") }
+            scope.launch {
+                stoppingTask?.invokeOnCompletion {
+                    logger.info("killing process now...")
+                    exitProcess(0)
+                } ?: exitProcess(0)
+            }
         }
 
         registerMixins()
