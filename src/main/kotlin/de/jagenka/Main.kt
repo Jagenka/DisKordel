@@ -13,7 +13,6 @@ import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -38,14 +37,21 @@ object Main : ModInitializer
         //register onServerLoaded
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             MinecraftHandler.onServerLoaded(server)
-            scope.launch { DiscordHandler.sendWebhookMessage(Config.configEntry.discordSettings.serverName, "", "Server started") }
+            scope.launch {
+                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "> *Server started!*", escapeMarkdown = false)
+            }
+        }
+
+        //register onServerStopping
+        ServerLifecycleEvents.SERVER_STOPPING.register { server ->
+            scope.launch {
+                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "> *Server stopping...*", escapeMarkdown = false)
+            }
         }
 
         //register onServerStopped
         ServerLifecycleEvents.SERVER_STOPPED.register { server ->
             scope.launch {
-                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "Server stopped")
-                scope.cancel("Server is shutting down.")
                 exitProcess(0)
             }
         }
