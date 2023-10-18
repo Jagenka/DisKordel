@@ -1,6 +1,7 @@
 package de.jagenka.commands.universal
 
 import de.jagenka.UserRegistry
+import de.jagenka.commands.StringInStringOutCommand
 import de.jagenka.commands.discord.StatsCommand
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats

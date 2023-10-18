@@ -2,6 +2,7 @@ package de.jagenka
 
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.ProfileLookupCallback
+import de.jagenka.DiscordHandler.kord
 import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.MinecraftHandler.logger
 import de.jagenka.MinecraftHandler.minecraftServer
@@ -10,12 +11,14 @@ import de.jagenka.config.Config
 import de.jagenka.config.UserEntry
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
+import dev.kord.core.entity.effectiveName
 import kotlinx.coroutines.launch
 import net.minecraft.server.WhitelistEntry
 import net.minecraft.util.Uuids
 import net.minecraft.util.WorldSavePath
 import java.nio.file.Files
 import java.util.*
+import kotlin.math.max
 
 object UserRegistry
 {
@@ -24,6 +27,8 @@ object UserRegistry
     private val discordMembers = mutableMapOf<DiscordUser, Member>()
     private var userCache = mutableSetOf<MinecraftUser>()
     private val minecraftProfiles = mutableSetOf<GameProfile>()
+
+    private val discordUserCache = mutableSetOf<dev.kord.core.entity.User>()
 
     // region getter
     fun getDiscordMembers(): Map<DiscordUser, Member>
@@ -84,9 +89,9 @@ object UserRegistry
 
     fun getAllRegisteredUsers() = registeredUsers.toList()
 
-    fun getAllUsersAsOutput(): String
+    suspend fun getAllUsersAsOutput(): String
     {
-        return getAllRegisteredUsers().joinToString(prefix = "Currently registered Users:\n", separator = "\n") { it.prettyString() }
+        return "Currently registered Users:\n\n" + getAllRegisteredUsers().getPrettyUsersList()
     }
 
     fun getMinecraftProfiles() = minecraftProfiles.toSet()
@@ -226,12 +231,53 @@ object UserRegistry
 
     fun User.prettyString(): String
     {
-        val member = discordMembers[this.discord] ?: return "~not a member~ aka `${this.minecraft.name}`"
-        return "${member.prettyName()} aka `${this.minecraft.name}`"
+        return (discordMembers[this.discord]?.prettyName() ?: "~not a member~") +
+                "   aka   ${this.minecraft.name}"
     }
 
-    fun List<User>.onlyMinecraftNames(): List<String> =
-        this.map { it.minecraft.name }
+    /**
+     * this method assumes equal character width
+     */
+    suspend fun List<User>.getPrettyUsersList(): String
+    {
+        val userNames = this.getUserNames()
+
+        val displayNameHeader = "Display Name"
+        val displayNameColWidth = max(userNames.maxOfOrNull { it.displayName.length } ?: 0, displayNameHeader.length) + 2
+
+        val usernameHeader = "Username"
+        val usernameColWidth = max(userNames.maxOfOrNull { it.username.length } ?: 0, usernameHeader.length) + 2
+
+        val minecraftNameHeader = "Minecraft Name"
+        val minecraftNameColWidth = max(userNames.maxOfOrNull { it.minecraftName.length } ?: 0, minecraftNameHeader.length) + 2
+
+        var header = displayNameHeader.padEnd(displayNameColWidth + 1, ' ') +
+                usernameHeader.padEnd(usernameColWidth + 1, ' ') +
+                minecraftNameHeader.padEnd(minecraftNameColWidth + 1, ' ')
+        header += "\n" + "-".repeat(header.length) + "\n"
+
+        return userNames.joinToString(prefix = header, separator = "\n") { (displayName, username, minecraftName) ->
+            " " + displayName.padEnd(displayNameColWidth - 1, ' ') + "|" +
+                    " " + username.padEnd(usernameColWidth - 1, ' ') + "|" +
+                    " " + minecraftName.padEnd(minecraftNameColWidth - 1, ' ')
+        }
+    }
+
+    suspend fun List<User>.getUserNames(): List<UserName>
+    {
+        return this.map {
+            val discordUser = discordMembers[it.discord] ?: discordUserCache.find { cachedUser -> cachedUser.id == it.discord.id } ?: kord?.getUser(it.discord.id)
+            if (discordUser != null)
+            {
+                discordUserCache.add(discordUser)
+            }
+            UserName(
+                displayName = (discordUser as? Member)?.effectiveName ?: discordUser?.effectiveName ?: "noname",
+                username = (discordUser as? Member)?.username ?: discordUser?.username ?: "noname",
+                minecraftName = it.minecraft.name
+            )
+        }
+    }
 
     fun loadGameProfilesFromPlayerData()
     {
@@ -345,4 +391,6 @@ object UserRegistry
         this.add(element)
     }
 }
+
+data class UserName(val displayName: String, val username: String, val minecraftName: String)
 
