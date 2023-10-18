@@ -1,7 +1,9 @@
 package de.jagenka.commands.universal
 
 import de.jagenka.UserRegistry
-import de.jagenka.UserRegistry.prettyString
+import de.jagenka.UserRegistry.getPrettyUsersList
+import de.jagenka.commands.StringInStringOutCommand
+import kotlinx.coroutines.runBlocking
 
 
 object WhoisCommand : StringInStringOutCommand
@@ -22,6 +24,6 @@ object WhoisCommand : StringInStringOutCommand
 
         if (possibleUsers.isEmpty()) return "No-one found!"
 
-        return possibleUsers.joinToString(prefix = "Could be:\n", separator = "\n") { it.prettyString() }
+        return runBlocking { "Could be:\n\n" + possibleUsers.getPrettyUsersList() }
     }
 }

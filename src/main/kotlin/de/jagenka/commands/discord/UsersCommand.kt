@@ -14,7 +14,7 @@ object UsersCommand : MessageCommand
         get() = "Lists all registered users."
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(empty(helpText) {
-            DiscordHandler.sendMessage(UserRegistry.getAllUsersAsOutput())
+            DiscordHandler.sendCodeBlock(text = UserRegistry.getAllUsersAsOutput())
             true
         })
 }

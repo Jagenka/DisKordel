@@ -1,4 +1,4 @@
-package de.jagenka.commands.universal
+package de.jagenka.commands
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -9,7 +9,6 @@ import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
 import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.findInput
 import de.jagenka.commands.discord.structure.MessageCommand
 import de.jagenka.commands.discord.structure.Registry
-import de.jagenka.commands.minecraft.MinecraftCommand
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
@@ -51,11 +50,11 @@ interface StringInStringOutCommand : MinecraftCommand, MessageCommand
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(
             empty(helpText) {
-                DiscordHandler.sendMessage(process(""))
+                DiscordHandler.sendCodeBlock(text = process(""))
                 true
             },
             ArgumentCombination(string(variableName), helpText) { event, arguments ->
-                DiscordHandler.sendMessage(process(arguments.findInput(variableName)))
+                DiscordHandler.sendCodeBlock(text = process(arguments.findInput(variableName)))
                 true
             })
 
