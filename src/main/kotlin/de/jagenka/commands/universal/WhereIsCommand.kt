@@ -4,18 +4,8 @@ import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
 import de.jagenka.commands.StringInStringOutCommand
 
-object WhereIsCommand : StringInStringOutCommand
+object WhereIsCommand : StringInStringOutCommand("whereis")
 {
-    override val minecraftName: String
-        get() = "whereis"
-    override val ids: List<String>
-        get() = listOf(minecraftName)
-    override val helpText: String
-        get() = "List where players are. No argument lists all players."
-    override val variableName: String
-        get() = "playerName"
-
-
     override fun process(input: String): String
     {
         val possibleUsers = UserRegistry.findRegistered(input.trim())

@@ -1,7 +1,6 @@
 package de.jagenka
 
-import de.jagenka.commands.discord.*
-import de.jagenka.commands.discord.structure.Registry
+import de.jagenka.commands.discord.Registry
 import dev.kord.common.entity.MessageFlag
 import dev.kord.common.entity.MessageFlags
 import dev.kord.common.entity.Snowflake
@@ -54,8 +53,6 @@ object DiscordHandler
             guild = GuildBehavior(guildSnowflake, kord)
             channel = MessageChannelBehavior(channelSnowflake, kord)
 
-            registerCommands()
-
             Registry.setup(kord)
 
             kord.login {// nicht sicher ob man für jeden link nen eigenen bot braucht mit der API
@@ -63,22 +60,6 @@ object DiscordHandler
                 intents += Intent.MessageContent
             }
         } ?: throw BotInitializationException("Error initializing bot.")
-    }
-
-    private fun registerCommands()
-    {
-        with(Registry)
-        {
-            register(HelpMessageCommand)
-            register(ListCommand)
-            register(RegisterCommand)
-            register(UsersCommand)
-            register(UpdateNamesCommand)
-            register(PerfCommand)
-            register(UnregisterCommand)
-            register(StatsCommand)
-            register(RelativeStatsCommand)
-        }
     }
 
     fun sendMessage(text: String, silent: Boolean = false)
@@ -196,10 +177,10 @@ object DiscordHandler
     /**
      * this is called, if a message is not a command, so if it is a chat message
      */
-    suspend fun handleNotACommand(event: MessageCreateEvent)
+    suspend fun relayChatMessage(messageCreateEvent: MessageCreateEvent)
     {
-        if (event.message.author?.id == kord?.selfId || event.message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return
+        if (messageCreateEvent.message.author?.id == kord?.selfId || messageCreateEvent.message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return
 
-        MinecraftHandler.sendMessageFromDiscord(event)
+        MinecraftHandler.sendMessageFromDiscord(messageCreateEvent)
     }
 }

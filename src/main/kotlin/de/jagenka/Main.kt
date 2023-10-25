@@ -64,7 +64,7 @@ object Main : ModInitializer
 
         //register commands
         CommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<ServerCommandSource>, _: CommandRegistryAccess, _: CommandManager.RegistrationEnvironment ->
-            minecraftCommands.forEach { it.register(dispatcher) }
+            minecraftCommands.forEach { it.registerWithMinecraft(dispatcher) }
         }
 
         Config.loadConfig()
