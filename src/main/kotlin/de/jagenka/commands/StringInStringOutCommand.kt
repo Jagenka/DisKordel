@@ -2,9 +2,9 @@ package de.jagenka.commands
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
-import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
-import com.mojang.brigadier.builder.RequiredArgumentBuilder.argument
 import de.jagenka.commands.discord.MessageCommandSource
+import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
+import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
@@ -42,14 +42,14 @@ abstract class StringInStringOutCommand(val name: String) : MinecraftCommand, Di
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
         dispatcher.register(
-            literal<MessageCommandSource>(name)
+            literal(name)
                 .executes {
                     val output = process().removePrefix("```").removeSuffix("```")
                     it.source.sendFeedback(output)
                     return@executes 0
                 }
                 .then(
-                    argument<MessageCommandSource, String>("name", StringArgumentType.greedyString())
+                    argument<String>("name", StringArgumentType.greedyString())
                         .executes
                         {
                             val output = process(StringArgumentType.getString(it, "name")).removePrefix("```").removeSuffix("```")

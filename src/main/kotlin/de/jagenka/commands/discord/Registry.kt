@@ -3,7 +3,7 @@ package de.jagenka.commands.discord
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import de.jagenka.DiscordHandler
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.MinecraftHandler.logger
 import de.jagenka.commands.universal.WhoisCommand
 import dev.kord.core.Kord
 import dev.kord.core.event.message.MessageCreateEvent
@@ -56,12 +56,18 @@ object Registry
 
                 if (!message.content.startsWith(messageCommandPrefix)) return@commandHandling
 
+                val command = message.content.removePrefix(messageCommandPrefix)
+
                 try
                 {
-                    commandDispatcher.execute(message.content.removePrefix(messageCommandPrefix), MessageCommandSource(this))
+                    commandDispatcher.execute(command, MessageCommandSource(event = this))
                     return@messageHandling
                 } catch (e: CommandSyntaxException)
                 {
+                    // TODO: give feedback
+                    logger.error(e.rawMessage.string)
+                    logger.error(e.input)
+
                     return@commandHandling
                 }
             }
@@ -73,16 +79,17 @@ object Registry
 
     private fun registerCommands()
     {
-        // Discord Commands
-        register(TestCommand)
+        listOf(
+            // Discord Commands
+            PerfCommand,
+            ListCommand,
+            UsersCommand,
+            UpdateNamesCommand,
+            RegisterCommand,
 
-        // Universal Commands
-        register(WhoisCommand)
-    }
-
-    private fun register(command: DiscordCommand)
-    {
-        command.registerWithDiscord(commandDispatcher)
+            // Universal Commands
+            WhoisCommand,
+        ).forEach { it.registerWithDiscord(commandDispatcher) }
     }
 
     // TODO: help texts / command

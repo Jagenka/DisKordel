@@ -10,13 +10,11 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
-import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.exception.KordInitializationException
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.create.addFile
-import dev.kord.x.emoji.Emojis
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.Dispatchers
@@ -81,7 +79,7 @@ object DiscordHandler
         }
     }
 
-    fun sendCodeBlock(formatId: String = "", text: String)
+    fun sendCodeBlock(text: String, formatId: String = "", silent: Boolean = false)
     {
         val content = ("$formatId\n" + text.preventCodeBlockEscape())
         var toSend = content
@@ -91,7 +89,7 @@ object DiscordHandler
             toSend = content.substring(0, 1990) + "..."
         }
 
-        sendMessage("```$toSend\n```")
+        sendMessage(text = "```$toSend\n```", silent = silent)
     }
 
     suspend fun sendWebhookMessage(username: String, avatarURL: String, text: String, escapeMarkdown: Boolean = true)
@@ -155,13 +153,6 @@ object DiscordHandler
     fun handleNotAMember(id: Snowflake)
     {
         MinecraftHandler.logger.error("User with Snowflake $id is not a member of the configured guild!")
-    }
-
-    fun reactConfirmation(message: Message)
-    {
-        Main.scope.launch {
-            message.addReaction(ReactionEmoji.Unicode(Emojis.whiteCheckMark.unicode))
-        }
     }
 
     /**

@@ -37,8 +37,8 @@ dependencies {
     shadow("dev.kord.x:emoji:0.5.0")
 
     //brigardier
-    implementation("com.mojang:brigadier:1.0.18")
-    shadow("com.mojang:brigadier:1.0.18")
+    //implementation("com.mojang:brigadier:1.0.18")
+    //shadow("com.mojang:brigadier:1.0.18")
 
     implementation("io.netty:netty-all:4.1.79.Final")
 }
