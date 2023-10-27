@@ -86,6 +86,9 @@ object Registry
             UsersCommand,
             UpdateNamesCommand,
             RegisterCommand,
+            UnregisterCommand,
+            StatsCommand,
+            RelativeStatsCommand,
 
             // Universal Commands
             WhoisCommand,
