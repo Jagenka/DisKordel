@@ -50,9 +50,14 @@ object RegisterCommand : DiscordCommand
         return true
     }
 
+    override val shortHelpText: String
+        get() = "whitelist yourself"
+    override val longHelpText: String
+        get() = "link your Discord account to a Minecraft name. this will also whitelist you."
+
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
-        dispatcher.register(
+        val commandNode = dispatcher.register(
             literal("register")
                 .then(
                     argument<String>("minecraftName", StringArgumentType.word())
@@ -66,5 +71,8 @@ object RegisterCommand : DiscordCommand
                         }
                 )
         )
+
+        Registry.registerShortHelpText(shortHelpText, commandNode)
+        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 }

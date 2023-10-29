@@ -13,9 +13,9 @@ import dev.kord.core.event.message.MessageCreateEvent
 
 class MessageCommandSource(private val event: MessageCreateEvent)
 {
-    fun sendFeedback(text: String)
+    fun sendCodeBlock(text: String)
     {
-        DiscordHandler.sendCodeBlock(text = text)
+        DiscordHandler.sendCodeBlock(text = text, silent = true)
     }
 
     val author: User?

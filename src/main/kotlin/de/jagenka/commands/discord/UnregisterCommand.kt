@@ -40,9 +40,14 @@ object UnregisterCommand : DiscordCommand
         return true
     }
 
+    override val shortHelpText: String
+        get() = "remove Discord-Minecraft link"
+    override val longHelpText: String
+        get() = "remove link between your Discord account and the saved Minecraft name. this will also remove you from the whitelist."
+
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
-        dispatcher.register(
+        val commandNode = dispatcher.register(
             literal("unregister")
                 .executes {
                     it.source.author?.let { user ->
@@ -52,7 +57,9 @@ object UnregisterCommand : DiscordCommand
                     }
                     0
                 }
-
         )
+
+        Registry.registerShortHelpText(shortHelpText, commandNode)
+        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 }

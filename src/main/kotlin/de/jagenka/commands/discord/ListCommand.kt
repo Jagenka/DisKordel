@@ -8,12 +8,15 @@ import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 
 object ListCommand : DiscordCommand
 {
-    private const val NAME = "list"
+    override val shortHelpText: String
+        get() = "list online players"
+    override val longHelpText: String
+        get() = "list players currently logged into the Minecraft server."
 
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
-        dispatcher.register(
-            literal(NAME)
+        val commandNode = dispatcher.register(
+            literal("list")
                 .executes {
                     val onlinePlayers = MinecraftHandler.getOnlinePlayers()
                     DiscordHandler.sendMessage(
@@ -28,5 +31,8 @@ object ListCommand : DiscordCommand
                     0
                 }
         )
+
+        Registry.registerShortHelpText(shortHelpText, commandNode)
+        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 }

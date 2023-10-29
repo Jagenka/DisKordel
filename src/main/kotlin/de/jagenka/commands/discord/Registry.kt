@@ -2,8 +2,11 @@ package de.jagenka.commands.discord
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.exceptions.CommandSyntaxException
+import com.mojang.brigadier.tree.CommandNode
 import de.jagenka.DiscordHandler
-import de.jagenka.MinecraftHandler.logger
+import de.jagenka.commands.universal.DeathsCommand
+import de.jagenka.commands.universal.PlaytimeCommand
+import de.jagenka.commands.universal.WhereIsCommand
 import de.jagenka.commands.universal.WhoisCommand
 import dev.kord.core.Kord
 import dev.kord.core.event.message.MessageCreateEvent
@@ -16,22 +19,34 @@ object Registry
     private val commandDispatcher = CommandDispatcher<MessageCommandSource>()
 
     /**
-     * suspend function to be called if a command needs admin, but the sender does not have the admin role.
+     * this stores short help texts. if two texts are equal, it is assumed, that the corresponding commands do the same thing. (important for cleaning up help overview)
      */
-    var needsAdminResponse: suspend (event: MessageCreateEvent) -> Unit = {
-        it.message.channel.createMessage("You need to be admin to do that!")
-    }
+    private val shortHelpTexts = mutableMapOf<CommandNode<MessageCommandSource>, String>()
 
     /**
-     * suspend function to be called if a command can only execute in a channel marked "NSFW", but isn't marked as such.
+     * this stores long help texts. if two texts are equal, it is assumed, that the corresponding commands do the same thing.
+     * mapping is command literal to help text
      */
-    var needsNSFWResponse: suspend (event: MessageCreateEvent) -> Unit = {
-        it.message.channel.createMessage("You can only do that in a channel marked \"NSFW\"!")
-    }
+    private val longHelpTexts = mutableMapOf<String, String>()
 
-    var isSenderAdmin: suspend (event: MessageCreateEvent) -> Boolean = {
-        it.member?.isOwner() == true
-    }
+    private val discordCommands = listOf(
+        // Discord-only Commands
+        PerfCommand,
+        ListCommand,
+        UsersCommand,
+        UpdateNamesCommand,
+        RegisterCommand,
+        UnregisterCommand,
+        StatsCommand,
+        RelativeStatsCommand,
+        HelpCommand,
+
+        // Universal Commands
+        WhoisCommand,
+        WhereIsCommand,
+        PlaytimeCommand,
+        DeathsCommand,
+    )
 
     fun setup(kord: Kord)
     {
@@ -64,11 +79,12 @@ object Registry
                     return@messageHandling
                 } catch (e: CommandSyntaxException)
                 {
-                    // TODO: give feedback
-                    logger.error(e.rawMessage.string)
-                    logger.error(e.input)
+                    DiscordHandler.sendMessage(
+                        text = "Error: ${e.message}\n" +
+                                "see `${messageCommandPrefix}help`", silent = true
+                    )
 
-                    return@commandHandling
+                    return@messageHandling
                 }
             }
 
@@ -79,21 +95,54 @@ object Registry
 
     private fun registerCommands()
     {
-        listOf(
-            // Discord Commands
-            PerfCommand,
-            ListCommand,
-            UsersCommand,
-            UpdateNamesCommand,
-            RegisterCommand,
-            UnregisterCommand,
-            StatsCommand,
-            RelativeStatsCommand,
-
-            // Universal Commands
-            WhoisCommand,
-        ).forEach { it.registerWithDiscord(commandDispatcher) }
+        discordCommands.forEach { it.registerWithDiscord(commandDispatcher) }
     }
 
-    // TODO: help texts / command
+    fun registerShortHelpText(text: String, vararg nodes: CommandNode<MessageCommandSource>)
+    {
+        nodes.forEach { shortHelpTexts[it] = text }
+    }
+
+    fun registerLongHelpText(text: String, vararg nodes: CommandNode<MessageCommandSource>)
+    {
+        nodes.forEach { longHelpTexts[it.name] = text }
+    }
+
+    fun getShortHelpTexts(source: MessageCommandSource): List<String>
+    {
+        val noHelpTexts = mutableListOf<String>()
+
+        val helpTexts = commandDispatcher.getSmartUsage(commandDispatcher.root, source).toList()
+            .groupBy { shortHelpTexts[it.first] }
+            .mapNotNull {
+                val shortHelpText = it.key
+                return@mapNotNull if (shortHelpText != null)
+                {
+                    val smartUsageString = it.value.first().second
+                    val trimmedUsageString = if (smartUsageString.contains(' ')) smartUsageString.replaceBefore(' ', "") else ""
+                    val postfix = "$trimmedUsageString`: $shortHelpText"
+                    it.value.joinToString(separator = "|", postfix = postfix) { it.second.replaceAfter(' ', "").trim() }
+                } else
+                {
+                    noHelpTexts.addAll(it.value.map { it.second + "`" })
+                    null
+                }
+            }.toMutableList()
+
+        helpTexts.addAll(noHelpTexts)
+
+        return helpTexts.sorted().map { "`$messageCommandPrefix$it" }
+    }
+
+    fun getHelpTextsForCommand(source: MessageCommandSource, command: String): List<String>
+    {
+        val parseResults = commandDispatcher.parse(command, source)
+        if (parseResults.context.nodes.isEmpty())
+        {
+            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().create()
+        }
+        return commandDispatcher.getSmartUsage(parseResults.context.rootNode, source)
+            .filter { it.key.name.equals(command, ignoreCase = true) }
+            .map { "`!" + it.value + "`" + (longHelpTexts[command]?.let { ": $it" } ?: "") }
+    }
 }

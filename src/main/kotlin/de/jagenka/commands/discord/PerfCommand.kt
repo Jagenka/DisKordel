@@ -10,6 +10,11 @@ import de.jagenka.commands.discord.MessageCommandSource.Companion.redirect
 
 object PerfCommand : DiscordCommand
 {
+    override val shortHelpText: String
+        get() = "query server performance"
+    override val longHelpText: String
+        get() = "query the server's current ticks per second (TPS) and milliseconds per tick (MSPT)."
+
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
         val commandNode =
@@ -20,6 +25,9 @@ object PerfCommand : DiscordCommand
                     0
                 })
 
-        dispatcher.register(redirect("performance", commandNode))
+        val aliasCommandNode = dispatcher.register(redirect("performance", commandNode))
+
+        Registry.registerShortHelpText(shortHelpText, commandNode, aliasCommandNode)
+        Registry.registerLongHelpText(longHelpText, commandNode, aliasCommandNode)
     }
 }

@@ -11,9 +11,14 @@ import kotlinx.coroutines.launch
 
 object UpdateNamesCommand : DiscordCommand
 {
+    override val shortHelpText: String
+        get() = "update Discord names in database"
+    override val longHelpText: String
+        get() = "this command is needed, if someone renames themselves in Discord. only with an update this mod will know of this change."
+
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
-        dispatcher.register(
+        val commandNode = dispatcher.register(
             literal("updatenames")
                 .executes {
                     Main.scope.launch {
@@ -23,5 +28,8 @@ object UpdateNamesCommand : DiscordCommand
                     0
                 }
         )
+
+        Registry.registerShortHelpText(shortHelpText, commandNode)
+        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 }

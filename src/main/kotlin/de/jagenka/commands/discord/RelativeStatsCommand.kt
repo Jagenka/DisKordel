@@ -88,6 +88,11 @@ object RelativeStatsCommand : DiscordCommand
         return result
     }
 
+    override val shortHelpText: String
+        get() = "list players' stats in relation to playtime"
+    override val longHelpText: String
+        get() = "query Minecraft stats of all or only some players and relate them to their playtime. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
+
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
         val commandNode = dispatcher.register(MessageCommandSource.literal("rstat")
@@ -118,7 +123,10 @@ object RelativeStatsCommand : DiscordCommand
                     )))
         )
 
-        dispatcher.register(MessageCommandSource.redirect("rstats", commandNode))
+        val alias = dispatcher.register(MessageCommandSource.redirect("rstats", commandNode))
+
+        Registry.registerShortHelpText(shortHelpText, commandNode, alias)
+        Registry.registerLongHelpText(longHelpText, commandNode, alias)
     }
 }
 

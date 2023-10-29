@@ -10,14 +10,23 @@ import kotlinx.coroutines.launch
 
 object UsersCommand : DiscordCommand
 {
+    override val shortHelpText: String
+        get() = "list all registered users"
+    override val longHelpText: String
+        get() = "list all registered users."
+
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
-        dispatcher.register(literal("users")
+        val commandNode = dispatcher.register(literal("users")
             .executes {
                 Main.scope.launch {
                     DiscordHandler.sendCodeBlock(text = UserRegistry.getAllUsersAsOutput(), silent = true)
                 }
                 0
-            })
+            }
+        )
+
+        Registry.registerShortHelpText(shortHelpText, commandNode)
+        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 }

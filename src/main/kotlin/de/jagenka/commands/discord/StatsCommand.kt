@@ -55,6 +55,11 @@ object StatsCommand : DiscordCommand
     }
 
     private fun format(playerName: String, stat: Stat<*>, value: Int) = "${"$playerName:".padEnd(17, ' ')} ${stat.format(value)}" // max length of player name is 16 character
+    override val shortHelpText: String
+        get() = "list players' stats"
+    override val longHelpText: String
+        get() = "query Minecraft stats of all or only some players. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
+
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
         val commandNode = dispatcher.register(literal("stat")
@@ -84,7 +89,10 @@ object StatsCommand : DiscordCommand
                     )))
         )
 
-        dispatcher.register(redirect("stats", commandNode))
+        val alias = dispatcher.register(redirect("stats", commandNode))
+
+        Registry.registerShortHelpText(shortHelpText, commandNode, alias)
+        Registry.registerLongHelpText(longHelpText, commandNode, alias)
     }
 }
 
@@ -109,4 +117,5 @@ class StatTypeArgument : ArgumentType<StatType<*>>
         }
     }
 
+    override fun getExamples(): MutableCollection<String> = mutableListOf("mined", "crafted", "used", "broken", "picked_up", "dropped", "killed", "killed_by", "custom")
 }
