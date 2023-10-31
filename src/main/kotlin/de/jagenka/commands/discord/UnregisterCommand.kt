@@ -1,28 +1,18 @@
 package de.jagenka.commands.discord
 
+import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.DiscordHandler
 import de.jagenka.DiscordHandler.prettyName
+import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
-import de.jagenka.commands.discord.structure.ArgumentCombination
-import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
-import de.jagenka.commands.discord.structure.MessageCommand
+import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.common.entity.Snowflake
+import kotlinx.coroutines.launch
 
-object UnregisterCommand : MessageCommand
+object UnregisterCommand : DiscordCommand
 {
-    override val ids: List<String>
-        get() = listOf("unregister")
-    override val helpText: String
-        get() = "Unlink your current Discord User from the linked Minecraft Player."
-    override val allowedArgumentCombinations: List<ArgumentCombination>
-        get() = listOf(empty(helpText) { event ->
-            event.message.author?.let {
-                return@empty unregisterUser(it.id)
-            }
-            true
-        })
-
     private suspend fun unregisterUser(userId: Snowflake): Boolean
     {
         val member = DiscordHandler.getMemberOrSendError(userId) ?: return false
@@ -43,10 +33,33 @@ object UnregisterCommand : MessageCommand
                 "${member.prettyName()} was not registered."
             }
 
-        DiscordHandler.sendMessage(response)
+        DiscordHandler.sendMessage(response, silent = true)
 
         UserRegistry.saveToFile()
 
         return true
+    }
+
+    override val shortHelpText: String
+        get() = "remove Discord-Minecraft link"
+    override val longHelpText: String
+        get() = "remove link between your Discord account and the saved Minecraft name. this will also remove you from the whitelist."
+
+    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
+    {
+        val commandNode = dispatcher.register(
+            literal("unregister")
+                .executes {
+                    it.source.author?.let { user ->
+                        Main.scope.launch {
+                            unregisterUser(user.id)
+                        }
+                    }
+                    0
+                }
+        )
+
+        Registry.registerShortHelpText(shortHelpText, commandNode)
+        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 }

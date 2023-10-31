@@ -176,9 +176,7 @@ object MinecraftHandler
     fun getOnlinePlayers(): List<String>
     {
         minecraftServer?.let { server ->
-            val list = ArrayList<String>()
-            server.playerManager.playerList.forEach { list.add(it.name.string) }
-            return list
+            return server.playerManager.playerList.map { it.name.string }
         }
 
         return emptyList()

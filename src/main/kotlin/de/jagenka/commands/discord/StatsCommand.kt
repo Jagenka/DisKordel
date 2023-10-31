@@ -1,64 +1,27 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package de.jagenka.commands.discord
 
 import com.mojang.authlib.GameProfile
+import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.StringReader
+import com.mojang.brigadier.arguments.ArgumentType
+import com.mojang.brigadier.arguments.StringArgumentType
+import com.mojang.brigadier.exceptions.CommandSyntaxException
 import de.jagenka.DiscordHandler
 import de.jagenka.PlayerStatManager
 import de.jagenka.UserRegistry
-import de.jagenka.commands.discord.structure.Argument
-import de.jagenka.commands.discord.structure.Argument.Companion.string
-import de.jagenka.commands.discord.structure.ArgumentCombination
-import de.jagenka.commands.discord.structure.MessageCommand
+import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
+import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
+import de.jagenka.commands.discord.MessageCommandSource.Companion.redirect
 import net.minecraft.stat.Stat
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.util.Identifier
-import java.util.*
 
-object StatsCommand : MessageCommand
+object StatsCommand : DiscordCommand
 {
-    override val ids: List<String>
-        get() = listOf("stat", "stats")
-    override val helpText: String
-        get() = "Display non-zero stats for players."
-    override val allowedArgumentCombinations: List<ArgumentCombination>
-        get() = listOf(
-            ArgumentCombination(listOf(StatArgument(), string("stat")), "Get stat for all players.") { event, arguments ->
-                val (argType, argText) = arguments[0]
-                DiscordHandler.sendCodeBlock(
-                    text = getReplyForAll(
-                        (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
-                        arguments[1].second
-                    )
-                )
-                true
-            },
-            ArgumentCombination(listOf(StatArgument(), string("stat"), string("partOfName")), "Get stat for some players.") { event, arguments ->
-                val (_, playerName) = arguments[2]
-                val (argType, argText) = arguments[0]
-                DiscordHandler.sendCodeBlock(
-                    text = getReplyForSome(
-                        UserRegistry.findMinecraftProfiles(playerName),
-                        (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
-                        arguments[1].second
-                    )
-                )
-                true
-            },
-        )
-
-    private fun format(playerName: String, stat: Stat<*>, value: Int) = "${"$playerName:".padEnd(17, ' ')} ${stat.format(value)}" // max length of player name is 16 character
-
-    private fun handle(playerName: String, statType: StatType<Any>, id: String): String?
-    {
-        return try
-        {
-            getReplyWithStat(playerName, statType.getOrCreateStat(statType.registry.get(Identifier(id))))
-        } catch (_: Exception)
-        {
-            null
-        }
-    }
-
     fun getReplyForAll(statType: StatType<Any>, id: String): String
     {
         return getReplyForSome(UserRegistry.getMinecraftProfiles(), statType, id)
@@ -66,14 +29,16 @@ object StatsCommand : MessageCommand
 
     fun getReplyForSome(collection: Collection<GameProfile>, statType: StatType<Any>, id: String): String
     {
-        val defaultResponse = "Nothing found!"
+        val defaultResponse = "Nothing found."
+        val invalidId = "Invalid stat identifier."
+        val noNonZeroValuesFound = "Only zero(es) found!"
 
         try
         {
             val identifier = Identifier(id)
             val registry = statType.registry
-            val key = registry.get(identifier) ?: return defaultResponse
-            if (registry.getId(key) != identifier) return defaultResponse
+            val key = registry.get(identifier) ?: return invalidId
+            if (registry.getId(key) != identifier) return invalidId
             val stat = statType.getOrCreateStat(key)
 
             return collection
@@ -82,77 +47,75 @@ object StatsCommand : MessageCommand
                 .filterNot { it.second == 0 }
                 .joinToString(separator = "\n") { format(it.first, stat, it.second) }
                 .replace("``````", "")
-                .ifBlank { defaultResponse }
+                .ifBlank { noNonZeroValuesFound }
         } catch (_: Exception)
         {
             return defaultResponse
         }
     }
 
-    private fun getReplyWithStat(playerName: String, stat: Stat<*>): String?
-    {
-        val statValue = PlayerStatManager.getStatHandlerForPlayer(playerName)?.getStat(stat)
-        return statValue?.let { stat.format(it) }
-    }
+    private fun format(playerName: String, stat: Stat<*>, value: Int) = "${"$playerName:".padEnd(17, ' ')} ${stat.format(value)}" // max length of player name is 16 character
+    override val shortHelpText: String
+        get() = "list players' stats"
+    override val longHelpText: String
+        get() = "query Minecraft stats of all or only some players. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
 
-    private fun handle(uuid: UUID, statType: StatType<Any>, id: String): String?
+    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
-        return try
-        {
-            getReplyWithStat(uuid, statType.getOrCreateStat(statType.registry.get(Identifier(id))))
-        } catch (_: Exception)
-        {
-            null
-        }
-    }
+        val commandNode = dispatcher.register(literal("stat")
+            .then(argument("statType", StatTypeArgument())
+                .then(argument<String>("stat_identifier", StringArgumentType.word())
+                    .executes {
+                        DiscordHandler.sendCodeBlock(
+                            text = getReplyForAll(
+                                it.getArgument("statType", StatType::class.java) as StatType<Any>,
+                                it.getArgument("stat_identifier", String::class.java)
+                            ),
+                            silent = true
+                        )
+                        0
+                    }
+                    .then(argument<String>("partOfPlayerName", StringArgumentType.word())
+                        .executes {
+                            val partOfPlayerName = it.getArgument("partOfPlayerName", String::class.java)
+                            val statType = it.getArgument("statType", StatType::class.java) as StatType<Any>
+                            val statIdentifier = it.getArgument("stat_identifier", String::class.java)
+                            DiscordHandler.sendCodeBlock(
+                                text = getReplyForSome(UserRegistry.findMinecraftProfiles(partOfPlayerName), statType, statIdentifier),
+                                silent = true
+                            )
+                            0
+                        }
+                    )))
+        )
 
-    private fun getReplyWithStat(uuid: UUID, stat: Stat<*>): String?
-    {
-        val statValue = PlayerStatManager.getStatHandlerForPlayer(uuid)?.getStat(stat)
-        return statValue?.let { stat.format(it) }
+        val alias = dispatcher.register(redirect("stats", commandNode))
+
+        Registry.registerShortHelpText(shortHelpText, commandNode, alias)
+        Registry.registerLongHelpText(longHelpText, commandNode, alias)
     }
 }
 
-class StatArgument : Argument<StatType<Any>>
+class StatTypeArgument : ArgumentType<StatType<*>>
 {
-    private val literals = listOf("mined", "crafted", "used", "broken", "picked_up", "dropped", "killed", "killed_by", "custom")
-
-    override val id: String
-        get() = literals.joinToString("|")
-
-    override fun isOfType(word: String): Boolean
+    override fun parse(reader: StringReader?): StatType<*>
     {
-        return word in literals
-    }
+        if (reader == null) throw NullPointerException("StringReader should not be null (yei Java Inter-Op)")
 
-    override fun convertToType(word: String): StatType<Any>?
-    {
-        return convert(word)
-    }
-
-    companion object
-    {
-        fun convert(word: String): StatType<Any>?
+        return when (reader.readUnquotedString())
         {
-            try
-            {
-                return when (word)
-                {
-                    "mined" -> Stats.MINED as StatType<Any>
-                    "crafted" -> Stats.CRAFTED as StatType<Any>
-                    "used" -> Stats.USED as StatType<Any>
-                    "broken" -> Stats.BROKEN as StatType<Any>
-                    "picked_up" -> Stats.PICKED_UP as StatType<Any>
-                    "dropped" -> Stats.DROPPED as StatType<Any>
-                    "killed" -> Stats.KILLED as StatType<Any>
-                    "killed_by" -> Stats.KILLED_BY as StatType<Any>
-                    "custom" -> Stats.CUSTOM as StatType<Any>
-                    else -> null
-                }
-            } catch (_: Exception)
-            {
-                return null
-            }
+            "mined" -> Stats.MINED
+            "crafted" -> Stats.CRAFTED
+            "used" -> Stats.USED
+            "broken" -> Stats.BROKEN
+            "picked_up" -> Stats.PICKED_UP
+            "dropped" -> Stats.DROPPED
+            "killed" -> Stats.KILLED
+            "killed_by" -> Stats.KILLED_BY
+            "custom" -> Stats.CUSTOM
+            else -> throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().createWithContext(reader)
         }
     }
+
+    override fun getExamples(): MutableCollection<String> = mutableListOf("mined", "crafted", "used", "broken", "picked_up", "dropped", "killed", "killed_by", "custom")
 }

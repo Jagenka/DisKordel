@@ -1,52 +1,24 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package de.jagenka.commands.discord
 
 import com.mojang.authlib.GameProfile
+import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
 import de.jagenka.PlayerStatManager
 import de.jagenka.UserRegistry
 import de.jagenka.Util
 import de.jagenka.Util.trimDecimals
-import de.jagenka.commands.discord.structure.Argument
-import de.jagenka.commands.discord.structure.ArgumentCombination
-import de.jagenka.commands.discord.structure.MessageCommand
+import de.jagenka.commands.DiscordCommand
 import net.minecraft.stat.Stat
 import net.minecraft.stat.StatFormatter
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.util.Identifier
 
-object RelativeStatsCommand : MessageCommand
+object RelativeStatsCommand : DiscordCommand
 {
-    override val ids: List<String>
-        get() = listOf("rstat", "rstats")
-    override val helpText: String
-        get() = "display non-zero stats in relation to the player's playtime"
-    override val allowedArgumentCombinations: List<ArgumentCombination>
-        get() = listOf(
-            ArgumentCombination(listOf(StatArgument(), Argument.string("stat")), "Get stat for all players.") { event, arguments ->
-                val (argType, argText) = arguments[0]
-                DiscordHandler.sendCodeBlock(
-                    text = getRelativeReplyForAll(
-                        (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
-                        arguments[1].second
-                    )
-                )
-                true
-            },
-            ArgumentCombination(listOf(StatArgument(), Argument.string("stat"), Argument.string("partOfName")), "Get stat for some players.") { event, arguments ->
-                val (_, playerName) = arguments[2]
-                val (argType, argText) = arguments[0]
-                DiscordHandler.sendCodeBlock(
-                    text = getRelativeReplyForSome(
-                        UserRegistry.findMinecraftProfiles(playerName),
-                        (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
-                        arguments[1].second
-                    )
-                )
-                true
-            },
-        )
-
     private fun getRelativeReplyForAll(statType: StatType<Any>, id: String): String
     {
         return getRelativeReplyForSome(UserRegistry.getMinecraftProfiles(), statType, id)
@@ -54,14 +26,16 @@ object RelativeStatsCommand : MessageCommand
 
     private fun getRelativeReplyForSome(collection: Collection<GameProfile>, statType: StatType<Any>, id: String): String
     {
-        val defaultResponse = "Nothing found!"
+        val defaultResponse = "Nothing found."
+        val invalidId = "Invalid stat identifier."
+        val noNonZeroValuesFound = "Only zero(es) found!"
 
         try
         {
             val identifier = Identifier(id)
             val registry = statType.registry
-            val key = registry.get(identifier) ?: return defaultResponse
-            if (registry.getId(key) != identifier) return defaultResponse
+            val key = registry.get(identifier) ?: return invalidId
+            if (registry.getId(key) != identifier) return invalidId
             val stat = statType.getOrCreateStat(key)
             val playtimeStat = Stats.CUSTOM.getOrCreateStat(Stats.CUSTOM.registry.get(Identifier("play_time")))
 
@@ -77,7 +51,7 @@ object RelativeStatsCommand : MessageCommand
                 .filter { it.relStat > 0.0 }
                 .joinToString(separator = "\n") { format(it, stat) }
                 .replace("``````", "")
-                .ifBlank { defaultResponse }
+                .ifBlank { noNonZeroValuesFound }
         } catch (_: Exception)
         {
             return defaultResponse
@@ -114,9 +88,50 @@ object RelativeStatsCommand : MessageCommand
         return result
     }
 
-    data class RStatData(val playerName: String, val stat: Int, val playtime: Int)
+    override val shortHelpText: String
+        get() = "list players' stats in relation to playtime"
+    override val longHelpText: String
+        get() = "query Minecraft stats of all or only some players and relate them to their playtime. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
+
+    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
-        val relStat: Double
-            get() = (if (playtime == 0) 0.0 else (stat.toDouble() * 72_000.0)) / playtime.toDouble() // converts ticks to hours (20*60*60)
+        val commandNode = dispatcher.register(MessageCommandSource.literal("rstat")
+            .then(MessageCommandSource.argument("statType", StatTypeArgument())
+                .then(MessageCommandSource.argument<String>("stat_identifier", StringArgumentType.word())
+                    .executes {
+                        DiscordHandler.sendCodeBlock(
+                            text = getRelativeReplyForAll(
+                                it.getArgument("statType", StatType::class.java) as StatType<Any>,
+                                it.getArgument("stat_identifier", String::class.java)
+                            ),
+                            silent = true
+                        )
+                        0
+                    }
+                    .then(
+                        MessageCommandSource.argument<String>("partOfPlayerName", StringArgumentType.word())
+                            .executes {
+                                val partOfPlayerName = it.getArgument("partOfPlayerName", String::class.java)
+                                val statType = it.getArgument("statType", StatType::class.java) as StatType<Any>
+                                val statIdentifier = it.getArgument("stat_identifier", String::class.java)
+                                DiscordHandler.sendCodeBlock(
+                                    text = getRelativeReplyForSome(UserRegistry.findMinecraftProfiles(partOfPlayerName), statType, statIdentifier),
+                                    silent = true
+                                )
+                                0
+                            }
+                    )))
+        )
+
+        val alias = dispatcher.register(MessageCommandSource.redirect("rstats", commandNode))
+
+        Registry.registerShortHelpText(shortHelpText, commandNode, alias)
+        Registry.registerLongHelpText(longHelpText, commandNode, alias)
     }
+}
+
+data class RStatData(val playerName: String, val stat: Int, val playtime: Int)
+{
+    val relStat: Double
+        get() = (if (playtime == 0) 0.0 else (stat.toDouble() * 72_000.0)) / playtime.toDouble() // converts ticks to hours (20*60*60)
 }
