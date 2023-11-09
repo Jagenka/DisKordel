@@ -18,6 +18,8 @@ import kotlin.math.min
 
 object MinecraftHandler
 {
+    private val guildEmojiRegex = Regex("<a?(:[a-zA-Z0-9_]+:)[0-9]+>")
+
     val logger = LoggerFactory.getLogger("diskordel")
 
     var minecraftServer: MinecraftServer? = null
@@ -168,9 +170,14 @@ object MinecraftHandler
                 )
         ).firstOrNull()
 
-        val content = Text.of(event.message.content)
+        // simplify guild emojis
+        val messageContent = event.message.content.replace(guildEmojiRegex) { matchResult ->
+            matchResult.groups[1]?.value ?: matchResult.value // index is 1, as groups are 1-indexed
+        }
 
-        sendChatMessage(Texts.join(listOfNotNull(authorText, referencedAuthorText, content), Text.of(" ")))
+        val messageText = Text.of(messageContent)
+
+        sendChatMessage(Texts.join(listOfNotNull(authorText, referencedAuthorText, messageText), Text.of(" ")))
     }
 
     fun getOnlinePlayers(): List<String>
