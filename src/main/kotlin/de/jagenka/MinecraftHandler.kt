@@ -12,7 +12,6 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.*
 import net.minecraft.util.Formatting
-import net.minecraft.util.math.Position
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
@@ -210,15 +209,6 @@ object MinecraftHandler
         }
 
         return PerformanceMetrics(0.0, 0.0)
-    }
-
-    fun getPlayerPosition(playerString: String): Position?
-    {
-        minecraftServer?.let { server ->
-            val player = server.playerManager.getPlayer(playerString) ?: return null
-            return player.pos
-        }
-        return null
     }
 
     fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)
