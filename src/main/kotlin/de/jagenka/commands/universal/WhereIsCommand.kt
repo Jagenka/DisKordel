@@ -12,6 +12,7 @@ import de.jagenka.commands.discord.Registry
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
+import net.minecraft.world.World
 
 object WhereIsCommand : DiscordCommand, MinecraftCommand
 {
@@ -22,8 +23,19 @@ object WhereIsCommand : DiscordCommand, MinecraftCommand
         if (possibleUsers.isEmpty()) return "No-one found!"
 
         return possibleUsers.joinToString("\n") { user ->
-            MinecraftHandler.getPlayerPosition(user.minecraft.name)?.let {
-                "${user.minecraft.name} is at (${it.x.toInt()} ${it.y.toInt()} ${it.z.toInt()})."
+            MinecraftHandler.minecraftServer?.let { server ->
+                val player = server.playerManager.getPlayer(user.minecraft.uuid)
+                    ?: return@let null
+
+                val dimensionName = when (player.serverWorld.registryKey)
+                {
+                    World.OVERWORLD -> "Overworld"
+                    World.NETHER -> "Nether"
+                    World.END -> "End"
+                    else -> return@let null
+                }
+
+                "${user.minecraft.name} is at (${player.x.toInt()}, ${player.y.toInt()}, ${player.z.toInt()}) in the $dimensionName."
             } ?: "${user.minecraft.name} is not online."
         }
     }
