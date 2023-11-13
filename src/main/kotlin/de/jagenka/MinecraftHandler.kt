@@ -167,6 +167,7 @@ object MinecraftHandler
                         Text.of(event.message.referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.name })
                     )
                 )
+                .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, Util.getMessageURL(event.message.referencedMessage ?: event.message)))
         ).firstOrNull()
 
         // simplify guild emojis
@@ -175,6 +176,11 @@ object MinecraftHandler
         }
 
         val messageText = Text.of(messageContent)
+            .getWithStyle(
+                Style.EMPTY
+                    .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, Util.getMessageURL(event.message)))
+            )
+            .firstOrNull()
 
         sendChatMessage(Texts.join(listOfNotNull(authorText, referencedAuthorText, messageText), Text.of(" ")))
     }
