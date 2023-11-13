@@ -2,6 +2,7 @@ package de.jagenka
 
 import dev.kord.common.entity.DiscordWebhook
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.entity.Message
 import dev.kord.rest.request.KtorRequestException
 import java.util.*
 
@@ -61,5 +62,14 @@ object Util
         var uuid = UUID.randomUUID()
         while (uuid in taken) uuid = UUID.randomUUID()
         return uuid
+    }
+
+    suspend fun getMessageURL(message: Message): String
+    {
+        val guildSnowflake = message.getGuildOrNull()?.id ?: return ""
+        val channelSnowflake = message.channel.id
+        val messageSnowflake = message.id
+
+        return "https://discord.com/channels/$guildSnowflake/$channelSnowflake/$messageSnowflake"
     }
 }
