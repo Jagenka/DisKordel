@@ -2,59 +2,56 @@
 
 package de.jagenka.commands.discord
 
-import com.mojang.authlib.GameProfile
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
-import de.jagenka.PlayerStatManager
+import de.jagenka.StatDataException
 import de.jagenka.UserRegistry
 import de.jagenka.Util
 import de.jagenka.Util.trimDecimals
 import de.jagenka.commands.DiscordCommand
+import de.jagenka.stats.RStatData
+import de.jagenka.stats.StatTypeArgument
+import de.jagenka.stats.StatUtil
 import net.minecraft.stat.Stat
 import net.minecraft.stat.StatFormatter
 import net.minecraft.stat.StatType
-import net.minecraft.stat.Stats
-import net.minecraft.util.Identifier
 
 object RelativeStatsCommand : DiscordCommand
 {
-    private fun getRelativeReplyForAll(statType: StatType<Any>, id: String): String
+    fun getReplyForAll(statType: StatType<Any>, id: String): String
     {
-        return getRelativeReplyForSome(UserRegistry.getMinecraftProfiles(), statType, id)
+        return try
+        {
+            val dataWithRanks = StatUtil.getStatDataWithRanks(statType, id)
+            val playtimeData = StatUtil.getStatDataList()
+
+            dataWithRanks.joinToString(separator = System.lineSeparator()) {
+                format(rank = it.first, data = it.second)
+            }
+        } catch (e: StatDataException)
+        {
+            e.type.response
+        }
     }
 
-    private fun getRelativeReplyForSome(collection: Collection<GameProfile>, statType: StatType<Any>, id: String): String
+    /**
+     * @param playerNames list of playerNames to filter. capitalization is ignored
+     */
+    fun getReplyForSome(playerNames: Collection<String>, statType: StatType<Any>, id: String): String
     {
-        val defaultResponse = "Nothing found."
-        val invalidId = "Invalid stat identifier."
-        val noNonZeroValuesFound = "Only zero(es) found!"
-
-        try
+        return try
         {
-            val identifier = Identifier(id)
-            val registry = statType.registry
-            val key = registry.get(identifier) ?: return invalidId
-            if (registry.getId(key) != identifier) return invalidId
-            val stat = statType.getOrCreateStat(key)
-            val playtimeStat = Stats.CUSTOM.getOrCreateStat(Stats.CUSTOM.registry.get(Identifier("play_time")))
+            val dataWithRanks = StatUtil.getStatDataWithRanks(statType, id)
 
-            return collection
-                .mapNotNull {
-                    RStatData(
-                        it.name,
-                        (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null),
-                        (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(playtimeStat) ?: return@mapNotNull null)
-                    )
+            dataWithRanks
+                .filter { playerNames.map { it.lowercase() }.contains(it.second.playerName.lowercase()) }
+                .joinToString(separator = System.lineSeparator()) {
+                    format(rank = it.first, data = it.second)
                 }
-                .sortedByDescending { it.relStat }
-                .filter { it.relStat > 0.0 }
-                .joinToString(separator = "\n") { format(it, stat) }
-                .replace("``````", "")
-                .ifBlank { noNonZeroValuesFound }
-        } catch (_: Exception)
+        } catch (e: StatDataException)
         {
-            return defaultResponse
+            e.type.response
         }
     }
 
@@ -130,8 +127,3 @@ object RelativeStatsCommand : DiscordCommand
     }
 }
 
-data class RStatData(val playerName: String, val stat: Int, val playtime: Int)
-{
-    val relStat: Double
-        get() = (if (playtime == 0) 0.0 else (stat.toDouble() * 72_000.0)) / playtime.toDouble() // converts ticks to hours (20*60*60)
-}

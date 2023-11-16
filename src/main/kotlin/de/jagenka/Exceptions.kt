@@ -11,3 +11,12 @@ class BotInitializationException : RuntimeException
 class KordInstanceMissingException(s: String) : RuntimeException(s)
 
 class WebhookInitException(s: String) : RuntimeException(s)
+
+class StatDataException(val type: StatDataExceptionType) : RuntimeException()
+
+enum class StatDataExceptionType(val response: String)
+{
+    EMPTY("Nothing found."),
+    INVALID_ID("Invalid stat identifier."),
+    ONLY_ZERO("Only zero(es) found.")
+}
