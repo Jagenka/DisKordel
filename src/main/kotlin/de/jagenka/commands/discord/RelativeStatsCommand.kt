@@ -3,32 +3,37 @@
 package de.jagenka.commands.discord
 
 import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
 import de.jagenka.StatDataException
 import de.jagenka.UserRegistry
 import de.jagenka.Util
+import de.jagenka.Util.subListUntilOrEnd
 import de.jagenka.Util.trimDecimals
 import de.jagenka.commands.DiscordCommand
-import de.jagenka.stats.RStatData
+import de.jagenka.stats.StatData
 import de.jagenka.stats.StatTypeArgument
 import de.jagenka.stats.StatUtil
-import net.minecraft.stat.Stat
 import net.minecraft.stat.StatFormatter
 import net.minecraft.stat.StatType
 
 object RelativeStatsCommand : DiscordCommand
 {
-    fun getReplyForAll(statType: StatType<Any>, id: String): String
+    /**
+     * @param limit top n list entries to show
+     */
+    fun getReplyForAll(statType: StatType<Any>, id: String, limit: Int = 25): String
     {
         return try
         {
-            val dataWithRanks = StatUtil.getStatDataWithRanks(statType, id)
-            val playtimeData = StatUtil.getStatDataList()
+            val dataWithRanks = StatUtil.getRelativeStatDataWithRank(statType, id)
 
-            dataWithRanks.joinToString(separator = System.lineSeparator()) {
-                format(rank = it.first, data = it.second)
-            }
+            dataWithRanks
+                .subListUntilOrEnd(limit)
+                .joinToString(separator = System.lineSeparator()) { (rank, statData, playtimeData) ->
+                    format(rank, statData, playtimeData)
+                }
         } catch (e: StatDataException)
         {
             e.type.response
@@ -37,17 +42,19 @@ object RelativeStatsCommand : DiscordCommand
 
     /**
      * @param playerNames list of playerNames to filter. capitalization is ignored
+     * @param limit top n list entries to show, null means no limit
      */
-    fun getReplyForSome(playerNames: Collection<String>, statType: StatType<Any>, id: String): String
+    fun getReplyForSome(playerNames: Collection<String>, statType: StatType<Any>, id: String, limit: Int = 25): String
     {
         return try
         {
-            val dataWithRanks = StatUtil.getStatDataWithRanks(statType, id)
+            val dataWithRanks = StatUtil.getRelativeStatDataWithRank(statType, id)
 
             dataWithRanks
                 .filter { playerNames.map { it.lowercase() }.contains(it.second.playerName.lowercase()) }
-                .joinToString(separator = System.lineSeparator()) {
-                    format(rank = it.first, data = it.second)
+                .subListUntilOrEnd(limit)
+                .joinToString(separator = System.lineSeparator()) { (rank, statData, playtimeData) ->
+                    format(rank, statData, playtimeData)
                 }
         } catch (e: StatDataException)
         {
@@ -55,32 +62,34 @@ object RelativeStatsCommand : DiscordCommand
         }
     }
 
-    private fun format(data: RStatData, stat: Stat<*>): String
+    private fun format(rank: Int, statData: StatData, playtimeData: StatData): String
     {
-        var result = "${"${data.playerName}:".padEnd(17, ' ')} " // max length of player name is 16 characters
+        val relStat = StatUtil.getRelStat(statData.value, playtimeData.value)
+
+        var result = "$rank. ${statData.playerName.padEnd(17, ' ')} " // max length of player name is 16 characters
 
         result +=
-            when (stat.formatter)
+            when (statData.stat.formatter)
             {
                 StatFormatter.TIME ->
                 {
-                    "${(data.relStat / 720.0).trimDecimals(2)}%" // converts tick stats to hours but then to percent ((value*100)/(20*60*60))
+                    "${(relStat / 720.0).trimDecimals(2)}%" // converts tick stats to hours but then to percent ((value*100)/(20*60*60))
                 }
 
                 StatFormatter.DISTANCE ->
                 {
-                    "${(data.relStat / 100_000.0).trimDecimals(2)} km/h" // converts cm stats to km (value/(100*1000))
+                    "${(relStat / 100_000.0).trimDecimals(2)} km/h" // converts cm stats to km (value/(100*1000))
                 }
 
                 else ->
                 {
-                    "${data.relStat.trimDecimals(2)}/h"
+                    "${relStat.trimDecimals(2)}/h"
                 }
             }
 
         result = result.padEnd(32, ' ') // 17 from above plus 15 (should be enough spacing)
 
-        result += " (${stat.format(data.stat)} in ${Util.ticksToPrettyString(data.playtime)})"
+        result += " (${statData.stat.format(statData.value)} in ${Util.ticksToPrettyString(playtimeData.value)})"
 
         return result
     }
@@ -97,7 +106,7 @@ object RelativeStatsCommand : DiscordCommand
                 .then(MessageCommandSource.argument<String>("stat_identifier", StringArgumentType.word())
                     .executes {
                         DiscordHandler.sendCodeBlock(
-                            text = getRelativeReplyForAll(
+                            text = getReplyForAll(
                                 it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                 it.getArgument("stat_identifier", String::class.java)
                             ),
@@ -105,19 +114,50 @@ object RelativeStatsCommand : DiscordCommand
                         )
                         0
                     }
-                    .then(
-                        MessageCommandSource.argument<String>("partOfPlayerName", StringArgumentType.word())
+                    .then(MessageCommandSource.argument<Int>("topN", IntegerArgumentType.integer(1))
+                        .executes {
+                            val topN = it.getArgument("topN", Int::class.java)
+                            val statType = it.getArgument("statType", StatType::class.java) as StatType<Any>
+                            val statIdentifier = it.getArgument("stat_identifier", String::class.java)
+                            DiscordHandler.sendCodeBlock(
+                                text = getReplyForAll(statType, statIdentifier, limit = topN),
+                                silent = true
+                            )
+                            0
+                        }
+                    )
+                    .then(MessageCommandSource.argument<String>("partOfPlayerName", StringArgumentType.word())
+                        .executes {
+                            val partOfPlayerName = it.getArgument("partOfPlayerName", String::class.java)
+                            val statType = it.getArgument("statType", StatType::class.java) as StatType<Any>
+                            val statIdentifier = it.getArgument("stat_identifier", String::class.java)
+                            DiscordHandler.sendCodeBlock(
+                                text = getReplyForSome(UserRegistry.findMinecraftProfiles(partOfPlayerName).map { it.name }, statType, statIdentifier),
+                                silent = true
+                            )
+                            0
+                        }
+                        .then(MessageCommandSource.argument<Int>("topN", IntegerArgumentType.integer(1))
                             .executes {
                                 val partOfPlayerName = it.getArgument("partOfPlayerName", String::class.java)
+                                val topN = it.getArgument("topN", Int::class.java)
                                 val statType = it.getArgument("statType", StatType::class.java) as StatType<Any>
                                 val statIdentifier = it.getArgument("stat_identifier", String::class.java)
                                 DiscordHandler.sendCodeBlock(
-                                    text = getRelativeReplyForSome(UserRegistry.findMinecraftProfiles(partOfPlayerName), statType, statIdentifier),
+                                    text = getReplyForSome(
+                                        UserRegistry.findMinecraftProfiles(partOfPlayerName).map { it.name },
+                                        statType,
+                                        statIdentifier,
+                                        limit = topN
+                                    ),
                                     silent = true
                                 )
                                 0
                             }
-                    )))
+                        )
+                    )
+                )
+            )
         )
 
         val alias = dispatcher.register(MessageCommandSource.redirect("rstats", commandNode))

@@ -3,10 +3,12 @@
 package de.jagenka.commands.discord
 
 import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
 import de.jagenka.StatDataException
 import de.jagenka.UserRegistry
+import de.jagenka.Util.subListUntilOrEnd
 import de.jagenka.commands.DiscordCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
@@ -18,32 +20,14 @@ import net.minecraft.stat.StatType
 
 object StatsCommand : DiscordCommand
 {
-    fun getReplyForAll(statType: StatType<Any>, id: String): String
-    {
-        return try
-        {
-            val dataWithRanks = StatUtil.getStatDataWithRanks(statType, id)
-
-            dataWithRanks.joinToString(separator = System.lineSeparator()) {
-                format(rank = it.first, data = it.second)
-            }
-        } catch (e: StatDataException)
-        {
-            e.type.response
-        }
-    }
-
-    /**
-     * @param playerNames list of playerNames to filter. capitalization is ignored
-     */
-    fun getReplyForSome(playerNames: Collection<String>, statType: StatType<Any>, id: String): String
+    fun getReplyForAll(statType: StatType<Any>, id: String, limit: Int = 25): String
     {
         return try
         {
             val dataWithRanks = StatUtil.getStatDataWithRanks(statType, id)
 
             dataWithRanks
-                .filter { playerNames.map { it.lowercase() }.contains(it.second.playerName.lowercase()) }
+                .subListUntilOrEnd(limit)
                 .joinToString(separator = System.lineSeparator()) {
                     format(rank = it.first, data = it.second)
                 }
@@ -53,7 +37,28 @@ object StatsCommand : DiscordCommand
         }
     }
 
-    private fun format(rank: Int, data: StatData) = "$rank: ${data.playerName.padEnd(17, ' ')} ${data.stat.format(data.value)}" // max length of player name is 16 character
+    /**
+     * @param playerNames list of playerNames to filter. capitalization is ignored
+     */
+    fun getReplyForSome(playerNames: Collection<String>, statType: StatType<Any>, id: String, limit: Int = 25): String
+    {
+        return try
+        {
+            val dataWithRanks = StatUtil.getStatDataWithRanks(statType, id)
+
+            dataWithRanks
+                .filter { playerNames.map { it.lowercase() }.contains(it.second.playerName.lowercase()) }
+                .subListUntilOrEnd(limit)
+                .joinToString(separator = System.lineSeparator()) {
+                    format(rank = it.first, data = it.second)
+                }
+        } catch (e: StatDataException)
+        {
+            e.type.response
+        }
+    }
+
+    private fun format(rank: Int, data: StatData) = "$rank. ${data.playerName.padEnd(17, ' ')} ${data.stat.format(data.value)}" // max length of player name is 16 character
 
     override val shortHelpText: String
         get() = "list players' stats"
@@ -75,17 +80,49 @@ object StatsCommand : DiscordCommand
                         )
                         0
                     }
+                    .then(
+                        argument<Int>("topN", IntegerArgumentType.integer(1))
+                            .executes {
+                                val topN = it.getArgument("topN", Int::class.java)
+                                val statType = it.getArgument("statType", StatType::class.java) as StatType<Any>
+                                val statIdentifier = it.getArgument("stat_identifier", String::class.java)
+                                DiscordHandler.sendCodeBlock(
+                                    text = getReplyForAll(statType, statIdentifier, limit = topN),
+                                    silent = true
+                                )
+                                0
+                            }
+                    )
                     .then(argument<String>("partOfPlayerName", StringArgumentType.word())
                         .executes {
                             val partOfPlayerName = it.getArgument("partOfPlayerName", String::class.java)
                             val statType = it.getArgument("statType", StatType::class.java) as StatType<Any>
                             val statIdentifier = it.getArgument("stat_identifier", String::class.java)
                             DiscordHandler.sendCodeBlock(
-                                text = getReplyForSome(UserRegistry.findRegistered(partOfPlayerName).map { it.minecraft.name }, statType, statIdentifier),
+                                text = getReplyForSome(UserRegistry.findMinecraftProfiles(partOfPlayerName).map { it.name }, statType, statIdentifier),
                                 silent = true
                             )
                             0
                         }
+                        .then(
+                            argument<Int>("topN", IntegerArgumentType.integer(1))
+                                .executes {
+                                    val partOfPlayerName = it.getArgument("partOfPlayerName", String::class.java)
+                                    val topN = it.getArgument("topN", Int::class.java)
+                                    val statType = it.getArgument("statType", StatType::class.java) as StatType<Any>
+                                    val statIdentifier = it.getArgument("stat_identifier", String::class.java)
+                                    DiscordHandler.sendCodeBlock(
+                                        text = getReplyForSome(
+                                            UserRegistry.findMinecraftProfiles(partOfPlayerName).map { it.name },
+                                            statType,
+                                            statIdentifier,
+                                            limit = topN
+                                        ),
+                                        silent = true
+                                    )
+                                    0
+                                }
+                        )
                     )))
         )
 

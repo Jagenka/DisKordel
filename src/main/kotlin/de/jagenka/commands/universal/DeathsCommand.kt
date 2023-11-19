@@ -25,7 +25,7 @@ object DeathsCommand : DiscordCommand, MinecraftCommand
             StatsCommand.getReplyForAll(Stats.CUSTOM as StatType<Any>, "deaths")
         } else
         {
-            StatsCommand.getReplyForSome(UserRegistry.findMinecraftProfiles(input), Stats.CUSTOM as StatType<Any>, "deaths")
+            StatsCommand.getReplyForSome(UserRegistry.findMinecraftProfiles(input).map { it.name }, Stats.CUSTOM as StatType<Any>, "deaths")
         }
     }
 
