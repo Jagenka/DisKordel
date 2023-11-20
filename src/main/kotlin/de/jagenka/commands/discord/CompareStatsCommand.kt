@@ -39,7 +39,8 @@ object CompareStatsCommand : DiscordCommand
         }
     }
 
-    private fun format(rank: Int, data: StatData) = "$rank. ${data.playerName.padEnd(17, ' ')} ${data.stat.format(data.value)}" // max length of player name is 16 character
+    private fun format(rank: Int, data: StatData) =
+        "${rank.toString().padStart(2, ' ')}. ${data.playerName.padEnd(17, ' ')} ${data.stat.format(data.value)}" // max length of player name is 16 character
 
     override val shortHelpText: String
         get() = "compare two player's stats"

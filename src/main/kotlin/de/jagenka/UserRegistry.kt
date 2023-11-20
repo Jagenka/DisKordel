@@ -12,7 +12,6 @@ import de.jagenka.config.UserEntry
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.effectiveName
-import info.debatty.java.stringsimilarity.Cosine
 import info.debatty.java.stringsimilarity.Levenshtein
 import kotlinx.coroutines.launch
 import net.minecraft.server.WhitelistEntry
@@ -33,33 +32,18 @@ object UserRegistry
     private val discordUserCache = mutableSetOf<dev.kord.core.entity.User>()
 
     /**
-     * input to comparison profile
-     */
-    private val precomputedMinecraftNames = mutableMapOf<String, Map<String, Int>>()
-
-    /**
      * some name to their Minecraft name
      */
     private val nameToMinecraftName = mutableMapOf<String, String>()
-    private val comparator = Cosine(3)
-    private val altComparator = Levenshtein()
+    private val comparator = Levenshtein()
 
     fun precomputeName(input: String, minecraftName: String)
     {
         nameToMinecraftName[input] = minecraftName
-        precomputedMinecraftNames[input] = comparator.getProfile(input)
     }
 
     fun prepareNamesForComparison()
     {
-        registeredUsers.forEach {
-            val memberName = discordMembers[it.discord]?.effectiveName
-            val username = discordMembers[it.discord]?.username
-            if (memberName != null) precomputeName(memberName, it.minecraft.name)
-            if (username != null) precomputeName(username, it.minecraft.name)
-            precomputeName(it.minecraft.name, it.minecraft.name)
-        }
-
         userCache.forEach {
             val name = it.name.lowercase()
             precomputeName(name, name)
@@ -68,6 +52,12 @@ object UserRegistry
         minecraftProfiles.forEach {
             val name = it.name.lowercase()
             precomputeName(name, name)
+        }
+
+        registeredUsers.forEach { user ->
+            discordMembers[user.discord]?.effectiveName?.let { precomputeName(it, user.minecraft.name) }
+            discordMembers[user.discord]?.username?.let { precomputeName(it, user.minecraft.name) }
+            precomputeName(user.minecraft.name, user.minecraft.name)
         }
     }
 
@@ -156,7 +146,7 @@ object UserRegistry
     fun findMostLikelyMinecraftName(input: String): String?
     {
         return nameToMinecraftName.minBy { (someName, _) ->
-            altComparator.distance(input, someName)
+            comparator.distance(input, someName)
         }.value
     }
     // endregion
@@ -164,7 +154,6 @@ object UserRegistry
     // region registration
     fun register(snowflake: Snowflake, minecraftName: String, callback: (success: Boolean) -> Unit = {})
     {
-        findDiscordMember(snowflake)
         val gameProfile =
             getGameProfile(minecraftName)
                 ?: findMinecraftProfileOrError(minecraftName)
@@ -174,8 +163,12 @@ object UserRegistry
                     minecraftName
                 )
         registeredUsers.put(User(discord = DiscordUser(snowflake), minecraft = MinecraftUser(gameProfile.name, gameProfile.id)))
-        val name = gameProfile.name.lowercase()
-        precomputeName(name, name)
+        val gameProfileName = gameProfile.name.lowercase()
+        findDiscordMember(snowflake) {
+            precomputeName(it.effectiveName, gameProfileName)
+            precomputeName(it.username, gameProfileName)
+        }
+        precomputeName(gameProfileName, gameProfileName)
         saveToCache(gameProfile)
 
         callback.invoke(true)
@@ -442,9 +435,13 @@ object UserRegistry
         return if (found) getGameProfile(minecraftName) else null
     }
 
-    private fun findDiscordMember(snowflake: Snowflake)
+    private fun findDiscordMember(snowflake: Snowflake, callback: (mamber: Member) -> Unit)
     {
-        Main.scope.launch { discordMembers[DiscordUser(snowflake)] = DiscordHandler.getMemberOrSendError(snowflake) ?: return@launch }
+        Main.scope.launch {
+            val member = DiscordHandler.getMemberOrSendError(snowflake)
+            discordMembers[DiscordUser(snowflake)] = member ?: return@launch
+            callback.invoke(member)
+        }
     }
 
     fun <V> MutableSet<V>.put(element: V)

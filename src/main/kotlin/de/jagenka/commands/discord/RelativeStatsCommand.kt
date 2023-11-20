@@ -67,7 +67,7 @@ object RelativeStatsCommand : DiscordCommand
     {
         val relStat = StatUtil.getRelStat(statData.value, playtimeData.value)
 
-        var result = "$rank. ${statData.playerName.padEnd(17, ' ')} " // max length of player name is 16 characters
+        var result = "${rank.toString().padStart(2, ' ')}. ${statData.playerName.padEnd(17, ' ')} " // max length of player name is 16 characters
 
         result +=
             when (statData.stat.formatter)

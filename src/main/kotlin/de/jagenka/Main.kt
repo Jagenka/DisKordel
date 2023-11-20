@@ -32,7 +32,6 @@ object Main : ModInitializer
         //register onServerLoaded
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             MinecraftHandler.onServerLoaded(server)
-            UserRegistry.prepareNamesForComparison()
             scope.launch {
                 DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "> *Server started!*", escapeMarkdown = false)
             }
