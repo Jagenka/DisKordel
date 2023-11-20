@@ -110,9 +110,9 @@ object PlaytimePerStatCommand : DiscordCommand
     }
 
     override val shortHelpText: String
-        get() = "list players' stats in relation to playtime"
+        get() = "list players' playtime in relation to a stat"
     override val longHelpText: String
-        get() = "query Minecraft stats of all or only some players and relate them to their playtime. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
+        get() = "query playtime of all or only some players and relate them to some Minecraft stat. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
 
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
