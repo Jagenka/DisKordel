@@ -30,6 +30,7 @@ object RelativeStatsCommand : DiscordCommand
             val dataWithRanks = StatUtil.getRelativeStatDataWithRank(statType, id)
 
             dataWithRanks
+                .filter { it.second.value != 0 }
                 .subListUntilOrEnd(limit)
                 .joinToString(separator = System.lineSeparator()) { (rank, statData, playtimeData) ->
                     format(rank, statData, playtimeData)

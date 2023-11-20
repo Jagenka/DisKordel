@@ -40,6 +40,7 @@ object Registry
         StatsCommand,
         RelativeStatsCommand,
         PlaytimePerStatCommand,
+        CompareStatsCommand,
         HelpCommand,
 
         // Universal Commands

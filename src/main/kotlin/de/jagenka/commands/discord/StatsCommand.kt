@@ -27,6 +27,7 @@ object StatsCommand : DiscordCommand
             val dataWithRanks = StatUtil.getStatDataWithRanks(statType, id)
 
             dataWithRanks
+                .filter { it.second.value != 0 }
                 .subListUntilOrEnd(limit)
                 .joinToString(separator = System.lineSeparator()) {
                     format(rank = it.first, data = it.second)

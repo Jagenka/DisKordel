@@ -41,7 +41,7 @@ object StatUtil
     {
         val data = getStatDataList(statType, id)
         if (data.isEmpty()) throw StatDataException(EMPTY)
-        if (data.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
+        // if (data.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
 
         var currentRank = 1
         var currentValue: Int? = null
@@ -67,11 +67,11 @@ object StatUtil
     {
         val data = getStatDataList(statType, id)
         if (data.isEmpty()) throw StatDataException(EMPTY)
-        if (data.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
+        // if (data.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
 
         val playtimeData = getStatDataList(Stats.CUSTOM as StatType<Any>, "play_time")
         if (playtimeData.isEmpty()) throw StatDataException(EMPTY)
-        if (playtimeData.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
+        // if (playtimeData.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
 
         var currentRank = 1
         var currentValue: Double? = null
@@ -105,11 +105,11 @@ object StatUtil
     {
         val data = getStatDataList(statType, id)
         if (data.isEmpty()) throw StatDataException(EMPTY)
-        if (data.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
+        // if (data.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
 
         val playtimeData = getStatDataList(Stats.CUSTOM as StatType<Any>, "play_time")
         if (playtimeData.isEmpty()) throw StatDataException(EMPTY)
-        if (playtimeData.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
+        // if (playtimeData.all { it.value == 0 }) throw StatDataException(ONLY_ZERO)
 
         var currentRank = 1
         var currentValue: Double? = null
