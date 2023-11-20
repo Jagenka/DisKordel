@@ -13,6 +13,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.effectiveName
 import info.debatty.java.stringsimilarity.Cosine
+import info.debatty.java.stringsimilarity.Levenshtein
 import kotlinx.coroutines.launch
 import net.minecraft.server.WhitelistEntry
 import net.minecraft.util.Uuids
@@ -41,6 +42,7 @@ object UserRegistry
      */
     private val nameToMinecraftName = mutableMapOf<String, String>()
     private val comparator = Cosine(3)
+    private val altComparator = Levenshtein()
 
     fun precomputeName(input: String, minecraftName: String)
     {
@@ -153,11 +155,9 @@ object UserRegistry
 
     fun findMostLikelyMinecraftName(input: String): String?
     {
-        val someName = precomputedMinecraftNames.maxBy { (_, precomputedProfile) ->
-            comparator.similarity(comparator.getProfile(input), precomputedProfile)
-        }.key
-
-        return nameToMinecraftName[someName]
+        return nameToMinecraftName.minBy { (someName, _) ->
+            altComparator.distance(input, someName)
+        }.value
     }
     // endregion
 
