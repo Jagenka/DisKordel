@@ -5,6 +5,7 @@ package de.jagenka.stats
 import de.jagenka.StatDataException
 import de.jagenka.StatDataExceptionType.*
 import de.jagenka.UserRegistry
+import net.minecraft.stat.StatFormatter
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.util.Identifier
@@ -81,6 +82,9 @@ object StatUtil
                 it to (playtimeData.find { playtimeData ->
                     playtimeData.playerName.equals(it.playerName, ignoreCase = true)
                 } ?: return@mapNotNull null)
+            }
+            .filterNot {
+                it.first.stat.formatter == StatFormatter.DISTANCE && it.first.value == 0
             }
             .sortedByDescending { (statData, playtimeData) ->
                 getRelStat(statData.value, playtimeData.value)
