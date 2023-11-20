@@ -83,9 +83,6 @@ object StatUtil
                     playtimeData.playerName.equals(it.playerName, ignoreCase = true)
                 } ?: return@mapNotNull null)
             }
-            .filterNot {
-                it.first.stat.formatter == StatFormatter.DISTANCE && it.first.value == 0
-            }
             .sortedByDescending { (statData, playtimeData) ->
                 getRelStat(statData.value, playtimeData.value)
             }
@@ -123,6 +120,9 @@ object StatUtil
                 it to (playtimeData.find { playtimeData ->
                     playtimeData.playerName.equals(it.playerName, ignoreCase = true)
                 } ?: return@mapNotNull null)
+            }
+            .filterNot {
+                it.first.stat.formatter == StatFormatter.DISTANCE && it.first.value == 0
             }
             .sortedByDescending { (statData, playtimeData) ->
                 getInverseRelStat(statData.value, playtimeData.value)

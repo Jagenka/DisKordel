@@ -69,7 +69,7 @@ object PlaytimePerStatCommand : DiscordCommand
     {
         val inverseRelStat = StatUtil.getInverseRelStat(statData.value, playtimeData.value) // hours per stat
 
-        var result = "$rank. ${statData.playerName.padEnd(17, ' ')} " // max length of player name is 16 characters
+        var result = "${rank.toString().padStart(2, ' ')}. ${statData.playerName.padEnd(17, ' ')} " // max length of player name is 16 characters
 
         result +=
             when (statData.stat.formatter)
