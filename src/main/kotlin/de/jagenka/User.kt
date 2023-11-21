@@ -1,6 +1,5 @@
 package de.jagenka
 
-import com.mojang.authlib.minecraft.MinecraftProfileTexture
 import de.jagenka.config.MinecraftUserSerializer
 import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.launch
@@ -53,7 +52,7 @@ data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String =
         {
             MinecraftHandler.minecraftServer?.apply {
                 val profile = sessionService.fetchProfile(uuid, false)?.profile ?: MinecraftHandler.logger.error("no profile found for UUID $uuid").run { return }
-                val texture = sessionService.getTextures(profile, false)[MinecraftProfileTexture.Type.SKIN] ?: return
+                val texture = sessionService.getTextures(profile).skin ?: return
 
                 val skin = ImageIO.read(URL(texture.url))
                 val layer1 = skin.getSubimage(8, 8, 8, 8)
