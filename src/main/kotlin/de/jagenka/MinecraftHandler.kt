@@ -171,10 +171,17 @@ object MinecraftHandler
                 .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, Util.getMessageURL(event.message.referencedMessage ?: event.message)))
         ).firstOrNull()
 
-        // simplify guild emojis
-        val messageContent = event.message.content.replace(guildEmojiRegex) { matchResult ->
-            matchResult.groups[1]?.value ?: matchResult.value // index is 1, as groups are 1-indexed
-        }
+        val messageContent =
+            if (event.message.attachments.isEmpty())
+            {
+                // simplify guild emojis
+                event.message.content.replace(guildEmojiRegex) { matchResult ->
+                    matchResult.groups[1]?.value ?: matchResult.value // index is 1, as groups are 1-indexed
+                }
+            } else
+            {
+                "* view attachment in Discord *"
+            }
 
         val messageText = Text.of(messageContent)
             .getWithStyle(
