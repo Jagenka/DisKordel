@@ -35,6 +35,7 @@ object MinecraftHandler
             UserRegistry.loadRegisteredUsersFromFile()
             UserRegistry.loadGameProfilesFromPlayerData()
             UserRegistry.saveCacheToFile()
+            UserRegistry.prepareNamesForComparison()
         }
     }
 

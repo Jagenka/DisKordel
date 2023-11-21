@@ -81,6 +81,8 @@ object DiscordHandler
 
     fun sendCodeBlock(text: String, formatId: String = "", silent: Boolean = false)
     {
+        if (text.preventCodeBlockEscape().isBlank()) return
+
         val content = ("$formatId\n" + text.preventCodeBlockEscape())
         var toSend = content
 

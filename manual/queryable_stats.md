@@ -1,21 +1,27 @@
 # `stats` command
 
-With the `stats`/`rstats` commands, you can query every players' personal stats, like they are displayed for them only in the pause menu. This is possible, as the stat data is stored in the world folder server-side.
+With the `stats`/`rstats` commands, you can query every players' personal stats, like they are displayed for them only in the pause menu. This is possible, as the stat data is
+stored in the world folder server-side.
 
 ## command usage:
 
-- `!stat <statType> <stat_identifier> [<partOfPlayerName>]`
+- `!stat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
     - stat types and identifiers are listed below
     - player name is optional - lists all players when empty
-- `!rstat <statType> <stat_identifier> [<partOfPlayerName>]`
-    - same as above, just relates stat to time played in world (`play_time`)
+  - `topN` refers to the maximum number of entries shown
+- `!rstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
+  - same as above, just relates stat to time played in world (`play_time`) (stat/playtime)
     - playtime and stat for each player are shown in round brackets
+- `!pstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
+  - same as above, but inverse (playtime/stat)
+  - playtime and stat for each player are shown in round brackets
 
 ## stat types:
 
 ### `custom`
 
 identifiers are:
+
 - `animals_bred`: The number of times the player bred two mobs.
 - `clean_armor`: The number of dyed leather armors washed with a cauldron.
 - `clean_banner`: The number of banner patterns washed with a cauldron.

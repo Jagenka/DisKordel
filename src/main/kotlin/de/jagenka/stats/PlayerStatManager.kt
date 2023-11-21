@@ -1,6 +1,8 @@
-package de.jagenka
+package de.jagenka.stats
 
+import de.jagenka.MinecraftHandler
 import de.jagenka.MinecraftHandler.logger
+import de.jagenka.UserRegistry
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.server.PlayerManager
 import net.minecraft.stat.ServerStatHandler
@@ -25,7 +27,7 @@ object PlayerStatManager
         MinecraftHandler.minecraftServer?.let { server ->
             server.playerManager.getPlayer(uuid)?.let { serverPlayerEntity ->
                 val statHandler = server.playerManager.getOrCreateStatHandler(serverPlayerEntity)
-                this.statisticsMap[uuid] = statHandler
+                statisticsMap[uuid] = statHandler
                 return statHandler
             }
         }

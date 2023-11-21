@@ -36,6 +36,10 @@ dependencies {
     implementation("dev.kord.x:emoji:0.5.0")
     shadow("dev.kord.x:emoji:0.5.0")
 
+    //String comparison
+    implementation("info.debatty:java-string-similarity:2.0.0")
+    shadow("info.debatty:java-string-similarity:2.0.0")
+
     //brigardier
     //implementation("com.mojang:brigadier:1.0.18")
     //shadow("com.mojang:brigadier:1.0.18")

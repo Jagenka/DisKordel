@@ -12,6 +12,7 @@ import de.jagenka.config.UserEntry
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.effectiveName
+import info.debatty.java.stringsimilarity.Levenshtein
 import kotlinx.coroutines.launch
 import net.minecraft.server.WhitelistEntry
 import net.minecraft.util.Uuids
@@ -29,6 +30,36 @@ object UserRegistry
     private val minecraftProfiles = mutableSetOf<GameProfile>()
 
     private val discordUserCache = mutableSetOf<dev.kord.core.entity.User>()
+
+    /**
+     * some name to their Minecraft name
+     */
+    private val nameToMinecraftName = mutableMapOf<String, String>()
+    private val comparator = Levenshtein()
+
+    fun precomputeName(input: String, minecraftName: String)
+    {
+        nameToMinecraftName[input] = minecraftName
+    }
+
+    fun prepareNamesForComparison()
+    {
+        userCache.forEach {
+            val name = it.name.lowercase()
+            precomputeName(name, name)
+        }
+
+        minecraftProfiles.forEach {
+            val name = it.name.lowercase()
+            precomputeName(name, name)
+        }
+
+        registeredUsers.forEach { user ->
+            discordMembers[user.discord]?.effectiveName?.let { precomputeName(it, user.minecraft.name) }
+            discordMembers[user.discord]?.username?.let { precomputeName(it, user.minecraft.name) }
+            precomputeName(user.minecraft.name, user.minecraft.name)
+        }
+    }
 
     // region getter
     fun getDiscordMembers(): Map<DiscordUser, Member>
@@ -111,12 +142,18 @@ object UserRegistry
                     || possibleRegisteredUsers.find { user -> user.minecraft.name.equals(gameProfile.name, ignoreCase = true) } != null
         }
     }
+
+    fun findMostLikelyMinecraftName(input: String): String?
+    {
+        return nameToMinecraftName.minBy { (someName, _) ->
+            comparator.distance(input, someName)
+        }.value
+    }
     // endregion
 
     // region registration
     fun register(snowflake: Snowflake, minecraftName: String, callback: (success: Boolean) -> Unit = {})
     {
-        findDiscordMember(snowflake)
         val gameProfile =
             getGameProfile(minecraftName)
                 ?: findMinecraftProfileOrError(minecraftName)
@@ -126,6 +163,12 @@ object UserRegistry
                     minecraftName
                 )
         registeredUsers.put(User(discord = DiscordUser(snowflake), minecraft = MinecraftUser(gameProfile.name, gameProfile.id)))
+        val gameProfileName = gameProfile.name.lowercase()
+        findDiscordMember(snowflake) {
+            precomputeName(it.effectiveName, gameProfileName)
+            precomputeName(it.username, gameProfileName)
+        }
+        precomputeName(gameProfileName, gameProfileName)
         saveToCache(gameProfile)
 
         callback.invoke(true)
@@ -204,6 +247,8 @@ object UserRegistry
             ?: userCache.add(user)
 
         minecraftProfiles.add(gameProfile)
+        val name = gameProfile.name.lowercase()
+        precomputeName(name, name)
         saveCacheToFile()
     }
 
@@ -224,6 +269,10 @@ object UserRegistry
     fun saveCacheToFile()
     {
         userCache.addAll(minecraftProfiles.map { MinecraftUser(it.name, it.id) })
+        minecraftProfiles.forEach {
+            val name = it.name.lowercase()
+            precomputeName(name, name)
+        }
         Config.configEntry.userCache = userCache.toMutableSet()
         Config.store()
     }
@@ -314,6 +363,8 @@ object UserRegistry
         Config.configEntry.userCache.toMutableSet().forEach { userFromConfig ->
             val gameProfile = foundProfiles.find { it.id == userFromConfig.uuid } ?: return@forEach
             userCache.put(MinecraftUser(gameProfile.name, gameProfile.id, userFromConfig.skinURL, userFromConfig.lastURLUpdate))
+            val name = gameProfile.name.lowercase()
+            precomputeName(name, name)
         }
     }
 
@@ -331,6 +382,8 @@ object UserRegistry
                 {
                     profile?.let {
                         minecraftProfiles.add(profile)
+                        val name = profile.name.lowercase()
+                        precomputeName(name, name)
                         result.add(profile)
                         return
                     } ?: logger.error("profile null even though lookup succeeded")
@@ -361,6 +414,8 @@ object UserRegistry
                 {
                     profile?.let {
                         minecraftProfiles.add(profile)
+                        val name = profile.name.lowercase()
+                        precomputeName(name, name)
                         found = true
                         return
                     } ?: logger.error("profile for $minecraftName null even though lookup succeeded")
@@ -380,9 +435,13 @@ object UserRegistry
         return if (found) getGameProfile(minecraftName) else null
     }
 
-    private fun findDiscordMember(snowflake: Snowflake)
+    private fun findDiscordMember(snowflake: Snowflake, callback: (mamber: Member) -> Unit)
     {
-        Main.scope.launch { discordMembers[DiscordUser(snowflake)] = DiscordHandler.getMemberOrSendError(snowflake) ?: return@launch }
+        Main.scope.launch {
+            val member = DiscordHandler.getMemberOrSendError(snowflake)
+            discordMembers[DiscordUser(snowflake)] = member ?: return@launch
+            callback.invoke(member)
+        }
     }
 
     fun <V> MutableSet<V>.put(element: V)

@@ -8,7 +8,7 @@ import de.jagenka.commands.MinecraftCommand
 import de.jagenka.commands.discord.MessageCommandSource
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.commands.discord.Registry
-import de.jagenka.commands.discord.StatsCommand
+import de.jagenka.stats.StatUtil
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.stat.StatType
@@ -20,19 +20,18 @@ object PlaytimeCommand : DiscordCommand, MinecraftCommand
     @Suppress("UNCHECKED_CAST")
     private fun process(input: String = ""): String
     {
-        return if (input.isBlank())
-        {
-            StatsCommand.getReplyForAll(Stats.CUSTOM as StatType<Any>, "play_time")
-        } else
-        {
-            StatsCommand.getReplyForSome(UserRegistry.findMinecraftProfiles(input), Stats.CUSTOM as StatType<Any>, "play_time")
-        }
+        return StatUtil.getStatReply(
+            statType = Stats.CUSTOM as StatType<Any>,
+            id = "play_time",
+            queryType = StatUtil.StatQueryType.DEFAULT,
+            nameFilter = if (input.isBlank()) emptyList() else UserRegistry.findMinecraftProfiles(input).map { it.name }
+        )
     }
 
     override val shortHelpText: String
         get() = "get playtime for players"
     override val longHelpText: String
-        get() = "list all players' time spent on this server, filtered if argument exists."
+        get() = "list top 10 time spent on this server, filtered if argument exists. use `!stat custom play_time` if you want to see more."
 
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {

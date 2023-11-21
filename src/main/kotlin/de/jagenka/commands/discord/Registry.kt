@@ -39,6 +39,8 @@ object Registry
         UnregisterCommand,
         StatsCommand,
         RelativeStatsCommand,
+        PlaytimePerStatCommand,
+        CompareStatsCommand,
         HelpCommand,
 
         // Universal Commands
