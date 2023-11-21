@@ -8,7 +8,7 @@ import de.jagenka.commands.MinecraftCommand
 import de.jagenka.commands.discord.MessageCommandSource
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.commands.discord.Registry
-import de.jagenka.commands.discord.StatsCommand
+import de.jagenka.stats.StatUtil
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.stat.StatType
@@ -20,19 +20,18 @@ object DeathsCommand : DiscordCommand, MinecraftCommand
     @Suppress("UNCHECKED_CAST")
     private fun process(input: String = ""): String
     {
-        return if (input.isBlank())
-        {
-            StatsCommand.getReplyForAll(Stats.CUSTOM as StatType<Any>, "deaths")
-        } else
-        {
-            StatsCommand.getReplyForSome(UserRegistry.findMinecraftProfiles(input).map { it.name }, Stats.CUSTOM as StatType<Any>, "deaths")
-        }
+        return StatUtil.getStatReply(
+            statType = Stats.CUSTOM as StatType<Any>,
+            id = "deaths",
+            queryType = StatUtil.StatQueryType.DEFAULT,
+            nameFilter = if (input.isBlank()) emptyList() else UserRegistry.findMinecraftProfiles(input).map { it.name }
+        )
     }
 
     override val shortHelpText: String
         get() = "get death count for players"
     override val longHelpText: String
-        get() = "list all players' deaths, filtered if argument exists."
+        get() = "list top 10 deaths, filtered if argument exists. use `!stat custom deaths` if you want to see more."
 
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {

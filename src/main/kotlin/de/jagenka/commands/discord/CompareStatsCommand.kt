@@ -6,18 +6,16 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import de.jagenka.DiscordHandler
-import de.jagenka.StatDataException
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiscordCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
-import de.jagenka.stats.StatData
 import de.jagenka.stats.StatTypeArgument
 import de.jagenka.stats.StatUtil
 import net.minecraft.stat.StatType
 
 object CompareStatsCommand : DiscordCommand
 {
-    fun sendComparison(type: StatType<Any>, id: String, player1: String?, player2: String?)
+    private fun sendComparison(type: StatType<Any>, id: String, player1: String?, player2: String?)
     {
         if (player1 == null)
         {
@@ -33,32 +31,16 @@ object CompareStatsCommand : DiscordCommand
 
         val playerNames = listOf(player1, player2)
 
-        try
-        {
-            val dataWithRanks = StatUtil.getStatDataWithRanks(type, id)
-            val resultList = dataWithRanks
-                .filter { playerNames.map { it.lowercase() }.contains(it.second.playerName.lowercase()) }
-
-            if (resultList.isEmpty())
-            {
-                DiscordHandler.sendMessage("No results found.", silent = true)
-            }
-
-            DiscordHandler.sendCodeBlock(
-                text =
-                resultList.joinToString(separator = System.lineSeparator()) {
-                    format(it.first, it.second)
-                },
-                silent = true
-            )
-        } catch (e: StatDataException)
-        {
-            DiscordHandler.sendMessage(e.type.response, silent = true)
-        }
+        DiscordHandler.sendCodeBlock(
+            text = StatUtil.getStatReply(
+                statType = type,
+                id = id,
+                queryType = StatUtil.StatQueryType.COMPARE,
+                nameFilter = playerNames
+            ),
+            silent = true
+        )
     }
-
-    private fun format(rank: Int, data: StatData) =
-        "${rank.toString().padStart(2, ' ')}. ${data.playerName.padEnd(17, ' ')} ${data.stat.format(data.value)}" // max length of player name is 16 character
 
     override val shortHelpText: String
         get() = "compare two player's stats"
