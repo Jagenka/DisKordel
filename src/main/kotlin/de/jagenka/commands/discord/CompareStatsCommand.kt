@@ -17,20 +17,38 @@ import net.minecraft.stat.StatType
 
 object CompareStatsCommand : DiscordCommand
 {
-    fun sendComparison(type: StatType<Any>, id: String, player1: String, player2: String)
+    fun sendComparison(type: StatType<Any>, id: String, player1: String?, player2: String?)
     {
+        if (player1 == null)
+        {
+            DiscordHandler.sendMessage("Error finding player1.", silent = true)
+            return
+        }
+
+        if (player2 == null)
+        {
+            DiscordHandler.sendMessage("Error finding player2.", silent = true)
+            return
+        }
+
         val playerNames = listOf(player1, player2)
 
         try
         {
             val dataWithRanks = StatUtil.getStatDataWithRanks(type, id)
+            val resultList = dataWithRanks
+                .filter { playerNames.map { it.lowercase() }.contains(it.second.playerName.lowercase()) }
+
+            if (resultList.isEmpty())
+            {
+                DiscordHandler.sendMessage("No results found.", silent = true)
+            }
 
             DiscordHandler.sendCodeBlock(
-                text = dataWithRanks
-                    .filter { playerNames.map { it.lowercase() }.contains(it.second.playerName.lowercase()) }
-                    .joinToString(separator = System.lineSeparator()) {
-                        format(it.first, it.second)
-                    },
+                text =
+                resultList.joinToString(separator = System.lineSeparator()) {
+                    format(it.first, it.second)
+                },
                 silent = true
             )
         } catch (e: StatDataException)
@@ -45,7 +63,7 @@ object CompareStatsCommand : DiscordCommand
     override val shortHelpText: String
         get() = "compare two player's stats"
     override val longHelpText: String
-        get() = "compare your own or someone else's stats just like with stat command"
+        get() = "compare your own or someone else's stats to another player. stat criteria are the same as with the normal stat command."
 
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
@@ -56,9 +74,7 @@ object CompareStatsCommand : DiscordCommand
                         .executes {
                             val player1Input = it.getArgument("player1", String::class.java)
                             val player1 = UserRegistry.findMostLikelyMinecraftName(player1Input)
-                                ?: UserRegistry.findRegistered(player1Input).randomOrNull()?.minecraft?.name
-                                ?: return@executes 1
-                            val player2 = UserRegistry.findUser(it.source.author?.id)?.minecraft?.name ?: return@executes 1
+                            val player2 = UserRegistry.findUser(it.source.author?.id)?.minecraft?.name
                             sendComparison(
                                 it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                 it.getArgument("stat_identifier", String::class.java),
@@ -72,11 +88,7 @@ object CompareStatsCommand : DiscordCommand
                                 val player1Input = it.getArgument("player1", String::class.java)
                                 val player2Input = it.getArgument("player2", String::class.java)
                                 val player1 = UserRegistry.findMostLikelyMinecraftName(player1Input)
-                                    ?: UserRegistry.findRegistered(player1Input).randomOrNull()?.minecraft?.name
-                                    ?: return@executes 1
                                 val player2 = UserRegistry.findMostLikelyMinecraftName(player2Input)
-                                    ?: UserRegistry.findRegistered(player2Input).randomOrNull()?.minecraft?.name
-                                    ?: return@executes 1
                                 sendComparison(
                                     it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                     it.getArgument("stat_identifier", String::class.java),
