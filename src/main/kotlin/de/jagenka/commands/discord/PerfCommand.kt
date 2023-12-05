@@ -21,7 +21,7 @@ object PerfCommand : DiscordCommand
             dispatcher.register(literal("perf")
                 .executes {
                     val performanceMetrics = MinecraftHandler.getPerformanceMetrics()
-                    DiscordHandler.sendMessage("TPS: ${performanceMetrics.tps.trimDecimals(1)} MSPT: ${performanceMetrics.mspt.trimDecimals(1)}", silent = true)
+                    DiscordHandler.sendMessage("TPS: ${performanceMetrics.tps.toDouble().trimDecimals(1)} MSPT: ${performanceMetrics.mspt.trimDecimals(1)}", silent = true)
                     0
                 })
 
