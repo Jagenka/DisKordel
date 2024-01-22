@@ -12,12 +12,13 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.*
 import net.minecraft.util.Formatting
-import net.minecraft.util.math.Position
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
 object MinecraftHandler
 {
+    private val guildEmojiRegex = Regex("<a?(:[a-zA-Z0-9_]+:)[0-9]+>")
+
     val logger = LoggerFactory.getLogger("diskordel")
 
     var minecraftServer: MinecraftServer? = null
@@ -34,6 +35,7 @@ object MinecraftHandler
             UserRegistry.loadRegisteredUsersFromFile()
             UserRegistry.loadGameProfilesFromPlayerData()
             UserRegistry.saveCacheToFile()
+            UserRegistry.prepareNamesForComparison()
         }
     }
 
@@ -166,19 +168,35 @@ object MinecraftHandler
                         Text.of(event.message.referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.name })
                     )
                 )
+                .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, Util.getMessageURL(event.message.referencedMessage ?: event.message)))
         ).firstOrNull()
 
-        val content = Text.of(event.message.content)
+        val messageContent =
+            if (event.message.attachments.isEmpty())
+            {
+                // simplify guild emojis
+                event.message.content.replace(guildEmojiRegex) { matchResult ->
+                    matchResult.groups[1]?.value ?: matchResult.value // index is 1, as groups are 1-indexed
+                }
+            } else
+            {
+                "* view attachment in Discord *"
+            }
 
-        sendChatMessage(Texts.join(listOfNotNull(authorText, referencedAuthorText, content), Text.of(" ")))
+        val messageText = Text.of(messageContent)
+            .getWithStyle(
+                Style.EMPTY
+                    .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, Util.getMessageURL(event.message)))
+            )
+            .firstOrNull()
+
+        sendChatMessage(Texts.join(listOfNotNull(authorText, referencedAuthorText, messageText), Text.of(" ")))
     }
 
     fun getOnlinePlayers(): List<String>
     {
         minecraftServer?.let { server ->
-            val list = ArrayList<String>()
-            server.playerManager.playerList.forEach { list.add(it.name.string) }
-            return list
+            return server.playerManager.playerList.map { it.name.string }
         }
 
         return emptyList()
@@ -205,22 +223,13 @@ object MinecraftHandler
     fun getPerformanceMetrics(): PerformanceMetrics
     {
         minecraftServer?.let { server ->
-            val mspt = server.lastTickLengths.average() * 1.0E-6 // average is in nanoseconds -> convert to milliseconds
-            val tps = min(1000.0 / mspt, 20.0)
-
+            val mspt = server.tickTimes.average() * 1.0E-6 // average is in nanoseconds -> convert to milliseconds
+            val possibleTickRate = 1000f / mspt.toFloat()
+            val tps = if (server.tickManager.isSprinting) possibleTickRate else min(possibleTickRate, server.tickManager.tickRate)
             return PerformanceMetrics(mspt, tps)
         }
 
-        return PerformanceMetrics(0.0, 0.0)
-    }
-
-    fun getPlayerPosition(playerString: String): Position?
-    {
-        minecraftServer?.let { server ->
-            val player = server.playerManager.getPlayer(playerString) ?: return null
-            return player.pos
-        }
-        return null
+        return PerformanceMetrics(0.0, 0f)
     }
 
     fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)

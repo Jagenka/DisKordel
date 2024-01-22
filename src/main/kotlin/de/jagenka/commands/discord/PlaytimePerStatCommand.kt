@@ -8,44 +8,41 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiscordCommand
-import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
-import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
-import de.jagenka.commands.discord.MessageCommandSource.Companion.redirect
 import de.jagenka.stats.StatTypeArgument
 import de.jagenka.stats.StatUtil
 import net.minecraft.stat.StatType
 
-object StatsCommand : DiscordCommand
+object PlaytimePerStatCommand : DiscordCommand
 {
     override val shortHelpText: String
-        get() = "list players' stats"
+        get() = "list players' playtime in relation to a stat"
     override val longHelpText: String
-        get() = "query Minecraft stats of all or only some players. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
+        get() = "query playtime of all or only some players and relate them to some Minecraft stat. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
 
     override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
     {
-        val commandNode = dispatcher.register(literal("stat")
-            .then(argument("statType", StatTypeArgument())
-                .then(argument<String>("stat_identifier", StringArgumentType.word())
+        val commandNode = dispatcher.register(MessageCommandSource.literal("pstat")
+            .then(MessageCommandSource.argument("statType", StatTypeArgument())
+                .then(MessageCommandSource.argument<String>("stat_identifier", StringArgumentType.word())
                     .executes {
                         DiscordHandler.sendCodeBlock(
                             text = StatUtil.getStatReply(
                                 statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                 id = it.getArgument("stat_identifier", String::class.java),
-                                queryType = StatUtil.StatQueryType.DEFAULT
+                                queryType = StatUtil.StatQueryType.TIME_PER_STAT
                             ),
                             silent = true
                         )
                         0
                     }
                     .then(
-                        argument<Int>("topN", IntegerArgumentType.integer(1))
+                        MessageCommandSource.argument<Int>("topN", IntegerArgumentType.integer(1))
                             .executes {
                                 DiscordHandler.sendCodeBlock(
                                     text = StatUtil.getStatReply(
                                         statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                         id = it.getArgument("stat_identifier", String::class.java),
-                                        queryType = StatUtil.StatQueryType.DEFAULT,
+                                        queryType = StatUtil.StatQueryType.TIME_PER_STAT,
                                         limit = it.getArgument("topN", Int::class.java)
                                     ),
                                     silent = true
@@ -53,13 +50,13 @@ object StatsCommand : DiscordCommand
                                 0
                             }
                     )
-                    .then(argument<String>("partOfPlayerName", StringArgumentType.word())
+                    .then(MessageCommandSource.argument<String>("partOfPlayerName", StringArgumentType.word())
                         .executes {
                             DiscordHandler.sendCodeBlock(
                                 text = StatUtil.getStatReply(
                                     statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                     id = it.getArgument("stat_identifier", String::class.java),
-                                    queryType = StatUtil.StatQueryType.DEFAULT,
+                                    queryType = StatUtil.StatQueryType.TIME_PER_STAT,
                                     nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name }
                                 ),
                                 silent = true
@@ -67,13 +64,13 @@ object StatsCommand : DiscordCommand
                             0
                         }
                         .then(
-                            argument<Int>("topN", IntegerArgumentType.integer(1))
+                            MessageCommandSource.argument<Int>("topN", IntegerArgumentType.integer(1))
                                 .executes {
                                     DiscordHandler.sendCodeBlock(
                                         text = StatUtil.getStatReply(
                                             statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                             id = it.getArgument("stat_identifier", String::class.java),
-                                            queryType = StatUtil.StatQueryType.DEFAULT,
+                                            queryType = StatUtil.StatQueryType.TIME_PER_STAT,
                                             nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name },
                                             limit = it.getArgument("topN", Int::class.java)
                                         ),
@@ -87,9 +84,10 @@ object StatsCommand : DiscordCommand
             )
         )
 
-        val alias = dispatcher.register(redirect("stats", commandNode))
+        val alias = dispatcher.register(MessageCommandSource.redirect("pstats", commandNode))
 
         Registry.registerShortHelpText(shortHelpText, commandNode, alias)
         Registry.registerLongHelpText(longHelpText, commandNode, alias)
     }
 }
+

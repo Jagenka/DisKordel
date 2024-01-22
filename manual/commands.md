@@ -4,7 +4,7 @@
 - `!register`: Link your Discord User to your Minecraft Player.
 - `!unregister`: Unlink your current Discord User from the linked Minecraft Player.
 
-- `!stats`/`!rstats`: see [this](./queryable_stats.md) for help.
+- `!stat`/`!rstat`/`!pstat`: see [this](./queryable_stats.md) for help.
 - `!deaths`: List how many deaths players have. No argument lists all players.
 - `!playtime`: List how much players have played. No argument lists all players.
 

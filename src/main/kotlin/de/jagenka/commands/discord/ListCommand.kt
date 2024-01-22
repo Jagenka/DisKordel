@@ -1,26 +1,38 @@
 package de.jagenka.commands.discord
 
+import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.DiscordHandler
 import de.jagenka.MinecraftHandler
-import de.jagenka.commands.discord.structure.ArgumentCombination
-import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
-import de.jagenka.commands.discord.structure.MessageCommand
+import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 
-object ListCommand : MessageCommand
+object ListCommand : DiscordCommand
 {
-    override val ids: List<String>
-        get() = listOf("list")
-    override val helpText: String
-        get() = "List Minecraft players currently in-game."
+    override val shortHelpText: String
+        get() = "list online players"
+    override val longHelpText: String
+        get() = "list players currently logged into the Minecraft server."
 
-    override val allowedArgumentCombinations: List<ArgumentCombination>
-        get() = listOf(empty(helpText) { _ ->
-            val onlinePlayers = MinecraftHandler.getOnlinePlayers()
-            val sb = StringBuilder("Currently online: ")
-            if (onlinePlayers.isEmpty()) sb.append("~nobody~, ")
-            else onlinePlayers.forEach { sb.append("$it, ") }
-            sb.deleteRange(sb.length - 2, sb.length)
-            DiscordHandler.sendMessage(sb.toString())
-            true
-        })
+    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
+    {
+        val commandNode = dispatcher.register(
+            literal("list")
+                .executes {
+                    val onlinePlayers = MinecraftHandler.getOnlinePlayers()
+                    DiscordHandler.sendMessage(
+                        text = "Currently online:\n" +
+                                if (onlinePlayers.isEmpty()) "~nobody~"
+                                else
+                                {
+                                    onlinePlayers.joinToString(separator = "\n") {
+                                        "- $it"
+                                    }
+                                }, silent = true)
+                    0
+                }
+        )
+
+        Registry.registerShortHelpText(shortHelpText, commandNode)
+        Registry.registerLongHelpText(longHelpText, commandNode)
+    }
 }

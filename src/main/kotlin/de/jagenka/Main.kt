@@ -3,9 +3,7 @@ package de.jagenka
 import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.MinecraftHandler.logger
 import de.jagenka.MinecraftHandler.registerMixins
-import de.jagenka.commands.universal.DeathsCommand
-import de.jagenka.commands.universal.PlaytimeCommand
-import de.jagenka.commands.universal.WhereIsCommand
+import de.jagenka.commands.MinecraftCommand
 import de.jagenka.commands.universal.WhoisCommand
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
@@ -23,13 +21,10 @@ object Main : ModInitializer
 {
     val scope: CoroutineScope = CoroutineScope(SupervisorJob())
 
-    var stoppingTask: Job? = null
+    private var stoppingTask: Job? = null
 
-    private val minecraftCommands = listOf(
-        WhoisCommand,
-        WhereIsCommand,
-        DeathsCommand,
-        PlaytimeCommand
+    private val minecraftCommands: List<MinecraftCommand> = listOf(
+        WhoisCommand
     )
 
     override fun onInitialize()
@@ -64,7 +59,7 @@ object Main : ModInitializer
 
         //register commands
         CommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<ServerCommandSource>, _: CommandRegistryAccess, _: CommandManager.RegistrationEnvironment ->
-            minecraftCommands.forEach { it.register(dispatcher) }
+            minecraftCommands.forEach { it.registerWithMinecraft(dispatcher) }
         }
 
         Config.loadConfig()

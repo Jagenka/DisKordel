@@ -2,8 +2,8 @@ package de.jagenka.mixin;
 
 import com.mojang.authlib.GameProfile;
 import de.jagenka.MinecraftHandler;
-import de.jagenka.PlayerStatManager;
 import de.jagenka.UserRegistry;
+import de.jagenka.stats.PlayerStatManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.message.MessageType;

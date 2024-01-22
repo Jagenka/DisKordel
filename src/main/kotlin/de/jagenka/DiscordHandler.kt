@@ -1,7 +1,6 @@
 package de.jagenka
 
-import de.jagenka.commands.discord.*
-import de.jagenka.commands.discord.structure.Registry
+import de.jagenka.commands.discord.Registry
 import dev.kord.common.entity.MessageFlag
 import dev.kord.common.entity.MessageFlags
 import dev.kord.common.entity.Snowflake
@@ -11,13 +10,11 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
-import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.exception.KordInitializationException
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.create.addFile
-import dev.kord.x.emoji.Emojis
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.Dispatchers
@@ -54,8 +51,6 @@ object DiscordHandler
             guild = GuildBehavior(guildSnowflake, kord)
             channel = MessageChannelBehavior(channelSnowflake, kord)
 
-            registerCommands()
-
             Registry.setup(kord)
 
             kord.login {// nicht sicher ob man für jeden link nen eigenen bot braucht mit der API
@@ -63,22 +58,6 @@ object DiscordHandler
                 intents += Intent.MessageContent
             }
         } ?: throw BotInitializationException("Error initializing bot.")
-    }
-
-    private fun registerCommands()
-    {
-        with(Registry)
-        {
-            register(HelpMessageCommand)
-            register(ListCommand)
-            register(RegisterCommand)
-            register(UsersCommand)
-            register(UpdateNamesCommand)
-            register(PerfCommand)
-            register(UnregisterCommand)
-            register(StatsCommand)
-            register(RelativeStatsCommand)
-        }
     }
 
     fun sendMessage(text: String, silent: Boolean = false)
@@ -100,8 +79,10 @@ object DiscordHandler
         }
     }
 
-    fun sendCodeBlock(formatId: String = "", text: String)
+    fun sendCodeBlock(text: String, formatId: String = "", silent: Boolean = false)
     {
+        if (text.preventCodeBlockEscape().isBlank()) return
+
         val content = ("$formatId\n" + text.preventCodeBlockEscape())
         var toSend = content
 
@@ -110,7 +91,7 @@ object DiscordHandler
             toSend = content.substring(0, 1990) + "..."
         }
 
-        sendMessage("```$toSend\n```")
+        sendMessage(text = "```$toSend\n```", silent = silent)
     }
 
     suspend fun sendWebhookMessage(username: String, avatarURL: String, text: String, escapeMarkdown: Boolean = true)
@@ -176,13 +157,6 @@ object DiscordHandler
         MinecraftHandler.logger.error("User with Snowflake $id is not a member of the configured guild!")
     }
 
-    fun reactConfirmation(message: Message)
-    {
-        Main.scope.launch {
-            message.addReaction(ReactionEmoji.Unicode(Emojis.whiteCheckMark.unicode))
-        }
-    }
-
     /**
      * prevents messages from looking like a system message, as implemented [MinecraftHandler.sendSystemMessageAsPlayer]
      */
@@ -196,10 +170,10 @@ object DiscordHandler
     /**
      * this is called, if a message is not a command, so if it is a chat message
      */
-    suspend fun handleNotACommand(event: MessageCreateEvent)
+    suspend fun relayChatMessage(messageCreateEvent: MessageCreateEvent)
     {
-        if (event.message.author?.id == kord?.selfId || event.message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return
+        if (messageCreateEvent.message.author?.id == kord?.selfId || messageCreateEvent.message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return
 
-        MinecraftHandler.sendMessageFromDiscord(event)
+        MinecraftHandler.sendMessageFromDiscord(messageCreateEvent)
     }
 }

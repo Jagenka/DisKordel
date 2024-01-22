@@ -1,19 +1,26 @@
 # `stats` command
 
-With the `stats`/`rstats` commands, you can query every players' personal stats, like they are displayed for them only in the pause menu. This is possible, as the stat data is stored in the world folder server-side.
+With the `stats`/`rstats` commands, you can query every players' personal stats, like they are displayed for them only in the pause menu. This is possible, as the stat data is
+stored in the world folder server-side.
 
 ## command usage:
 
-- `!stats [category] [stat_name] (part_of_player_name)`
-    - categories are listed below
+- `!stat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
+    - stat types and identifiers are listed below
     - player name is optional - lists all players when empty
-- `!rstats [category] [stat_name] (part_of_player_name)`
-    - same as above, just relates stat to hours played in world (`play_time`)
-    - playtime for each player is shown in round brackets
+  - `topN` refers to the maximum number of entries shown
+- `!rstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
+  - same as above, just relates stat to time played in world (`play_time`) (stat/playtime)
+    - playtime and stat for each player are shown in round brackets
+- `!pstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
+  - same as above, but inverse (playtime/stat)
+  - playtime and stat for each player are shown in round brackets
 
-## categories:
+## stat types:
 
 ### `custom`
+
+identifiers are:
 
 - `animals_bred`: The number of times the player bred two mobs.
 - `clean_armor`: The number of dyed leather armors washed with a cauldron.
@@ -94,17 +101,17 @@ With the `stats`/`rstats` commands, you can query every players' personal stats,
 
 ### `mined`
 
-- requires block (e.g. `stone`, `light_blue_glazed_terracotta`)
+- requires block as identifier (e.g. `stone`, `light_blue_glazed_terracotta`)
 
 ### `broken`
 
 - refers to broken items
-- requires item (e.g. `iron_pickaxe`, `fishing_rod`)
+- requires item as identifier (e.g. `iron_pickaxe`, `fishing_rod`)
 
 ### `crafted`
 
 - refers also to smelted items etc.
-- requires item (e.g. `oak_planks`, `stone`)
+- requires item as identifier (e.g. `oak_planks`, `stone`)
 
 ### `used`
 
@@ -132,6 +139,6 @@ directly with use, when leather armor is washed in a cauldron, and instances men
 
 ### `killed` / `killed_by`
 
-- requires entity (e.g. `enderman`, `wither_skeleton`)
+- requires entity as identifier (e.g. `enderman`, `wither_skeleton`)
 
-(some parts are taken from [Statistics](https://minecraft.fandom.com/wiki/Statistics), accessed July 2023)
+(some parts are taken from [Statistics](https://minecraft.wiki/w/Statistics), accessed October 2023)

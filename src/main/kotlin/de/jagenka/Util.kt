@@ -2,8 +2,13 @@ package de.jagenka
 
 import dev.kord.common.entity.DiscordWebhook
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.entity.Message
 import dev.kord.rest.request.KtorRequestException
 import java.util.*
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 object Util
 {
@@ -16,19 +21,18 @@ object Util
 
     fun <T> Optional<T>.unwrap(): T? = orElse(null)
 
-    fun ticksToPrettyString(ticks: Int): String
+    fun ticksToPrettyString(ticks: Int) = durationToPrettyString(ticks.ticks)
+
+    fun durationToPrettyString(duration: Duration): String
     {
-        val seconds = ticks / 20
-        val minutes = seconds / 60
-        val hours = minutes / 60
-
-        val sb = StringBuilder()
-        if (hours > 0) sb.append("${hours}h")
-        if (hours > 0 || minutes > 0) sb.append(" ${minutes - hours * 60}min")
-        if (hours > 0 || minutes > 0 || seconds > 0) sb.append(" ${seconds - minutes * 60}s")
-        else sb.append("0h 0min 0s")
-
-        return sb.toString().trim()
+        return duration.toComponents { days, hours, minutes, seconds, _ ->
+            var toReturn = ""
+            if (days > 0) toReturn += "${days}d"
+            if (days > 0 || hours > 0) toReturn += " ${hours}h"
+            if (days > 0 || hours > 0 || minutes > 0) toReturn += " ${minutes}min"
+            toReturn += " ${seconds}s"
+            return@toComponents toReturn
+        }.trim()
     }
 
     fun findWebhookBySnowflake(id: Snowflake): DiscordWebhook?
@@ -62,4 +66,24 @@ object Util
         while (uuid in taken) uuid = UUID.randomUUID()
         return uuid
     }
+
+    suspend fun getMessageURL(message: Message): String
+    {
+        val guildSnowflake = message.getGuildOrNull()?.id ?: return ""
+        val channelSnowflake = message.channel.id
+        val messageSnowflake = message.id
+
+        return "https://discord.com/channels/$guildSnowflake/$channelSnowflake/$messageSnowflake"
+    }
+
+    /**
+     * Like List.sublist, but limiting to size, when limit >= size. Also defaults to 0, if limit < 0.
+     */
+    fun <T> List<T>.subListUntilOrEnd(limit: Int): List<T>
+    {
+        return this.subList(0, min(max(0, limit), this.size))
+    }
+
+    val Int.ticks: Duration
+        get() = (this / 20.0).seconds
 }

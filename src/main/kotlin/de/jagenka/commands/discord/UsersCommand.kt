@@ -1,20 +1,32 @@
 package de.jagenka.commands.discord
 
+import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.DiscordHandler
+import de.jagenka.Main
 import de.jagenka.UserRegistry
-import de.jagenka.commands.discord.structure.ArgumentCombination
-import de.jagenka.commands.discord.structure.ArgumentCombination.Companion.empty
-import de.jagenka.commands.discord.structure.MessageCommand
+import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
+import kotlinx.coroutines.launch
 
-object UsersCommand : MessageCommand
+object UsersCommand : DiscordCommand
 {
-    override val ids: List<String>
-        get() = listOf("users")
-    override val helpText: String
-        get() = "Lists all registered users."
-    override val allowedArgumentCombinations: List<ArgumentCombination>
-        get() = listOf(empty(helpText) {
-            DiscordHandler.sendMessage(UserRegistry.getAllUsersAsOutput())
-            true
-        })
+    override val shortHelpText: String
+        get() = "list all registered users"
+    override val longHelpText: String
+        get() = "list all registered users."
+
+    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
+    {
+        val commandNode = dispatcher.register(literal("users")
+            .executes {
+                Main.scope.launch {
+                    DiscordHandler.sendCodeBlock(text = UserRegistry.getAllUsersAsOutput(), silent = true)
+                }
+                0
+            }
+        )
+
+        Registry.registerShortHelpText(shortHelpText, commandNode)
+        Registry.registerLongHelpText(longHelpText, commandNode)
+    }
 }

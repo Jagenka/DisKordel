@@ -1,122 +1,93 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package de.jagenka.commands.discord
 
-import com.mojang.authlib.GameProfile
+import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.IntegerArgumentType
+import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
-import de.jagenka.PlayerStatManager
 import de.jagenka.UserRegistry
-import de.jagenka.Util
-import de.jagenka.Util.trimDecimals
-import de.jagenka.commands.discord.structure.Argument
-import de.jagenka.commands.discord.structure.ArgumentCombination
-import de.jagenka.commands.discord.structure.MessageCommand
-import net.minecraft.stat.Stat
-import net.minecraft.stat.StatFormatter
+import de.jagenka.commands.DiscordCommand
+import de.jagenka.stats.StatTypeArgument
+import de.jagenka.stats.StatUtil
 import net.minecraft.stat.StatType
-import net.minecraft.stat.Stats
-import net.minecraft.util.Identifier
 
-object RelativeStatsCommand : MessageCommand
+object RelativeStatsCommand : DiscordCommand
 {
-    override val ids: List<String>
-        get() = listOf("rstat", "rstats")
-    override val helpText: String
-        get() = "display non-zero stats in relation to the player's playtime"
-    override val allowedArgumentCombinations: List<ArgumentCombination>
-        get() = listOf(
-            ArgumentCombination(listOf(StatArgument(), Argument.string("stat")), "Get stat for all players.") { event, arguments ->
-                val (argType, argText) = arguments[0]
-                DiscordHandler.sendCodeBlock(
-                    text = getRelativeReplyForAll(
-                        (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
-                        arguments[1].second
+    override val shortHelpText: String
+        get() = "list players' stats in relation to playtime"
+    override val longHelpText: String
+        get() = "query Minecraft stats of all or only some players and relate them to their playtime. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
+
+    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
+    {
+        val commandNode = dispatcher.register(MessageCommandSource.literal("rstat")
+            .then(MessageCommandSource.argument("statType", StatTypeArgument())
+                .then(MessageCommandSource.argument<String>("stat_identifier", StringArgumentType.word())
+                    .executes {
+                        DiscordHandler.sendCodeBlock(
+                            text = StatUtil.getStatReply(
+                                statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
+                                id = it.getArgument("stat_identifier", String::class.java),
+                                queryType = StatUtil.StatQueryType.STAT_PER_TIME
+                            ),
+                            silent = true
+                        )
+                        0
+                    }
+                    .then(
+                        MessageCommandSource.argument<Int>("topN", IntegerArgumentType.integer(1))
+                            .executes {
+                                DiscordHandler.sendCodeBlock(
+                                    text = StatUtil.getStatReply(
+                                        statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
+                                        id = it.getArgument("stat_identifier", String::class.java),
+                                        queryType = StatUtil.StatQueryType.STAT_PER_TIME,
+                                        limit = it.getArgument("topN", Int::class.java)
+                                    ),
+                                    silent = true
+                                )
+                                0
+                            }
+                    )
+                    .then(MessageCommandSource.argument<String>("partOfPlayerName", StringArgumentType.word())
+                        .executes {
+                            DiscordHandler.sendCodeBlock(
+                                text = StatUtil.getStatReply(
+                                    statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
+                                    id = it.getArgument("stat_identifier", String::class.java),
+                                    queryType = StatUtil.StatQueryType.STAT_PER_TIME,
+                                    nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name }
+                                ),
+                                silent = true
+                            )
+                            0
+                        }
+                        .then(
+                            MessageCommandSource.argument<Int>("topN", IntegerArgumentType.integer(1))
+                                .executes {
+                                    DiscordHandler.sendCodeBlock(
+                                        text = StatUtil.getStatReply(
+                                            statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
+                                            id = it.getArgument("stat_identifier", String::class.java),
+                                            queryType = StatUtil.StatQueryType.STAT_PER_TIME,
+                                            nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name },
+                                            limit = it.getArgument("topN", Int::class.java)
+                                        ),
+                                        silent = true
+                                    )
+                                    0
+                                }
+                        )
                     )
                 )
-                true
-            },
-            ArgumentCombination(listOf(StatArgument(), Argument.string("stat"), Argument.string("partOfName")), "Get stat for some players.") { event, arguments ->
-                val (_, playerName) = arguments[2]
-                val (argType, argText) = arguments[0]
-                DiscordHandler.sendCodeBlock(
-                    text = getRelativeReplyForSome(
-                        UserRegistry.findMinecraftProfiles(playerName),
-                        (argType as StatArgument).convertToType(argText) ?: return@ArgumentCombination false,
-                        arguments[1].second
-                    )
-                )
-                true
-            },
+            )
         )
 
-    private fun getRelativeReplyForAll(statType: StatType<Any>, id: String): String
-    {
-        return getRelativeReplyForSome(UserRegistry.getMinecraftProfiles(), statType, id)
-    }
+        val alias = dispatcher.register(MessageCommandSource.redirect("rstats", commandNode))
 
-    private fun getRelativeReplyForSome(collection: Collection<GameProfile>, statType: StatType<Any>, id: String): String
-    {
-        val defaultResponse = "Nothing found!"
-
-        try
-        {
-            val identifier = Identifier(id)
-            val registry = statType.registry
-            val key = registry.get(identifier) ?: return defaultResponse
-            if (registry.getId(key) != identifier) return defaultResponse
-            val stat = statType.getOrCreateStat(key)
-            val playtimeStat = Stats.CUSTOM.getOrCreateStat(Stats.CUSTOM.registry.get(Identifier("play_time")))
-
-            return collection
-                .mapNotNull {
-                    RStatData(
-                        it.name,
-                        (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null),
-                        (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(playtimeStat) ?: return@mapNotNull null)
-                    )
-                }
-                .sortedByDescending { it.relStat }
-                .filter { it.relStat > 0.0 }
-                .joinToString(separator = "\n") { format(it, stat) }
-                .replace("``````", "")
-                .ifBlank { defaultResponse }
-        } catch (_: Exception)
-        {
-            return defaultResponse
-        }
-    }
-
-    private fun format(data: RStatData, stat: Stat<*>): String
-    {
-        var result = "${"${data.playerName}:".padEnd(17, ' ')} " // max length of player name is 16 characters
-
-        result +=
-            when (stat.formatter)
-            {
-                StatFormatter.TIME ->
-                {
-                    "${(data.relStat / 720.0).trimDecimals(2)}%" // converts tick stats to hours but then to percent ((value*100)/(20*60*60))
-                }
-
-                StatFormatter.DISTANCE ->
-                {
-                    "${(data.relStat / 100_000.0).trimDecimals(2)} km/h" // converts cm stats to km (value/(100*1000))
-                }
-
-                else ->
-                {
-                    "${data.relStat.trimDecimals(2)}/h"
-                }
-            }
-
-        result = result.padEnd(32, ' ') // 17 from above plus 15 (should be enough spacing)
-
-        result += " (${stat.format(data.stat)} in ${Util.ticksToPrettyString(data.playtime)})"
-
-        return result
-    }
-
-    data class RStatData(val playerName: String, val stat: Int, val playtime: Int)
-    {
-        val relStat: Double
-            get() = (if (playtime == 0) 0.0 else (stat.toDouble() * 72_000.0)) / playtime.toDouble() // converts ticks to hours (20*60*60)
+        Registry.registerShortHelpText(shortHelpText, commandNode, alias)
+        Registry.registerLongHelpText(longHelpText, commandNode, alias)
     }
 }
+

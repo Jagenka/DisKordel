@@ -28,9 +28,9 @@
   ],
   "accessWidener": "diskordel.accesswidener",
   "depends": {
-    "fabricloader": ">=0.14.22",
-    "fabric": ">=0.89.0+1.20.1",
-    "fabric-language-kotlin": ">=1.10.10+kotlin.1.9.10",
+    "fabricloader": ">=0.15.6",
+    "fabric": ">=0.91.0+1.20.1",
+    "fabric-language-kotlin": ">=1.10.17+kotlin.1.9.22",
     "minecraft": "=1.20.1",
     "java": ">=17"
   }
