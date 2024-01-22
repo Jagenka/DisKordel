@@ -1,5 +1,6 @@
 package de.jagenka
 
+import com.mojang.authlib.Agent
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.ProfileLookupCallback
 import de.jagenka.DiscordHandler.kord
@@ -376,7 +377,7 @@ object UserRegistry
 
         try
         {
-            minecraftServer?.gameProfileRepo?.findProfilesByNames(names.shuffled().toTypedArray(), object : ProfileLookupCallback
+            minecraftServer?.gameProfileRepo?.findProfilesByNames(names.shuffled().toTypedArray(), Agent.MINECRAFT, object : ProfileLookupCallback
             {
                 override fun onProfileLookupSucceeded(profile: GameProfile?)
                 {
@@ -389,9 +390,9 @@ object UserRegistry
                     } ?: logger.error("profile null even though lookup succeeded")
                 }
 
-                override fun onProfileLookupFailed(profileName: String?, exception: java.lang.Exception?)
+                override fun onProfileLookupFailed(profile: GameProfile?, exception: java.lang.Exception?)
                 {
-                    logger.error("no profile found for $profileName")
+                    logger.error("no profile found for ${profile?.name}")
                 }
             })
         } catch (e: Exception)
@@ -408,7 +409,7 @@ object UserRegistry
 
         try
         {
-            minecraftServer?.gameProfileRepo?.findProfilesByNames(arrayOf(minecraftName), object : ProfileLookupCallback
+            minecraftServer?.gameProfileRepo?.findProfilesByNames(arrayOf(minecraftName), Agent.MINECRAFT, object : ProfileLookupCallback
             {
                 override fun onProfileLookupSucceeded(profile: GameProfile?)
                 {
@@ -421,7 +422,7 @@ object UserRegistry
                     } ?: logger.error("profile for $minecraftName null even though lookup succeeded")
                 }
 
-                override fun onProfileLookupFailed(profileName: String?, exception: java.lang.Exception?)
+                override fun onProfileLookupFailed(profile: GameProfile?, exception: java.lang.Exception?)
                 {
                     found = false
                     logger.error("no profile found for $minecraftName")

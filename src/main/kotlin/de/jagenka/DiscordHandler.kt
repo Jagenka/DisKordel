@@ -14,7 +14,7 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.exception.KordInitializationException
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
-import dev.kord.rest.builder.message.create.addFile
+import dev.kord.rest.builder.message.addFile
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.Dispatchers

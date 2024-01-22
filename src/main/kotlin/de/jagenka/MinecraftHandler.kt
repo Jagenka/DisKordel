@@ -223,13 +223,13 @@ object MinecraftHandler
     fun getPerformanceMetrics(): PerformanceMetrics
     {
         minecraftServer?.let { server ->
-            val mspt = server.tickTimes.average() * 1.0E-6 // average is in nanoseconds -> convert to milliseconds
-            val possibleTickRate = 1000f / mspt.toFloat()
-            val tps = if (server.tickManager.isSprinting) possibleTickRate else min(possibleTickRate, server.tickManager.tickRate)
+            val mspt = server.lastTickLengths.average() * 1.0E-6 // average is in nanoseconds -> convert to milliseconds
+            val tps = min(1000.0 / mspt, 20.0)
+
             return PerformanceMetrics(mspt, tps)
         }
 
-        return PerformanceMetrics(0.0, 0f)
+        return PerformanceMetrics(0.0, 0.0)
     }
 
     fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)
