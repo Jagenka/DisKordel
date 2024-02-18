@@ -94,7 +94,7 @@ object DiscordHandler
         sendMessage(text = "```$toSend\n```", silent = silent)
     }
 
-    suspend fun sendWebhookMessage(username: String, avatarURL: String, text: String, escapeMarkdown: Boolean = true)
+    suspend fun sendWebhookMessage(username: String, avatarURL: String = Util.getServerIconURL(), text: String, escapeMarkdown: Boolean = true)
     {
         if (text.isBlank()) return
 

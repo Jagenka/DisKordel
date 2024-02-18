@@ -1,12 +1,14 @@
 package de.jagenka
 
 import com.mojang.authlib.minecraft.MinecraftProfileTexture
+import de.jagenka.config.Config
 import de.jagenka.config.MinecraftUserSerializer
 import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
+import java.net.URI
 import java.net.URL
 import java.util.*
 import javax.imageio.ImageIO
@@ -43,8 +45,25 @@ data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String =
 {
     suspend fun getSkinURL(): String
     {
+        val playerAvatarsURL = Config.configEntry.discordSettings.playerAvatarsURL
+        if (playerAvatarsURL != null)
+        {
+            val replacedURL = playerAvatarsURL.replace("%uuid%", uuid.toString().replace("-", ""))
+
+            try
+            {
+                val uri = URI(replacedURL)
+                return uri.toURL().toString()
+            } catch (_: Exception)
+            {
+
+            }
+        }
+
+        // fallback, if above parsing does not work
         updateSkin()
         return this.skinURL
+
     }
 
     private suspend fun updateSkin()

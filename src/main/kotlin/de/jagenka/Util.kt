@@ -1,9 +1,11 @@
 package de.jagenka
 
+import de.jagenka.config.Config
 import dev.kord.common.entity.DiscordWebhook
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Message
 import dev.kord.rest.request.KtorRequestException
+import java.net.URI
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
@@ -74,6 +76,19 @@ object Util
         val messageSnowflake = message.id
 
         return "https://discord.com/channels/$guildSnowflake/$channelSnowflake/$messageSnowflake"
+    }
+
+    fun getServerIconURL(): String
+    {
+        val fromConfig = Config.configEntry.discordSettings.serverIconURL ?: ""
+        try
+        {
+            val uri = URI(fromConfig)
+            return uri.toURL().toString()
+        } catch (e: Exception)
+        {
+            return ""
+        }
     }
 
     /**

@@ -15,7 +15,9 @@ class DiscordSettingsEntry(
     var botToken: String = "BOT_TOKEN",
     var guildId: Long = 123456789,
     var channelId: Long = 123456789,
-    var serverName: String = "Server"
+    var serverName: String = "Server",
+    var serverIconURL: String? = "URL_TO_PNG",
+    var playerAvatarsURL: String? = "URL_TO_PNG/%uuid%"
 )
 
 @Serializable
