@@ -91,7 +91,6 @@ object MinecraftHandler
 
                 DiscordHandler.sendWebhookMessage(
                     username = Config.configEntry.discordSettings.serverName,
-                    avatarURL = "",
                     text = if (user != null) "[${user.name}] ${text.string}" else text.string,
                     escapeMarkdown = false
                 )

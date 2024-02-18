@@ -33,14 +33,22 @@ object Main : ModInitializer
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             MinecraftHandler.onServerLoaded(server)
             scope.launch {
-                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "> *Server started!*", escapeMarkdown = false)
+                DiscordHandler.sendWebhookMessage(
+                    username = configEntry.discordSettings.serverName,
+                    text = "> *Server started!*",
+                    escapeMarkdown = false
+                )
             }
         }
 
         //register onServerStopping
         ServerLifecycleEvents.SERVER_STOPPING.register { server ->
             stoppingTask = scope.launch {
-                DiscordHandler.sendWebhookMessage(configEntry.discordSettings.serverName, "", "> *Server stopping...*", escapeMarkdown = false)
+                DiscordHandler.sendWebhookMessage(
+                    username = configEntry.discordSettings.serverName,
+                    text = "> *Server stopping...*",
+                    escapeMarkdown = false
+                )
                 stoppingTask?.cancel("done")
             }
         }
