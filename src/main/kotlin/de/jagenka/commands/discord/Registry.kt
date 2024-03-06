@@ -20,6 +20,7 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.application.GuildApplicationCommand
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.entity.toRawType
+import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.core.on
@@ -141,6 +142,10 @@ object Registry
                 )
             }
         }
+
+        kord.on<ChatInputCommandInteractionCreateEvent> {
+            handleSlashCommands(this)
+        }
     }
 
     private suspend fun messageWithPrettyMentions(message: Message): String
@@ -231,6 +236,15 @@ object Registry
             }
         }
         toDelete.forEach { it.delete() }
+    }
+
+    private suspend fun handleSlashCommands(event: ChatInputCommandInteractionCreateEvent)
+    {
+        with(event)
+        {
+            val cmd = slashCommandMap[interaction.invokedCommandName]
+            cmd?.execute(this)
+        }
     }
 
     fun registerShortHelpText(text: String, vararg nodes: CommandNode<MessageCommandSource>)
