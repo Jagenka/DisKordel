@@ -3,16 +3,41 @@ package de.jagenka.commands.discord
 import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.Main
 import de.jagenka.UserRegistry
+import de.jagenka.commands.DiskordelSlashCommand
 import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
+import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.ReactionEmoji
+import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import dev.kord.rest.builder.interaction.RootInputChatBuilder
 import dev.kord.x.emoji.Emojis
 import kotlinx.coroutines.launch
 
-object UpdateNamesCommand : DiskordelTextCommand
+object UpdateNamesCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
     override val internalId: String
         get() = "updatenames"
+
+    override val name: String
+        get() = "update_names"
+    override val description: String
+        get() = "Update internal name storage to reflect recent name changes."
+
+    override suspend fun build(builder: RootInputChatBuilder)
+    {
+        // nothing to declare
+    }
+
+    override suspend fun execute(event: ChatInputCommandInteractionCreateEvent)
+    {
+        Main.scope.launch {
+            val response = event.interaction.deferEphemeralResponse()
+            UserRegistry.loadRegisteredUsersFromFile()
+            response.respond {
+                content = "Done updating."
+            }
+        }
+    }
 
     override val shortHelpText: String
         get() = "update Discord names in database"
