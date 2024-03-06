@@ -10,6 +10,7 @@ import de.jagenka.commands.universal.PlaytimeCommand
 import de.jagenka.commands.universal.WhereIsCommand
 import de.jagenka.commands.universal.WhoisCommand
 import dev.kord.core.Kord
+import dev.kord.core.entity.Message
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.entity.toRawType
 import dev.kord.core.event.message.MessageCreateEvent
@@ -104,7 +105,7 @@ object Registry
             DiscordHandler.relayChatMessage(
                 authorId = message.author?.id,
                 authorName = message.getAuthorAsMemberOrNull()?.effectiveName ?: message.author?.effectiveName ?: "unknown user",
-                content = message.content,
+                content = messageWithPrettyMentions(message),
                 referencedMessage = message.referencedMessage,
                 attachments = message.attachments.map { it.toRawType() },
                 linkToMessage = Util.getMessageURL(message)
@@ -128,6 +129,23 @@ object Registry
                 )
             }
         }
+    }
+
+    private suspend fun messageWithPrettyMentions(message: Message): String
+    {
+        var messageContent = message.content
+        message.mentionedUsers.collect {
+            messageContent = messageContent.replace(it.mention, "@${it.username}")
+        }
+        message.mentionedRoles.collect {
+            println(it.name)
+            messageContent = messageContent.replace(it.mention, "@${it.name}")
+        }
+        message.mentionedChannels.collect {
+            println(it.data.name.value)
+            messageContent = messageContent.replace(it.mention, "#${it.data.name.value ?: "someChannel"}")
+        }
+        return messageContent
     }
 
     private fun registerCommands()
