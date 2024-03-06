@@ -1,13 +1,16 @@
 package de.jagenka
 
+import de.jagenka.Util.unwrap
 import de.jagenka.config.Config
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.launch
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.minecraft.advancement.AdvancementEntry
 import net.minecraft.network.message.MessageType
 import net.minecraft.network.message.SignedMessage
-import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.*
@@ -41,18 +44,66 @@ object MinecraftHandler
 
     fun registerMixins()
     {
-        //register chat message
-        ServerMessageEvents.CHAT_MESSAGE.register { message, sender, params ->
+        // register chat message
+        ServerMessageEvents.CHAT_MESSAGE.register { message, sender, _ ->
             Main.scope.launch {
                 handleMinecraftChatMessage(message.content, sender)
             }
         }
 
-        //register system message
-        ServerMessageEvents.GAME_MESSAGE.register { server, message, overlay ->
+        // say/me messages
+        ServerMessageEvents.COMMAND_MESSAGE.register { message, _, parameters ->
+            handleSayCommand(message, parameters)
+        }
+
+        // login messages
+        ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
+            val player = handler.player
             Main.scope.launch {
-                handleMinecraftSystemMessage(message)
+                val text = Text.translatable("multiplayer.player.joined", player.displayName)
+                val string = text.string
+                val name = string.split(" ").firstOrNull()
+                sendSystemMessageAsPlayer(name, string)
             }
+        }
+
+        // disconnect messages
+        ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
+            val player = handler.player
+            Main.scope.launch {
+                val text = Text.translatable("multiplayer.player.left", player.displayName)
+                val string = text.string
+                val name = string.split(" ").firstOrNull()
+                sendSystemMessageAsPlayer(name, string)
+            }
+        }
+
+        // death messages
+        ServerLivingEntityEvents.ALLOW_DEATH.register { entity, _, _ ->
+            if (!entity.isPlayer) return@register true
+            val text = entity.damageTracker.deathMessage
+            Main.scope.launch {
+                val string = text.string
+                val name = string.split(" ").firstOrNull()
+                sendSystemMessageAsPlayer(name, string)
+            }
+
+            return@register true
+        }
+    }
+
+    // coming from Mixin, as I did not find an inject from Fabric API
+    @JvmStatic
+    fun handleAdvancementGet(advancement: AdvancementEntry, player: ServerPlayerEntity)
+    {
+        val display = advancement.value.display.unwrap() ?: return
+        if (!display.shouldAnnounceToChat()) return
+        val text = display.frame.getChatAnnouncementText(advancement, player)
+        Main.scope.launch {
+            val string = text.string
+            val name = string.split(" ").firstOrNull()
+            sendSystemMessageAsPlayer(name, string)
+
         }
     }
 
@@ -62,80 +113,37 @@ object MinecraftHandler
         DiscordHandler.sendWebhookMessage(username = user.name, avatarURL = user.getSkinURL(), text = message.string)
     }
 
-    private suspend fun handleMinecraftSystemMessage(message: Text)
-    {
-        val key = (message.content as? TranslatableTextContent)?.key ?: return
-
-        if (key.startsWith("multiplayer.player.joined"))
-        {
-            handleLoginMessage(message)
-        } else if (key.startsWith("multiplayer.player.left"))
-        {
-            handleLogoutMessage(message)
-        } else if (key.startsWith("death."))
-        {
-            handleDeathMessage(message)
-        } else if (key.startsWith("chat.type.advancement."))
-        {
-            handleAdvancementMessage(message)
-        }
-    }
-
-    fun handleSayCommand(message: SignedMessage, params: MessageType.Parameters)
+    private fun handleSayCommand(message: SignedMessage, params: MessageType.Parameters)
     {
         Main.scope.launch {
-            if (params.type == minecraftServer?.registryManager?.get(RegistryKeys.MESSAGE_TYPE)?.get(MessageType.SAY_COMMAND))
-            {
-                val user = UserRegistry.getMinecraftUser(message.sender)
-                val text = message.content
+            val user = UserRegistry.getMinecraftUser(message.sender)
+            val text = message.content
 
-                DiscordHandler.sendWebhookMessage(
-                    username = Config.configEntry.discordSettings.serverName,
-                    text = if (user != null) "[${user.name}] ${text.string}" else text.string,
-                    escapeMarkdown = false
-                )
-            }
+            DiscordHandler.sendWebhookMessage(
+                username = Config.configEntry.discordSettings.serverName,
+                text = if (user != null) "[${user.name}] ${text.string}" else text.string,
+                escapeMarkdown = false
+            )
         }
     }
 
     /**
      * Sends a message looking like it came from a player, but stylized with > and cursive text.
-     * If the first word is not a known player name, the message is sent as whatever is set as `serverName` in Config
+     * If playerName is not a known player name, the message is sent as whatever is set as `serverName` in Config
+     * If playerName is known, it removes content's first word if it is the player's name.
      */
-    private suspend fun sendSystemMessageAsPlayer(text: Text)
+    private suspend fun sendSystemMessageAsPlayer(playerName: String?, content: String)
     {
-        val string = text.string
-        val firstWord = string.split(" ").firstOrNull()
-        val user = firstWord?.let { playerName ->
-            UserRegistry.getMinecraftUser(playerName)
-        }
+        val user = playerName?.let { UserRegistry.getMinecraftUser(it) }
 
         DiscordHandler.sendWebhookMessage(
             username = user?.name ?: Config.configEntry.discordSettings.serverName,
             avatarURL = user?.getSkinURL() ?: "",
-            text = if (user != null) "> *${string.removePrefix(firstWord).trim()}*" else "> *$string*",
+            text = "> *${
+                if (playerName != null && content.startsWith(playerName, ignoreCase = true)) content.replaceFirst(playerName, "", ignoreCase = true).trim() else content
+            }*",
             escapeMarkdown = false
         )
-    }
-
-    private suspend fun handleLoginMessage(text: Text)
-    {
-        sendSystemMessageAsPlayer(text)
-    }
-
-    private suspend fun handleLogoutMessage(text: Text)
-    {
-        sendSystemMessageAsPlayer(text)
-    }
-
-    private suspend fun handleDeathMessage(text: Text)
-    {
-        sendSystemMessageAsPlayer(text)
-    }
-
-    private suspend fun handleAdvancementMessage(text: Text)
-    {
-        sendSystemMessageAsPlayer(text)
     }
 
     suspend fun sendMessageFromDiscord(event: MessageCreateEvent)
