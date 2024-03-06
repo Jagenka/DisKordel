@@ -4,12 +4,16 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import com.mojang.brigadier.tree.CommandNode
 import de.jagenka.DiscordHandler
+import de.jagenka.Util
 import de.jagenka.commands.universal.DeathsCommand
 import de.jagenka.commands.universal.PlaytimeCommand
 import de.jagenka.commands.universal.WhereIsCommand
 import de.jagenka.commands.universal.WhoisCommand
 import dev.kord.core.Kord
+import dev.kord.core.entity.effectiveName
+import dev.kord.core.entity.toRawType
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.core.on
 
 object Registry
@@ -55,11 +59,15 @@ object Registry
         registerCommands()
 
         kord.on<MessageCreateEvent> messageHandling@{
-            if (message.getChannelOrNull()?.id != DiscordHandler.channel.id)
-            {
-                // return if message was not sent in set channel
-                return@messageHandling
-            }
+            // return if message is from ourselves
+            if (message.author?.id == kord.selfId) return@messageHandling
+
+            // return if message was not sent in set channel
+            if (message.getChannelOrNull()?.id != DiscordHandler.channel.id) return@messageHandling
+
+            // return if message is from an interaction, as we catch that in the message update event
+            if (message.interaction != null) return@messageHandling
+
             let commandHandling@{
                 if (interactsWithBots)
                 {
@@ -90,8 +98,35 @@ object Registry
                 }
             }
 
+            if (message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return@messageHandling
+
             // if commandHandling fails, it must be a chat message, which is to be relayed to Minecraft
-            DiscordHandler.relayChatMessage(messageCreateEvent = this)
+            DiscordHandler.relayChatMessage(
+                authorId = message.author?.id,
+                authorName = message.getAuthorAsMemberOrNull()?.effectiveName ?: message.author?.effectiveName ?: "unknown user",
+                content = message.content,
+                referencedMessage = message.referencedMessage,
+                attachments = message.attachments.map { it.toRawType() },
+                linkToMessage = Util.getMessageURL(message)
+            )
+        }
+
+        // here we don't allow commands
+        kord.on<MessageUpdateEvent> messageUpdateHandling@{
+            // this is a response from an interaction
+            if (new.interaction.value != null)
+            {
+                val authorName = new.author.value?.globalName?.value ?: new.author.value?.username ?: "unknown user"
+
+                DiscordHandler.relayChatMessage(
+                    authorId = new.author.value?.id,
+                    authorName = authorName,
+                    content = new.content.value ?: "* empty message *",
+                    referencedMessage = null,
+                    attachments = new.attachments.value ?: emptyList(),
+                    linkToMessage = Util.getMessageURL(new.guildId.value, new.channelId, new.id)
+                )
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package de.jagenka
 
 import de.jagenka.commands.discord.Registry
+import dev.kord.common.entity.DiscordAttachment
 import dev.kord.common.entity.MessageFlag
 import dev.kord.common.entity.MessageFlags
 import dev.kord.common.entity.Snowflake
@@ -10,7 +11,6 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
-import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.exception.KordInitializationException
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
@@ -20,6 +20,8 @@ import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.minecraft.text.*
+import net.minecraft.util.Formatting
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -36,6 +38,8 @@ object DiscordHandler
         private set
     lateinit var channel: MessageChannelBehavior
         private set
+
+    private val guildEmojiRegex = Regex("<a?(:[a-zA-Z0-9_]+:)[0-9]+>")
 
     suspend fun init(token: String, guildSnowflake: Snowflake, channelSnowflake: Snowflake)
     {
@@ -170,10 +174,62 @@ object DiscordHandler
     /**
      * this is called, if a message is not a command, so if it is a chat message
      */
-    suspend fun relayChatMessage(messageCreateEvent: MessageCreateEvent)
+    suspend fun relayChatMessage(
+        authorId: Snowflake?,
+        authorName: String,
+        content: String,
+        referencedMessage: Message?,
+        attachments: Collection<DiscordAttachment>,
+        linkToMessage: String
+    )
     {
-        if (messageCreateEvent.message.author?.id == kord?.selfId || messageCreateEvent.message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return
+        val associatedUser = UserRegistry.findUser(authorId)
 
-        MinecraftHandler.sendMessageFromDiscord(messageCreateEvent)
+        val authorText = Text.of(
+            "[$authorName]"
+        ).getWithStyle(
+            Style.EMPTY
+                .withFormatting(Formatting.BLUE)
+                .withHoverEvent(associatedUser?.minecraft?.name?.let { HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of(it)) })
+        ).firstOrNull()
+
+        val referencedAuthorText = Text.of(
+            referencedMessage?.getAuthorAsMemberOrNull()?.let {
+                "@${it.effectiveName}"
+            } ?: referencedMessage?.data?.author?.username?.let {
+                "@$it"
+            } ?: ""
+        ).getWithStyle(
+            Style.EMPTY
+                .withFormatting(Formatting.BLUE)
+                .withHoverEvent(
+                    HoverEvent(
+                        HoverEvent.Action.SHOW_TEXT,
+                        Text.of(referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.name })
+                    )
+                )
+                .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, Util.getMessageURL(referencedMessage)))
+        ).firstOrNull()
+
+        val messageContent =
+            if (attachments.isEmpty())
+            {
+                // simplify guild emojis
+                content.replace(guildEmojiRegex) { matchResult ->
+                    matchResult.groups[1]?.value ?: matchResult.value // index is 1, as groups are 1-indexed
+                }
+            } else
+            {
+                "* view attachment in Discord *"
+            }
+
+        val messageText = Text.of(messageContent)
+            .getWithStyle(
+                Style.EMPTY
+                    .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, linkToMessage))
+            )
+            .firstOrNull()
+
+        MinecraftHandler.sendChatMessage(Texts.join(listOfNotNull(authorText, referencedAuthorText, messageText), Text.of(" ")))
     }
 }

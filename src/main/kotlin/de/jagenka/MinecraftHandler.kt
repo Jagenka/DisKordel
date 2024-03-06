@@ -2,8 +2,7 @@ package de.jagenka
 
 import de.jagenka.Util.unwrap
 import de.jagenka.config.Config
-import dev.kord.core.entity.effectiveName
-import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.entity.Message
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
@@ -13,15 +12,12 @@ import net.minecraft.network.message.MessageType
 import net.minecraft.network.message.SignedMessage
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.*
-import net.minecraft.util.Formatting
+import net.minecraft.text.Text
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
 object MinecraftHandler
 {
-    private val guildEmojiRegex = Regex("<a?(:[a-zA-Z0-9_]+:)[0-9]+>")
-
     val logger = LoggerFactory.getLogger("diskordel")
 
     var minecraftServer: MinecraftServer? = null
@@ -146,58 +142,9 @@ object MinecraftHandler
         )
     }
 
-    suspend fun sendMessageFromDiscord(event: MessageCreateEvent)
+    suspend fun sendMessageFromDiscord(message: Message)
     {
-        val author = event.message.author
-        val authorName = event.message.getAuthorAsMemberOrNull()?.effectiveName ?: author?.effectiveName ?: "unknown user"
-        val associatedUser = UserRegistry.findUser(author?.id)
 
-        val authorText = Text.of(
-            "[$authorName]"
-        ).getWithStyle(
-            Style.EMPTY
-                .withFormatting(Formatting.BLUE)
-                .withHoverEvent(associatedUser?.minecraft?.name?.let { HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of(it)) })
-        ).firstOrNull()
-
-        val referencedAuthorText = Text.of(
-            event.message.referencedMessage?.getAuthorAsMemberOrNull()?.let {
-                "@${it.effectiveName}"
-            } ?: event.message.referencedMessage?.data?.author?.username?.let {
-                "@$it"
-            } ?: ""
-        ).getWithStyle(
-            Style.EMPTY
-                .withFormatting(Formatting.BLUE)
-                .withHoverEvent(
-                    HoverEvent(
-                        HoverEvent.Action.SHOW_TEXT,
-                        Text.of(event.message.referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.name })
-                    )
-                )
-                .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, Util.getMessageURL(event.message.referencedMessage ?: event.message)))
-        ).firstOrNull()
-
-        val messageContent =
-            if (event.message.attachments.isEmpty())
-            {
-                // simplify guild emojis
-                event.message.content.replace(guildEmojiRegex) { matchResult ->
-                    matchResult.groups[1]?.value ?: matchResult.value // index is 1, as groups are 1-indexed
-                }
-            } else
-            {
-                "* view attachment in Discord *"
-            }
-
-        val messageText = Text.of(messageContent)
-            .getWithStyle(
-                Style.EMPTY
-                    .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, Util.getMessageURL(event.message)))
-            )
-            .firstOrNull()
-
-        sendChatMessage(Texts.join(listOfNotNull(authorText, referencedAuthorText, messageText), Text.of(" ")))
     }
 
     fun getOnlinePlayers(): List<String>

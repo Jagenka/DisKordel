@@ -69,13 +69,26 @@ object Util
         return uuid
     }
 
-    suspend fun getMessageURL(message: Message): String
+    suspend fun getMessageURL(message: Message?): String
     {
+        if (message == null) return ""
+
         val guildSnowflake = message.getGuildOrNull()?.id ?: return ""
         val channelSnowflake = message.channel.id
         val messageSnowflake = message.id
 
-        return "https://discord.com/channels/$guildSnowflake/$channelSnowflake/$messageSnowflake"
+        return getMessageURL(guildSnowflake, channelSnowflake, messageSnowflake)
+    }
+
+    fun getMessageURL(guild: Snowflake?, channel: Snowflake?, message: Snowflake?): String
+    {
+        if (guild == null) return ""
+        var link = "https://discord.com/channels/$guild"
+        if (channel == null) return link
+        link += "/$channel"
+        if (message == null) return link
+        link += "/$message"
+        return link
     }
 
     fun getServerIconURL(): String
