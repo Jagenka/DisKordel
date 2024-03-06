@@ -6,19 +6,45 @@ import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
+import de.jagenka.commands.DiskordelSlashCommand
 import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import dev.kord.rest.builder.interaction.RootInputChatBuilder
 import kotlinx.coroutines.launch
 
-object UnregisterCommand : DiskordelTextCommand
+object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
     override val internalId: String
         get() = "unregister"
 
-    private suspend fun unregisterUser(userId: Snowflake): Boolean
+    override val name: String
+        get() = "unregister"
+    override val description: String
+        get() = "Remove Discord-Minecraft link. This will also remove your name from the whitelist."
+
+    override suspend fun build(builder: RootInputChatBuilder)
     {
-        val member = DiscordHandler.getMemberOrSendError(userId) ?: return false
+        // nothing to declare
+    }
+
+    override suspend fun execute(event: ChatInputCommandInteractionCreateEvent)
+    {
+        val discordId = event.interaction.user.id
+        val response = unregisterUser(discordId)
+        event.interaction.respondEphemeral {
+            content = response
+        }
+    }
+
+    /**
+     * @return response string
+     */
+    private suspend fun unregisterUser(userId: Snowflake): String
+    {
+        val member = DiscordHandler.getMemberOrSendError(userId) ?: return ""
 
         var response = ""
 
@@ -36,11 +62,9 @@ object UnregisterCommand : DiskordelTextCommand
                 "${member.prettyName()} was not registered."
             }
 
-        DiscordHandler.sendMessage(response, silent = true)
-
         UserRegistry.saveToFile()
 
-        return true
+        return response
     }
 
     override val shortHelpText: String
@@ -55,7 +79,8 @@ object UnregisterCommand : DiskordelTextCommand
                 .executes {
                     it.source.author?.let { user ->
                         Main.scope.launch {
-                            unregisterUser(user.id)
+                            val response = unregisterUser(user.id)
+                            DiscordHandler.sendMessage(response, silent = true)
                         }
                     }
                     0
