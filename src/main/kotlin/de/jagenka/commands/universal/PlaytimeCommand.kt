@@ -3,7 +3,7 @@ package de.jagenka.commands.universal
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.MinecraftCommand
 import de.jagenka.commands.discord.MessageCommandSource
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
@@ -15,8 +15,11 @@ import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.text.Text
 
-object PlaytimeCommand : DiscordCommand, MinecraftCommand
+object PlaytimeCommand : DiskordelTextCommand, MinecraftCommand
 {
+    override val internalId: String
+        get() = "playtime"
+
     @Suppress("UNCHECKED_CAST")
     private fun process(input: String = ""): String
     {

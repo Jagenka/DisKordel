@@ -7,13 +7,16 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.stats.StatTypeArgument
 import de.jagenka.stats.StatUtil
 import net.minecraft.stat.StatType
 
-object RelativeStatsCommand : DiscordCommand
+object RelativeStatsCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "rstat"
+
     override val shortHelpText: String
         get() = "list players' stats in relation to playtime"
     override val longHelpText: String

@@ -7,7 +7,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import de.jagenka.commands.discord.MessageCommandSource.Companion.redirect
@@ -15,8 +15,11 @@ import de.jagenka.stats.StatTypeArgument
 import de.jagenka.stats.StatUtil
 import net.minecraft.stat.StatType
 
-object StatsCommand : DiscordCommand
+object StatsCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "stat"
+
     override val shortHelpText: String
         get() = "list players' stats"
     override val longHelpText: String

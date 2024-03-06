@@ -3,13 +3,16 @@ package de.jagenka.commands.discord
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import de.jagenka.commands.discord.MessageCommandSource.Companion.redirect
 
-object HelpCommand : DiscordCommand
+object HelpCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "help"
+
     override val shortHelpText: String
         get() = "help with commands"
     override val longHelpText: String

@@ -4,12 +4,15 @@ import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.DiscordHandler
 import de.jagenka.MinecraftHandler
 import de.jagenka.Util.trimDecimals
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import de.jagenka.commands.discord.MessageCommandSource.Companion.redirect
 
-object PerfCommand : DiscordCommand
+object PerfCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "perf"
+
     override val shortHelpText: String
         get() = "query server performance"
     override val longHelpText: String

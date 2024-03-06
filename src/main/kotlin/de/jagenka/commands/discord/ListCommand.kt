@@ -3,11 +3,14 @@ package de.jagenka.commands.discord
 import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.DiscordHandler
 import de.jagenka.MinecraftHandler
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 
-object ListCommand : DiscordCommand
+object ListCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "list"
+
     override val shortHelpText: String
         get() = "list online players"
     override val longHelpText: String

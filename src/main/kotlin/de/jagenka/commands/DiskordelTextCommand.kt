@@ -3,7 +3,7 @@ package de.jagenka.commands
 import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.commands.discord.MessageCommandSource
 
-interface DiscordCommand
+interface DiskordelTextCommand : DiskordelCommand
 {
     // TODO: needs admin
 

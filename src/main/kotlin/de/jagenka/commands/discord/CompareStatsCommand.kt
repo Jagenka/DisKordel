@@ -7,14 +7,17 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import de.jagenka.DiscordHandler
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.stats.StatTypeArgument
 import de.jagenka.stats.StatUtil
 import net.minecraft.stat.StatType
 
-object CompareStatsCommand : DiscordCommand
+object CompareStatsCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "cstat"
+
     private fun sendComparison(type: StatType<Any>, id: String, player1: String?, player2: String?)
     {
         if (player1 == null)

@@ -6,13 +6,16 @@ import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.launch
 
-object UnregisterCommand : DiscordCommand
+object UnregisterCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "unregister"
+
     private suspend fun unregisterUser(userId: Snowflake): Boolean
     {
         val member = DiscordHandler.getMemberOrSendError(userId) ?: return false

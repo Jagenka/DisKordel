@@ -4,7 +4,7 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.MinecraftCommand
 import de.jagenka.commands.discord.MessageCommandSource
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
@@ -14,8 +14,11 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import net.minecraft.world.World
 
-object WhereIsCommand : DiscordCommand, MinecraftCommand
+object WhereIsCommand : DiskordelTextCommand, MinecraftCommand
 {
+    override val internalId: String
+        get() = "whereis"
+
     private fun process(input: String): String
     {
         val possibleUsers = UserRegistry.findRegistered(input.trim())

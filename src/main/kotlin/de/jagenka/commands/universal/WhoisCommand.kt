@@ -4,7 +4,7 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.UserRegistry
 import de.jagenka.UserRegistry.getPrettyUsersList
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.MinecraftCommand
 import de.jagenka.commands.discord.MessageCommandSource
 import de.jagenka.commands.discord.Registry
@@ -14,8 +14,11 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 
 
-object WhoisCommand : DiscordCommand, MinecraftCommand
+object WhoisCommand : DiskordelTextCommand, MinecraftCommand
 {
+    override val internalId: String
+        get() = "whois"
+
     private fun generateOutput(partOfName: String = ""): String
     {
         val possibleUsers = UserRegistry.findRegistered(partOfName.trim())

@@ -3,14 +3,17 @@ package de.jagenka.commands.discord
 import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.Main
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.x.emoji.Emojis
 import kotlinx.coroutines.launch
 
-object UpdateNamesCommand : DiscordCommand
+object UpdateNamesCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "updatenames"
+
     override val shortHelpText: String
         get() = "update Discord names in database"
     override val longHelpText: String

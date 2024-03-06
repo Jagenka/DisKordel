@@ -4,12 +4,15 @@ import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.DiscordHandler
 import de.jagenka.Main
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import kotlinx.coroutines.launch
 
-object UsersCommand : DiscordCommand
+object UsersCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "users"
+
     override val shortHelpText: String
         get() = "list all registered users"
     override val longHelpText: String

@@ -7,14 +7,17 @@ import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.launch
 
-object RegisterCommand : DiscordCommand
+object RegisterCommand : DiskordelTextCommand
 {
+    override val internalId: String
+        get() = "register"
+
     private suspend fun registerUser(userId: Snowflake, minecraftName: String): Boolean
     {
         val member = DiscordHandler.getMemberOrSendError(userId) ?: return false
