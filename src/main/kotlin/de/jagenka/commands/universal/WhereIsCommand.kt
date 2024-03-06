@@ -33,7 +33,7 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
     {
         with(builder)
         {
-            string("minecraft_name", "Part of a player's name.")
+            string("part_of_name", "Part of a player's name.")
             { required = true }
         }
     }
@@ -42,7 +42,7 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
     {
         with(event)
         {
-            val partOfName = interaction.command.strings["minecraft_name"]!!
+            val partOfName = interaction.command.strings["part_of_name"]!!
             interaction.respondEphemeral {
                 content = process(partOfName)
             }
