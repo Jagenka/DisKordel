@@ -14,9 +14,10 @@ import de.jagenka.commands.universal.PlaytimeCommand
 import de.jagenka.commands.universal.WhereIsCommand
 import de.jagenka.commands.universal.WhoisCommand
 import de.jagenka.config.Config
+import dev.kord.common.exception.RequestException
 import dev.kord.core.Kord
 import dev.kord.core.entity.Message
-import dev.kord.core.entity.application.GlobalApplicationCommand
+import dev.kord.core.entity.application.GuildApplicationCommand
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.entity.toRawType
 import dev.kord.core.event.message.MessageCreateEvent
@@ -167,15 +168,15 @@ object Registry
             error("Duplicate internal IDs are used: ${discordCommands.map { it.javaClass.name to it.internalId }}")
         }
 
-        val globalAppCommandsInDiscord = mutableListOf<GlobalApplicationCommand>()
+        val guildAppCommandsInDiscord = mutableListOf<GuildApplicationCommand>()
 
-        kord.getGlobalApplicationCommands().collect {
-            globalAppCommandsInDiscord.add(it)
+        kord.getGuildApplicationCommands(DiscordHandler.guild.id).collect {
+            guildAppCommandsInDiscord.add(it)
         }
 
         // remove commands from config, if they are no longer registered with Discord
         Config.configEntry.discordCommandCache.toList().forEach { (internalId, snowflake) ->
-            if (snowflake !in globalAppCommandsInDiscord.map { it.id })
+            if (snowflake !in guildAppCommandsInDiscord.map { it.id })
             {
                 Config.configEntry.discordCommandCache.remove(internalId)
             }
@@ -198,25 +199,32 @@ object Registry
         // update/register commands with Discord
         slashCommandMap.forEach { (_, cmd) ->
             // command snowflake already in storage -> send update to Discord
-            val snowflake = Config.configEntry.discordCommandCache[cmd.internalId]
-            if (snowflake != null)
+            val cmdSnowflake = Config.configEntry.discordCommandCache[cmd.internalId]
+            if (cmdSnowflake != null)
             {
-                kord.rest.interaction.modifyGlobalChatInputApplicationCommand(kord.selfId, snowflake) {
-                    cmd.build(this)
+                try
+                {
+                    kord.rest.interaction.modifyGuildChatInputApplicationCommand(kord.selfId, DiscordHandler.guild.id, cmdSnowflake) {
+                        cmd.build(this)
+                    }
+                    return@forEach
+                } catch (_: RequestException)
+                {
+                    // if modifying does not work, we add it as a new command
                 }
-            } else
-            {
-                // when registering a new command with Discord, save its Snowflake to bot config
-                val newAppCommand = kord.createGlobalChatInputCommand(cmd.name, cmd.description) {
-                    cmd.build(this)
-                }
-                Config.addCommand(cmd.internalId, newAppCommand.id)
             }
+
+            // when registering a new command with Discord, save its Snowflake to bot config
+            val newAppCommand = kord.createGuildChatInputCommand(DiscordHandler.guild.id, cmd.name, cmd.description) {
+                cmd.build(this)
+            }
+            Config.addCommand(cmd.internalId, newAppCommand.id)
+
         }
 
         // remove commands from Discord which should not be there (not in bot config)
-        val toDelete = mutableListOf<GlobalApplicationCommand>()
-        kord.getGlobalApplicationCommands().collect {
+        val toDelete = mutableListOf<GuildApplicationCommand>()
+        kord.getGuildApplicationCommands(DiscordHandler.guild.id).collect {
             if (it.id !in Config.configEntry.discordCommandCache.values)
             {
                 toDelete.add(it)
