@@ -14,6 +14,9 @@ import dev.kord.rest.builder.interaction.RootInputChatBuilder
 
 object PerfCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
+    override val internalId: String
+        get() = "perf"
+
     override val name: String
         get() = "performance"
     override val description: String
@@ -30,9 +33,6 @@ object PerfCommand : DiskordelTextCommand, DiskordelSlashCommand
             content = getResponse()
         }
     }
-
-    override val internalId: String
-        get() = "perf"
 
     override val shortHelpText: String
         get() = "query server performance"
