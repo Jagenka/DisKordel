@@ -12,9 +12,6 @@ import dev.kord.rest.builder.interaction.RootInputChatBuilder
 
 object ListCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
-    override val internalId: String
-        get() = "list"
-
     override val name: String
         get() = "list"
     override val description: String

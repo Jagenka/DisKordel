@@ -17,9 +17,6 @@ import kotlinx.coroutines.launch
 
 object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
-    override val internalId: String
-        get() = "unregister"
-
     override val name: String
         get() = "unregister"
     override val description: String

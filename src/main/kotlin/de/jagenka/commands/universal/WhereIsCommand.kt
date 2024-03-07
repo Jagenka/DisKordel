@@ -21,9 +21,6 @@ import net.minecraft.world.World
 
 object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
 {
-    override val internalId: String
-        get() = "whereis"
-
     override val name: String
         get() = "where"
     override val description: String

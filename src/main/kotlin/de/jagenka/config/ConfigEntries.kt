@@ -1,7 +1,6 @@
 package de.jagenka.config
 
 import de.jagenka.MinecraftUser
-import dev.kord.common.entity.Snowflake
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -56,5 +55,5 @@ class BaseConfigEntry(
     var discordSettings: DiscordSettingsEntry = DiscordSettingsEntry(),
     var registeredUsers: MutableList<UserEntry> = mutableListOf(),
     var userCache: MutableSet<MinecraftUser> = mutableSetOf(),
-    var discordCommandCache: MutableMap<String, Snowflake> = mutableMapOf(),
+    var appCommandVersion: String = "0",
 )

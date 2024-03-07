@@ -10,9 +10,6 @@ import de.jagenka.commands.discord.MessageCommandSource.Companion.redirect
 
 object HelpCommand : DiskordelTextCommand
 {
-    override val internalId: String
-        get() = "help"
-
     override val shortHelpText: String
         get() = "help with commands"
     override val longHelpText: String

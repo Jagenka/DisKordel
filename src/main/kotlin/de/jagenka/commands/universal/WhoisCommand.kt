@@ -22,9 +22,6 @@ import net.minecraft.text.Text
 
 object WhoisCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
 {
-    override val internalId: String
-        get() = "whois"
-
     override val name: String
         get() = "who"
     override val description: String

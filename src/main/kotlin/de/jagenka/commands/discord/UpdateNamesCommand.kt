@@ -15,9 +15,6 @@ import kotlinx.coroutines.launch
 
 object UpdateNamesCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
-    override val internalId: String
-        get() = "updatenames"
-
     override val name: String
         get() = "update_names"
     override val description: String

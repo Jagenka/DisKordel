@@ -15,9 +15,6 @@ import net.minecraft.stat.StatType
 
 object CompareStatsCommand : DiskordelTextCommand
 {
-    override val internalId: String
-        get() = "cstat"
-
     private fun sendComparison(type: StatType<Any>, id: String, player1: String?, player2: String?)
     {
         if (player1 == null)

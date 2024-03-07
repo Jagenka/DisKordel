@@ -20,9 +20,6 @@ import kotlinx.coroutines.launch
 
 object RegisterCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
-    override val internalId: String
-        get() = "register"
-
     override val name: String
         get() = "register"
     override val description: String

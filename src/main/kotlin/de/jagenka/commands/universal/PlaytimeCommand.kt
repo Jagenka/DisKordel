@@ -17,9 +17,6 @@ import net.minecraft.text.Text
 
 object PlaytimeCommand : DiskordelTextCommand, MinecraftCommand
 {
-    override val internalId: String
-        get() = "playtime"
-
     @Suppress("UNCHECKED_CAST")
     private fun process(input: String = ""): String
     {

@@ -2,7 +2,6 @@ package de.jagenka.config
 
 import de.jagenka.InvalidConfigException
 import de.jagenka.MissingConfigException
-import dev.kord.common.entity.Snowflake
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.fabricmc.loader.api.FabricLoader
@@ -44,11 +43,5 @@ object Config
     {
         val json = serializer.encodeToString(configEntry)
         Files.writeString(pathToConfigFile, json)
-    }
-
-    fun addCommand(internalId: String, snowflake: Snowflake)
-    {
-        configEntry.discordCommandCache[internalId] = snowflake
-        store()
     }
 }

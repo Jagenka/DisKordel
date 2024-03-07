@@ -14,9 +14,6 @@ import net.minecraft.stat.StatType
 
 object RelativeStatsCommand : DiskordelTextCommand
 {
-    override val internalId: String
-        get() = "rstat"
-
     override val shortHelpText: String
         get() = "list players' stats in relation to playtime"
     override val longHelpText: String

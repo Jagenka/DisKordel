@@ -5,6 +5,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException
 import com.mojang.brigadier.tree.CommandNode
 import de.jagenka.DiscordHandler
 import de.jagenka.Main
+import de.jagenka.MinecraftHandler
 import de.jagenka.Util
 import de.jagenka.commands.DiskordelCommand
 import de.jagenka.commands.DiskordelSlashCommand
@@ -14,7 +15,7 @@ import de.jagenka.commands.universal.PlaytimeCommand
 import de.jagenka.commands.universal.WhereIsCommand
 import de.jagenka.commands.universal.WhoisCommand
 import de.jagenka.config.Config
-import dev.kord.common.exception.RequestException
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.application.GuildApplicationCommand
@@ -25,9 +26,15 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.core.on
 import kotlinx.coroutines.launch
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URI
 
 object Registry
 {
+    private const val linkToAppCommandVersionFile = "https://github.com/Jagenka/DisKordel/blob/master/applicationCommandsVersion.yaml"
+
     private const val messageCommandPrefix: String = "!"
     private const val interactsWithBots: Boolean = true
     private val commandDispatcher = CommandDispatcher<MessageCommandSource>()
@@ -69,8 +76,35 @@ object Registry
     fun setup(kord: Kord)
     {
         Main.scope.launch {
-            registerCommands(kord)
+            try
+            {
+                val url = URI(linkToAppCommandVersionFile).toURL()
+                val conn: HttpURLConnection = url.openConnection() as HttpURLConnection
+                conn.connectTimeout = 10000 // timing out in ten seconds
+                val version = BufferedReader(InputStreamReader(conn.inputStream)).readLines()
+                    .find { it.startsWith("version: ") }?.removePrefix("version: ")
+
+                if (version != Config.configEntry.appCommandVersion)
+                {
+                    reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
+                    Config.configEntry.appCommandVersion = version ?: "0"
+                    Config.store()
+                    return@launch
+                }
+
+            } catch (_: Exception)
+            {
+            }
+
+            val appCommands = mutableListOf<GuildApplicationCommand>()
+            kord.getGuildApplicationCommands(DiscordHandler.guild.id).collect { appCommands.add(it) }
+            if (discordCommands.filterIsInstance<DiskordelSlashCommand>().size != appCommands.size)
+            {
+                reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
+            }
         }
+
+        registerCommands()
 
         kord.on<MessageCreateEvent> messageHandling@{
             // return if message is from ourselves
@@ -171,28 +205,8 @@ object Registry
         return messageContent
     }
 
-    private suspend fun registerCommands(kord: Kord)
+    private fun registerCommands()
     {
-        // ensure ids are unique
-        if (discordCommands.distinctBy { it.internalId }.size != discordCommands.size)
-        {
-            error("Duplicate internal IDs are used: ${discordCommands.map { it.javaClass.name to it.internalId }}")
-        }
-
-        val guildAppCommandsInDiscord = mutableListOf<GuildApplicationCommand>()
-
-        kord.getGuildApplicationCommands(DiscordHandler.guild.id).collect {
-            guildAppCommandsInDiscord.add(it)
-        }
-
-        // remove commands from config, if they are no longer registered with Discord
-        Config.configEntry.discordCommandCache.toList().forEach { (internalId, snowflake) ->
-            if (snowflake !in guildAppCommandsInDiscord.map { it.id })
-            {
-                Config.configEntry.discordCommandCache.remove(internalId)
-            }
-        }
-
         // sort commands into types
         discordCommands.forEach { cmd ->
             if (cmd is DiskordelTextCommand)
@@ -206,42 +220,6 @@ object Registry
                 slashCommandMap[cmd.name] = cmd
             }
         }
-
-        // update/register commands with Discord
-        slashCommandMap.forEach { (_, cmd) ->
-            // command snowflake already in storage -> send update to Discord
-            val cmdSnowflake = Config.configEntry.discordCommandCache[cmd.internalId]
-            if (cmdSnowflake != null)
-            {
-                try
-                {
-                    kord.rest.interaction.modifyGuildChatInputApplicationCommand(kord.selfId, DiscordHandler.guild.id, cmdSnowflake) {
-                        cmd.build(this)
-                    }
-                    return@forEach
-                } catch (_: RequestException)
-                {
-                    // if modifying does not work, we add it as a new command
-                }
-            }
-
-            // when registering a new command with Discord, save its Snowflake to bot config
-            val newAppCommand = kord.createGuildChatInputCommand(DiscordHandler.guild.id, cmd.name, cmd.description) {
-                cmd.build(this)
-            }
-            Config.addCommand(cmd.internalId, newAppCommand.id)
-
-        }
-
-        // remove commands from Discord which should not be there (not in bot config)
-        val toDelete = mutableListOf<GuildApplicationCommand>()
-        kord.getGuildApplicationCommands(DiscordHandler.guild.id).collect {
-            if (it.id !in Config.configEntry.discordCommandCache.values)
-            {
-                toDelete.add(it)
-            }
-        }
-        toDelete.forEach { it.delete() }
     }
 
     private suspend fun handleSlashCommands(event: ChatInputCommandInteractionCreateEvent)
@@ -299,5 +277,22 @@ object Registry
         return commandDispatcher.getSmartUsage(parseResults.context.rootNode, source)
             .filter { it.key.name.equals(command, ignoreCase = true) }
             .map { "`!" + it.value + "`" + (longHelpTexts[command]?.let { ": $it" } ?: "") }
+    }
+
+    private suspend fun reRegisterApplicationCommands(kord: Kord, guildId: Snowflake)
+    {
+        // delete all commands
+        kord.getGuildApplicationCommands(guildId).collect {
+            it.delete()
+        }
+
+        // register all commands
+        discordCommands.filterIsInstance<DiskordelSlashCommand>().forEach { cmd ->
+            kord.createGuildChatInputCommand(guildId, cmd.name, cmd.description) {
+                cmd.build(this)
+            }
+        }
+
+        MinecraftHandler.logger.info("Discord Application Commands re-registered!")
     }
 }

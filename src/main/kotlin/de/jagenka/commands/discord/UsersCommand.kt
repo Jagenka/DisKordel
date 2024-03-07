@@ -15,9 +15,6 @@ import kotlinx.coroutines.launch
 
 object UsersCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
-    override val internalId: String
-        get() = "users"
-
     override val name: String
         get() = "users"
     override val description: String

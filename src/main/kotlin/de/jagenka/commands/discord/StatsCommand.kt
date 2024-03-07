@@ -26,9 +26,6 @@ import net.minecraft.stat.StatType
 
 object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
-    override val internalId: String
-        get() = "stat"
-
     override val name: String
         get() = "stat"
     override val description: String
