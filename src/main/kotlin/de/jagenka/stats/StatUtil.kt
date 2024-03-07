@@ -14,6 +14,7 @@ import net.minecraft.stat.StatFormatter
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.util.Identifier
+import java.util.*
 import kotlin.math.max
 import kotlin.time.Duration.Companion.hours
 
@@ -91,13 +92,15 @@ object StatUtil
     /**
      * @param nameFilter only display for those player names. don't filter if collection is empty
      */
-    fun getStatReply(statType: StatType<Any>, id: String, queryType: StatQueryType, nameFilter: Collection<String> = emptyList(), limit: Int = 10): String
+    fun getStatReply(statType: StatType<Any>, id: String, queryType: StatQueryType, nameFilter: Collection<String> = emptyList(), limit: Int? = 10): String
     {
+        val limitDefault = 10
+
         try
         {
             val untrimmedList = getAllStatInfoSorted(
                 statType = statType,
-                id = id,
+                id = id.lowercase(Locale.US),
                 excludeFilter = { stat, _ ->
                     when (queryType)
                     {
@@ -116,7 +119,7 @@ object StatUtil
                 .filter {
                     nameFilter.isEmpty() || nameFilter.map { it.lowercase() }.contains(it.second.playerName.lowercase())
                 }
-            val resultList = untrimmedList.subListUntilOrEnd(limit)
+            val resultList = untrimmedList.subListUntilOrEnd(limit ?: limitDefault)
 
             var replyString = resultList.joinToString(
                 separator = System.lineSeparator()

@@ -143,7 +143,7 @@ object UserRegistry
         }
     }
 
-    fun findMostLikelyMinecraftName(input: String): String?
+    fun findMostLikelyMinecraftName(input: String): String
     {
         return nameToMinecraftName.minBy { (someName, _) ->
             comparator.distance(input, someName)

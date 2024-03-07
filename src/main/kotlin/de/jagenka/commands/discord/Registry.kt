@@ -127,6 +127,12 @@ object Registry
 
         // here we don't allow commands
         kord.on<MessageUpdateEvent> messageUpdateHandling@{
+            // return if message is from ourselves
+            if (new.author.value?.id == kord.selfId) return@messageUpdateHandling
+
+            // return if message was not sent in set channel
+            if (new.channelId != DiscordHandler.channel.id) return@messageUpdateHandling
+
             // this is a response from an interaction
             if (new.interaction.value != null)
             {
