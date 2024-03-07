@@ -33,7 +33,7 @@ import java.net.URI
 
 object Registry
 {
-    private const val linkToAppCommandVersionFile = "https://github.com/Jagenka/DisKordel/blob/master/applicationCommandsVersion.yaml"
+    private const val linkToAppCommandVersionFile = "https://raw.githubusercontent.com/Jagenka/DisKordel/master/applicationCommandsVersion.yaml"
 
     private const val messageCommandPrefix: String = "!"
     private const val interactsWithBots: Boolean = true
