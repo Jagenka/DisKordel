@@ -138,7 +138,7 @@ object Registry
                 } catch (e: CommandSyntaxException)
                 {
                     DiscordHandler.sendMessage(
-                        text = "Diskordel no longer uses text commands. Use / commands instead!",
+                        text = "DisKordel no longer uses text commands. Use / commands instead!",
                         silent = true,
                     )
 //                    DiscordHandler.sendMessage(
