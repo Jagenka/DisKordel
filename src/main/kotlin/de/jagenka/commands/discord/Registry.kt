@@ -80,7 +80,7 @@ object Registry
             {
                 val url = URI(linkToAppCommandVersionFile).toURL()
                 val conn: HttpURLConnection = url.openConnection() as HttpURLConnection
-                conn.connectTimeout = 10000 // timing out in ten seconds
+                conn.connectTimeout = 5000 // timing out in five seconds
                 val version = BufferedReader(InputStreamReader(conn.inputStream)).readLines()
                     .find { it.startsWith("version: ") }?.removePrefix("version: ")
 

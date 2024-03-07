@@ -18,10 +18,7 @@ import de.jagenka.stats.StatUtil
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
-import dev.kord.rest.builder.interaction.RootInputChatBuilder
-import dev.kord.rest.builder.interaction.integer
-import dev.kord.rest.builder.interaction.string
-import dev.kord.rest.builder.interaction.subCommand
+import dev.kord.rest.builder.interaction.*
 import net.minecraft.stat.StatType
 
 object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
@@ -63,6 +60,8 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                 { required = false }
                 string("part_of_name", "Part of a player's name.")
                 { required = false }
+                boolean("ascending", "If the result should be sorted ascending, rather than descending.")
+                { required = false }
             }
             subCommand("compare", "Compare stats between yourself and another player, or two other players.") {
                 string("relation", "In what relation to play time.")
@@ -91,6 +90,8 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                 { required = true }
                 string("player2", "Part of a player's name.")
                 { required = false }
+                boolean("ascending", "If the result should be sorted ascending, rather than descending.")
+                { required = false }
             }
         }
     }
@@ -117,13 +118,15 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                     val stat = interaction.command.strings["stat"]!!
                     val limit = interaction.command.integers["limit"]
                     val partOfName = interaction.command.strings["part_of_name"]
+                    val ascending = interaction.command.booleans["ascending"]
                     val nameFilter = if (partOfName != null) UserRegistry.findMinecraftProfiles(partOfName).map { it.name } else emptyList()
                     val reply = StatUtil.getStatReply(
                         statType = statType,
                         id = stat,
                         queryType = relation,
                         nameFilter = nameFilter,
-                        limit = limit?.toInt()
+                        limit = limit?.toInt(),
+                        ascending = ascending,
                     )
                     response.respond { content = reply.asCodeBlock() }
                 }
@@ -134,6 +137,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                     val relation = StatUtil.StatQueryType.valueOf(interaction.command.strings["relation"]!!)
                     val statType = StatTypeArgument.parse(interaction.command.strings["category"]!!) as? StatType<Any> ?: return // should never happen
                     val stat = interaction.command.strings["stat"]!!
+                    val ascending = interaction.command.booleans["ascending"]
                     val player1 = UserRegistry.findMostLikelyMinecraftName(interaction.command.strings["player"]!!)
                     val player2Input = interaction.command.strings["player2"]
                     val player2 =
@@ -151,7 +155,8 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                         statType = statType,
                         id = stat,
                         queryType = relation,
-                        nameFilter = players
+                        nameFilter = players,
+                        ascending = ascending,
                     )
                     response.respond { content = reply.asCodeBlock() }
                 }

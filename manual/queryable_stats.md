@@ -8,10 +8,13 @@ This is possible, as the stat data is stored in the world folder on the server-s
 ### slash command:
 
 - `/stat help`: Shows a link to this page.
-- `/stat get <relation> <category> <stat> [<part_of_name>] [<limit>]`: Query stats.
+- `/stat get <relation> <category> <stat> [<part_of_name>] [<limit>] [<ascending>]`: Query stats.
+  - `relation` is for relating to played time.
   - Identifiers are listed below.
   - Playtime (and depending on relation, also playtime) is shown in round brackets.
-- `/stat compare <relation> <category> <stat> <player> [<player2>]`: Compare your own or someone else's stats to another player.
+  - `ascending` is useful, if a lower value is considered better, for example with deaths.
+- `/stat compare <relation> <category> <stat> <player> [<player2>] [<ascending>]`: Compare your own or someone else's stats to another player.
+  - If no `player2` is provided, this command tries to compare to the invoker's stat.
 
 ### text command:
 
