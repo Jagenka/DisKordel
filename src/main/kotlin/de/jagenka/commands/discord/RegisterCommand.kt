@@ -7,17 +7,53 @@ import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelSlashCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import dev.kord.rest.builder.interaction.RootInputChatBuilder
+import dev.kord.rest.builder.interaction.string
 import kotlinx.coroutines.launch
 
-object RegisterCommand : DiscordCommand
+object RegisterCommand : DiskordelTextCommand, DiskordelSlashCommand
 {
-    private suspend fun registerUser(userId: Snowflake, minecraftName: String): Boolean
+    override val name: String
+        get() = "register"
+    override val description: String
+        get() = "Link your Discord Account to your Minecraft Name. This will also whitelist you."
+
+    override suspend fun build(builder: RootInputChatBuilder)
     {
-        val member = DiscordHandler.getMemberOrSendError(userId) ?: return false
+        with(builder)
+        {
+            string("minecraft_name", "Your in-game Minecraft name.") {
+                required = true
+            }
+        }
+    }
+
+    override suspend fun execute(event: ChatInputCommandInteractionCreateEvent)
+    {
+        with(event)
+        {
+            val minecraftName = interaction.command.strings["minecraft_name"]!!
+            val discordId = interaction.user.id
+            val response = registerUser(discordId, minecraftName)
+            interaction.respondEphemeral {
+                content = response
+            }
+        }
+    }
+
+    /**
+     * @return response string
+     */
+    private suspend fun registerUser(userId: Snowflake, minecraftName: String): String
+    {
+        val member = DiscordHandler.getMemberOrSendError(userId) ?: return ""
 
         var response = ""
 
@@ -43,11 +79,9 @@ object RegisterCommand : DiscordCommand
             }
         }
 
-        DiscordHandler.sendMessage(response, silent = true)
-
         UserRegistry.saveToFile()
 
-        return true
+        return response
     }
 
     override val shortHelpText: String
@@ -64,7 +98,8 @@ object RegisterCommand : DiscordCommand
                         .executes {
                             Main.scope.launch {
                                 it.source.author?.let { author ->
-                                    registerUser(author.id, it.getArgument("minecraftName", String::class.java))
+                                    val response = registerUser(author.id, it.getArgument("minecraftName", String::class.java))
+                                    DiscordHandler.sendMessage(response, silent = true)
                                 } ?: MinecraftHandler.logger.error("non-existent author tried to register")
                             }
                             0

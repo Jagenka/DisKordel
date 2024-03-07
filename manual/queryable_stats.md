@@ -1,22 +1,39 @@
-# `stats` command
+# `stat` command
 
-With the `stats`/`rstats` commands, you can query every players' personal stats, like they are displayed for them only in the pause menu. This is possible, as the stat data is
-stored in the world folder server-side.
+With the `stat` commands, you can query players' personal stats, like they are displayed for them only in the pause menu.
+This is possible, as the stat data is stored in the world folder on the server-side.
 
 ## command usage:
 
-- `!stat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
-    - stat types and identifiers are listed below
-    - player name is optional - lists all players when empty
-  - `topN` refers to the maximum number of entries shown
-- `!rstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
-  - same as above, just relates stat to time played in world (`play_time`) (stat/playtime)
-    - playtime and stat for each player are shown in round brackets
-- `!pstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
-  - same as above, but inverse (playtime/stat)
-  - playtime and stat for each player are shown in round brackets
+### slash command:
 
-## stat types:
+- `/stat help`: Shows a link to this page.
+- `/stat get <relation> <category> <stat> [<part_of_name>] [<limit>] [<ascending>]`: Query stats.
+  - `relation` is for relating to played time.
+  - Identifiers are listed below.
+  - Playtime (and depending on relation, also playtime) is shown in round brackets.
+  - `ascending` is useful, if a lower value is considered better, for example with deaths.
+- `/stat compare <relation> <category> <stat> <player> [<player2>] [<ascending>]`: Compare your own or someone else's stats to another player.
+  - If no `player2` is provided, this command tries to compare to the invoker's stat.
+
+### text command:
+
+- `!stat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
+  - Stat types and identifiers are listed below.
+  - Player name is optional - lists all players when empty.
+  - `topN` refers to the maximum number of entries shown.
+  - Playtime is shown in round brackets.
+- `!rstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
+  - Same as above, just relates stat to time played in world (`play_time`). (stat per playtime)
+  - Playtime and stat for each player are shown in round brackets
+- `!pstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
+  - Same as above, but inverse. (playtime per stat)
+  - Playtime and stat for each player are shown in round brackets
+- `!cstat <statType> <stat_identifier> <player1> [<player2>]`
+  - Compare your own or someone else's stats to another player.
+  - Playtime and stat for each player are shown in round brackets.
+
+## stat types / categories:
 
 ### `custom`
 

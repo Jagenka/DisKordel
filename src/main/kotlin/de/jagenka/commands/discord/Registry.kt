@@ -4,23 +4,39 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import com.mojang.brigadier.tree.CommandNode
 import de.jagenka.DiscordHandler
+import de.jagenka.Main
+import de.jagenka.MinecraftHandler
 import de.jagenka.Util
+import de.jagenka.commands.DiskordelCommand
+import de.jagenka.commands.DiskordelSlashCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.universal.DeathsCommand
 import de.jagenka.commands.universal.PlaytimeCommand
 import de.jagenka.commands.universal.WhereIsCommand
 import de.jagenka.commands.universal.WhoisCommand
+import de.jagenka.config.Config
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.entity.Message
+import dev.kord.core.entity.application.GuildApplicationCommand
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.entity.toRawType
+import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.core.on
+import kotlinx.coroutines.launch
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URI
 
 object Registry
 {
-    private val messageCommandPrefix: String = "!"
-    private val interactsWithBots: Boolean = true
+    private const val linkToAppCommandVersionFile = "https://github.com/Jagenka/DisKordel/blob/master/applicationCommandsVersion.yaml"
+
+    private const val messageCommandPrefix: String = "!"
+    private const val interactsWithBots: Boolean = true
     private val commandDispatcher = CommandDispatcher<MessageCommandSource>()
 
     /**
@@ -34,7 +50,7 @@ object Registry
      */
     private val longHelpTexts = mutableMapOf<String, String>()
 
-    private val discordCommands = listOf(
+    private val discordCommands = listOf<DiskordelCommand>(
         // Discord-only Commands
         PerfCommand,
         ListCommand,
@@ -55,8 +71,39 @@ object Registry
         DeathsCommand,
     )
 
+    private val slashCommandMap = mutableMapOf<String, DiskordelSlashCommand>()
+
     fun setup(kord: Kord)
     {
+        Main.scope.launch {
+            try
+            {
+                val url = URI(linkToAppCommandVersionFile).toURL()
+                val conn: HttpURLConnection = url.openConnection() as HttpURLConnection
+                conn.connectTimeout = 5000 // timing out in five seconds
+                val version = BufferedReader(InputStreamReader(conn.inputStream)).readLines()
+                    .find { it.startsWith("version: ") }?.removePrefix("version: ")
+
+                if (version != Config.configEntry.appCommandVersion)
+                {
+                    reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
+                    Config.configEntry.appCommandVersion = version ?: "0"
+                    Config.store()
+                    return@launch
+                }
+
+            } catch (_: Exception)
+            {
+            }
+
+            val appCommands = mutableListOf<GuildApplicationCommand>()
+            kord.getGuildApplicationCommands(DiscordHandler.guild.id).collect { appCommands.add(it) }
+            if (discordCommands.filterIsInstance<DiskordelSlashCommand>().size != appCommands.size)
+            {
+                reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
+            }
+        }
+
         registerCommands()
 
         kord.on<MessageCreateEvent> messageHandling@{
@@ -114,6 +161,12 @@ object Registry
 
         // here we don't allow commands
         kord.on<MessageUpdateEvent> messageUpdateHandling@{
+            // return if message is from ourselves
+            if (new.author.value?.id == kord.selfId) return@messageUpdateHandling
+
+            // return if message was not sent in set channel
+            if (new.channelId != DiscordHandler.channel.id) return@messageUpdateHandling
+
             // this is a response from an interaction
             if (new.interaction.value != null)
             {
@@ -128,6 +181,10 @@ object Registry
                     linkToMessage = Util.getMessageURL(new.guildId.value, new.channelId, new.id)
                 )
             }
+        }
+
+        kord.on<ChatInputCommandInteractionCreateEvent> {
+            handleSlashCommands(this)
         }
     }
 
@@ -150,7 +207,28 @@ object Registry
 
     private fun registerCommands()
     {
-        discordCommands.forEach { it.registerWithDiscord(commandDispatcher) }
+        // sort commands into types
+        discordCommands.forEach { cmd ->
+            if (cmd is DiskordelTextCommand)
+            {
+                // cmd.registerWithDiscord(commandDispatcher)
+            }
+
+            if (cmd is DiskordelSlashCommand)
+            {
+                if (slashCommandMap.containsKey(cmd.name)) error("${cmd.name} is already a registered slash command.")
+                slashCommandMap[cmd.name] = cmd
+            }
+        }
+    }
+
+    private suspend fun handleSlashCommands(event: ChatInputCommandInteractionCreateEvent)
+    {
+        with(event)
+        {
+            val cmd = slashCommandMap[interaction.invokedCommandName]
+            cmd?.execute(this)
+        }
     }
 
     fun registerShortHelpText(text: String, vararg nodes: CommandNode<MessageCommandSource>)
@@ -199,5 +277,22 @@ object Registry
         return commandDispatcher.getSmartUsage(parseResults.context.rootNode, source)
             .filter { it.key.name.equals(command, ignoreCase = true) }
             .map { "`!" + it.value + "`" + (longHelpTexts[command]?.let { ": $it" } ?: "") }
+    }
+
+    private suspend fun reRegisterApplicationCommands(kord: Kord, guildId: Snowflake)
+    {
+        // delete all commands
+        kord.getGuildApplicationCommands(guildId).collect {
+            it.delete()
+        }
+
+        // register all commands
+        discordCommands.filterIsInstance<DiskordelSlashCommand>().forEach { cmd ->
+            kord.createGuildChatInputCommand(guildId, cmd.name, cmd.description) {
+                cmd.build(this)
+            }
+        }
+
+        MinecraftHandler.logger.info("Discord Application Commands re-registered!")
     }
 }

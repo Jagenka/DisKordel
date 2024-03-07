@@ -4,18 +4,48 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelSlashCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.MinecraftCommand
 import de.jagenka.commands.discord.MessageCommandSource
 import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.commands.discord.Registry
+import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import dev.kord.rest.builder.interaction.RootInputChatBuilder
+import dev.kord.rest.builder.interaction.string
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import net.minecraft.world.World
 
-object WhereIsCommand : DiscordCommand, MinecraftCommand
+object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
 {
+    override val name: String
+        get() = "where"
+    override val description: String
+        get() = "Get coordinates for an online player."
+
+    override suspend fun build(builder: RootInputChatBuilder)
+    {
+        with(builder)
+        {
+            string("part_of_name", "Part of a player's name.")
+            { required = true }
+        }
+    }
+
+    override suspend fun execute(event: ChatInputCommandInteractionCreateEvent)
+    {
+        with(event)
+        {
+            val partOfName = interaction.command.strings["part_of_name"]!!
+            interaction.respondEphemeral {
+                content = process(partOfName)
+            }
+        }
+    }
+
     private fun process(input: String): String
     {
         val possibleUsers = UserRegistry.findRegistered(input.trim())
@@ -35,8 +65,8 @@ object WhereIsCommand : DiscordCommand, MinecraftCommand
                     else -> return@let null
                 }
 
-                "${user.minecraft.name} is at (${player.x.toInt()}, ${player.y.toInt()}, ${player.z.toInt()}) in the $dimensionName."
-            } ?: "${user.minecraft.name} is not online."
+                "- ${user.minecraft.name} is at (${player.x.toInt()}, ${player.y.toInt()}, ${player.z.toInt()}) in the $dimensionName."
+            } ?: "- ${user.minecraft.name} is not online."
         }
     }
 
@@ -52,7 +82,7 @@ object WhereIsCommand : DiscordCommand, MinecraftCommand
                 .then(argument<String>("partOfName", StringArgumentType.greedyString())
                     .executes {
                         val output = process(StringArgumentType.getString(it, "partOfName"))
-                        it.source.sendCodeBlock(output)
+                        it.source.respond(output)
                         return@executes 0
                     })
         )

@@ -2,20 +2,51 @@ package de.jagenka.commands.universal
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
+import de.jagenka.DiscordHandler.asCodeBlock
 import de.jagenka.UserRegistry
 import de.jagenka.UserRegistry.getPrettyUsersList
-import de.jagenka.commands.DiscordCommand
+import de.jagenka.commands.DiskordelSlashCommand
+import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.MinecraftCommand
 import de.jagenka.commands.discord.MessageCommandSource
 import de.jagenka.commands.discord.Registry
+import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import dev.kord.rest.builder.interaction.RootInputChatBuilder
+import dev.kord.rest.builder.interaction.string
 import kotlinx.coroutines.runBlocking
 import net.minecraft.server.command.CommandManager
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 
 
-object WhoisCommand : DiscordCommand, MinecraftCommand
+object WhoisCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
 {
+    override val name: String
+        get() = "who"
+    override val description: String
+        get() = "Identify users by a part of any of their names."
+
+    override suspend fun build(builder: RootInputChatBuilder)
+    {
+        with(builder)
+        {
+            string("part_of_name", "Part of a player's name.")
+            { required = true }
+        }
+    }
+
+    override suspend fun execute(event: ChatInputCommandInteractionCreateEvent)
+    {
+        with(event)
+        {
+            val partOfName = interaction.command.strings["part_of_name"]!!
+            interaction.respondEphemeral {
+                content = generateOutput(partOfName).asCodeBlock()
+            }
+        }
+    }
+
     private fun generateOutput(partOfName: String = ""): String
     {
         val possibleUsers = UserRegistry.findRegistered(partOfName.trim())

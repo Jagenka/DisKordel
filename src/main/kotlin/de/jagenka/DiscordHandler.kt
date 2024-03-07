@@ -83,6 +83,21 @@ object DiscordHandler
         }
     }
 
+    fun String.asCodeBlock(formatId: String = ""): String
+    {
+        if (this.preventCodeBlockEscape().isBlank()) return "*empty*"
+
+        val content = ("$formatId\n" + this.preventCodeBlockEscape())
+        var toSend = content
+
+        if (content.length > 1993)
+        {
+            toSend = content.substring(0, 1990) + "..."
+        }
+
+        return "```$toSend\n```"
+    }
+
     fun sendCodeBlock(text: String, formatId: String = "", silent: Boolean = false)
     {
         if (text.preventCodeBlockEscape().isBlank()) return

@@ -13,6 +13,11 @@ import dev.kord.core.event.message.MessageCreateEvent
 
 class MessageCommandSource(private val event: MessageCreateEvent)
 {
+    fun respond(text: String, silent: Boolean = true)
+    {
+        DiscordHandler.sendMessage(text, silent)
+    }
+
     fun sendCodeBlock(text: String)
     {
         DiscordHandler.sendCodeBlock(text = text, silent = true)
