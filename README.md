@@ -3,8 +3,12 @@
 A Minecraft Fabric mod for interaction between the game and Discord.
 This includes not only chat sync, but also death messages, join messages, and some commands like querying all players' stats.
 
-## manuals:
+## Manuals:
 
-- [install instructions](manual/install_instructions.md)
-- [available Discord commands](manual/commands.md)
-- [query player stats](manual/queryable_stats.md)
+- [Install Instructions](manual/install_instructions.md)
+- [Available Discord Commands](manual/commands.md)
+- [Query Player Stats](manual/queryable_stats.md)
+
+## How to build:
+
+clone the repository and run gradle's `build` task
