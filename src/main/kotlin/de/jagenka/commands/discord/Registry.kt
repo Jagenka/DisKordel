@@ -138,9 +138,13 @@ object Registry
                 } catch (e: CommandSyntaxException)
                 {
                     DiscordHandler.sendMessage(
-                        text = "Error: ${e.message}\n" +
-                                "see `${messageCommandPrefix}help`", silent = true
+                        text = "Diskordel no longer uses text commands. Use / commands instead!",
+                        silent = true,
                     )
+//                    DiscordHandler.sendMessage(
+//                        text = "Error: ${e.message}\n" +
+//                                "see `${messageCommandPrefix}help`", silent = true
+//                    )
 
                     return@messageHandling
                 }
