@@ -33,3 +33,4 @@ bin/
 run/
 
 tmp/**
+/logs/latest.log

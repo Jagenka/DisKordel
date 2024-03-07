@@ -57,7 +57,8 @@ object StatUtil
         statType: StatType<Any>,
         id: String,
         excludeFilter: (stat: StatData, playtime: StatData) -> Boolean = { _, _ -> false },
-        valuation: (stat: StatData, playtime: StatData) -> Double
+        valuation: (stat: StatData, playtime: StatData) -> Double,
+        ascending: Boolean? = false,
     ): List<Triple<Int, StatData, StatData>>
     {
         val data = getStatDataList(statType, id)
@@ -76,7 +77,7 @@ object StatUtil
                 } ?: return@mapNotNull null)
             }
             .filterNot { excludeFilter(it.first, it.second) }
-            .sortedByDescending { valuation(it.first, it.second) }
+            .sortedByDescending { (if (ascending == true) -1 else 1) * valuation(it.first, it.second) }
             .mapIndexed { index, (statData, playtimeData) ->
                 val value = valuation(statData, playtimeData)
                 if (value != currentValue)
@@ -92,7 +93,14 @@ object StatUtil
     /**
      * @param nameFilter only display for those player names. don't filter if collection is empty
      */
-    fun getStatReply(statType: StatType<Any>, id: String, queryType: StatQueryType, nameFilter: Collection<String> = emptyList(), limit: Int? = 10): String
+    fun getStatReply(
+        statType: StatType<Any>,
+        id: String,
+        queryType: StatQueryType,
+        nameFilter: Collection<String> = emptyList(),
+        limit: Int? = 10,
+        ascending: Boolean? = false
+    ): String
     {
         val limitDefault = 10
 
@@ -115,7 +123,9 @@ object StatUtil
                         STAT_PER_TIME -> getRelStat(stat.value, playtime.value)
                         TIME_PER_STAT -> getInverseRelStat(stat.value, playtime.value)
                     }.toDouble()
-                })
+                },
+                ascending = ascending,
+            )
                 .filter {
                     nameFilter.isEmpty() || nameFilter.map { it.lowercase() }.contains(it.second.playerName.lowercase())
                 }
@@ -128,7 +138,7 @@ object StatUtil
                 {
                     // max length of player name is 16 character
                     DEFAULT, COMPARE -> "${rank.toString().padStart(2, ' ')}. ${stat.playerName.padEnd(17, ' ')} ${stat.stat.format(stat.value)}"
-                        .padEnd(40) + if (!(id == "play_time" || statType == Stats.CUSTOM)) " (in ${durationToPrettyString(playtime.value.ticks)})" else ""
+                        .padEnd(40) + if (stat.stat.formatter != StatFormatter.TIME) " (in ${durationToPrettyString(playtime.value.ticks)})" else ""
 
                     STAT_PER_TIME ->
                     {
