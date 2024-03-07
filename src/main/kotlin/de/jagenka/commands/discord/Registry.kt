@@ -211,7 +211,7 @@ object Registry
         discordCommands.forEach { cmd ->
             if (cmd is DiskordelTextCommand)
             {
-                cmd.registerWithDiscord(commandDispatcher)
+                // cmd.registerWithDiscord(commandDispatcher)
             }
 
             if (cmd is DiskordelSlashCommand)
