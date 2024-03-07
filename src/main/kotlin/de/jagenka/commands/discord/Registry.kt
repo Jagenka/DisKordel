@@ -33,7 +33,7 @@ import java.net.URI
 
 object Registry
 {
-    private const val linkToAppCommandVersionFile = "https://github.com/Jagenka/DisKordel/blob/master/applicationCommandsVersion.yaml"
+    private const val linkToAppCommandVersionFile = "https://raw.githubusercontent.com/Jagenka/DisKordel/master/applicationCommandsVersion.yaml"
 
     private const val messageCommandPrefix: String = "!"
     private const val interactsWithBots: Boolean = true
@@ -138,9 +138,13 @@ object Registry
                 } catch (e: CommandSyntaxException)
                 {
                     DiscordHandler.sendMessage(
-                        text = "Error: ${e.message}\n" +
-                                "see `${messageCommandPrefix}help`", silent = true
+                        text = "Diskordel no longer uses text commands. Use / commands instead!",
+                        silent = true,
                     )
+//                    DiscordHandler.sendMessage(
+//                        text = "Error: ${e.message}\n" +
+//                                "see `${messageCommandPrefix}help`", silent = true
+//                    )
 
                     return@messageHandling
                 }
