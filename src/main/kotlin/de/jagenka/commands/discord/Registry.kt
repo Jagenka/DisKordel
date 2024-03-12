@@ -93,8 +93,9 @@ object Registry
                     reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
                     Config.configEntry.appCommandVersion = version ?: "0"
                     Config.store()
-                    return@launch
                 }
+
+                return@launch
 
             } catch (_: Exception)
             {
@@ -295,6 +296,8 @@ object Registry
 
     private suspend fun reRegisterApplicationCommands(kord: Kord, guildId: Snowflake)
     {
+        MinecraftHandler.logger.info("Start re-registering Discord Application Commands...")
+
         // delete all commands
         kord.getGuildApplicationCommands(guildId).collect {
             it.delete()
