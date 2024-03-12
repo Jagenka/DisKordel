@@ -100,6 +100,12 @@ object Registry
             {
             }
 
+            if (Config.configEntry.appCommandVersion == "0")
+            {
+                reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
+                return@launch
+            }
+
             val appCommands = mutableListOf<GuildApplicationCommand>()
             kord.getGuildApplicationCommands(DiscordHandler.guild.id).collect { appCommands.add(it) }
             if (discordCommands.filterIsInstance<DiskordelSlashCommand>().size != appCommands.size)
