@@ -7,6 +7,7 @@ import de.jagenka.DiscordHandler
 import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.Util
+import de.jagenka.Util.unwrap
 import de.jagenka.commands.DiskordelCommand
 import de.jagenka.commands.DiskordelSlashCommand
 import de.jagenka.commands.DiskordelTextCommand
@@ -26,6 +27,7 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.core.on
 import kotlinx.coroutines.launch
+import net.fabricmc.loader.api.FabricLoader
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
@@ -33,7 +35,9 @@ import java.net.URI
 
 object Registry
 {
-    private const val linkToAppCommandVersionFile = "https://raw.githubusercontent.com/Jagenka/DisKordel/master/applicationCommandsVersion.yaml"
+    private val linkToAppCommandVersionFile = "https://raw.githubusercontent.com/Jagenka/DisKordel/v${
+        FabricLoader.getInstance().getModContainer("diskordel").unwrap()?.metadata?.version?.toString()
+    }/applicationCommandsVersion.yaml"
 
     private const val messageCommandPrefix: String = "!"
     private const val interactsWithBots: Boolean = true
