@@ -17,6 +17,7 @@ repositories {
     mavenCentral()
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven("https://libraries.minecraft.net")
+    maven("https://redempt.dev")
 }
 dependencies {
     val minecraft_version: String by project
@@ -39,6 +40,10 @@ dependencies {
     //String comparison
     implementation("info.debatty:java-string-similarity:2.0.0")
     shadow("info.debatty:java-string-similarity:2.0.0")
+
+    //eval command
+    implementation("com.github.Redempt:Crunch:2.0.3")
+    shadow("com.github.Redempt:Crunch:2.0.3")
 
     //brigardier
     //implementation("com.mojang:brigadier:1.0.18")
