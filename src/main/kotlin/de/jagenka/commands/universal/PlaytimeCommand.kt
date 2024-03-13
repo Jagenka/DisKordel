@@ -50,7 +50,8 @@ object PlaytimeCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashC
                     it.source.sendCodeBlock(output)
                     0
                 }
-                .then(argument<String>("partOfName", StringArgumentType.greedyString())
+                .then(
+                    argument<String>("partOfName", StringArgumentType.word())
                     .executes {
                         val output = process(StringArgumentType.getString(it, "partOfName"))
                         it.source.sendCodeBlock(output)
@@ -74,7 +75,8 @@ object PlaytimeCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashC
                     }
                     0
                 }
-                .then(CommandManager.argument("partOfName", StringArgumentType.greedyString())
+                .then(
+                    CommandManager.argument("partOfName", StringArgumentType.word())
                     .executes {
                         val output = process(StringArgumentType.getString(it, "partOfName"))
                         output.lines().forEach { line ->

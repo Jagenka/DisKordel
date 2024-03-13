@@ -11,10 +11,7 @@ import de.jagenka.Util.unwrap
 import de.jagenka.commands.DiskordelCommand
 import de.jagenka.commands.DiskordelSlashCommand
 import de.jagenka.commands.DiskordelTextCommand
-import de.jagenka.commands.universal.DeathsCommand
-import de.jagenka.commands.universal.PlaytimeCommand
-import de.jagenka.commands.universal.WhereIsCommand
-import de.jagenka.commands.universal.WhoisCommand
+import de.jagenka.commands.universal.*
 import de.jagenka.config.Config
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
@@ -54,7 +51,7 @@ object Registry
      */
     private val longHelpTexts = mutableMapOf<String, String>()
 
-    private val discordCommands = listOf<DiskordelCommand>(
+    val commands = listOf<DiskordelCommand>(
         // Discord-only Commands
         PerfCommand,
         ListCommand,
@@ -73,6 +70,7 @@ object Registry
         WhereIsCommand,
         PlaytimeCommand,
         DeathsCommand,
+        EvalCommand,
     )
 
     private val slashCommandMap = mutableMapOf<String, DiskordelSlashCommand>()
@@ -109,7 +107,7 @@ object Registry
 
             val appCommands = mutableListOf<GuildApplicationCommand>()
             kord.getGuildApplicationCommands(DiscordHandler.guild.id).collect { appCommands.add(it) }
-            if (discordCommands.filterIsInstance<DiskordelSlashCommand>().size != appCommands.size)
+            if (commands.filterIsInstance<DiskordelSlashCommand>().size != appCommands.size)
             {
                 reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
             }
@@ -223,7 +221,7 @@ object Registry
     private fun registerCommands()
     {
         // sort commands into types
-        discordCommands.forEach { cmd ->
+        commands.forEach { cmd ->
             if (cmd is DiskordelTextCommand)
             {
                 // cmd.registerWithDiscord(commandDispatcher)
@@ -304,7 +302,7 @@ object Registry
         }
 
         // register all commands
-        discordCommands.filterIsInstance<DiskordelSlashCommand>().forEach { cmd ->
+        commands.filterIsInstance<DiskordelSlashCommand>().forEach { cmd ->
             kord.createGuildChatInputCommand(guildId, cmd.name, cmd.description) {
                 cmd.build(this)
             }

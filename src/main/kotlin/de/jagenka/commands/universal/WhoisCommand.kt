@@ -66,7 +66,7 @@ object WhoisCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashComm
         val commandNode = dispatcher.register(
             MessageCommandSource.literal("whois")
                 .then(
-                    MessageCommandSource.argument<String>("partOfName", StringArgumentType.greedyString())
+                    MessageCommandSource.argument<String>("partOfName", StringArgumentType.word())
                         .executes
                         {
                             val output = generateOutput(StringArgumentType.getString(it, "partOfName"))
@@ -84,7 +84,7 @@ object WhoisCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashComm
         dispatcher.register(
             CommandManager.literal("whois")
                 .then(
-                    CommandManager.argument("partOfName", StringArgumentType.greedyString()).executes
+                    CommandManager.argument("partOfName", StringArgumentType.word()).executes
                     {
                         val output = generateOutput(StringArgumentType.getString(it, "partOfName"))
                         output.lines().forEach { line ->

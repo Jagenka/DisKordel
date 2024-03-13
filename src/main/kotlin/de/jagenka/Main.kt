@@ -4,7 +4,7 @@ import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.MinecraftHandler.logger
 import de.jagenka.MinecraftHandler.registerMixins
 import de.jagenka.commands.MinecraftCommand
-import de.jagenka.commands.universal.WhoisCommand
+import de.jagenka.commands.discord.Registry
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
 import dev.kord.common.entity.Snowflake
@@ -22,10 +22,6 @@ object Main : ModInitializer
     val scope: CoroutineScope = CoroutineScope(SupervisorJob())
 
     private var stoppingTask: Job? = null
-
-    private val minecraftCommands: List<MinecraftCommand> = listOf(
-        WhoisCommand
-    )
 
     override fun onInitialize()
     {
@@ -67,7 +63,7 @@ object Main : ModInitializer
 
         //register commands
         CommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<ServerCommandSource>, _: CommandRegistryAccess, _: CommandManager.RegistrationEnvironment ->
-            minecraftCommands.forEach { it.registerWithMinecraft(dispatcher) }
+            Registry.commands.filterIsInstance<MinecraftCommand>().forEach { it.registerWithMinecraft(dispatcher) }
         }
 
         Config.loadConfig()
@@ -82,7 +78,7 @@ object Main : ModInitializer
             DiscordHandler.init(token, Snowflake(guildId), Snowflake(channelId))
         }
 
-        logger.info("DisKordel has been initialized.")
+        logger.info("DisKordel has been initialized.") // TODO: move, this appears before everything is done
     }
 }
 

@@ -3,7 +3,7 @@ package de.jagenka.commands
 import com.mojang.brigadier.CommandDispatcher
 import net.minecraft.server.command.ServerCommandSource
 
-interface MinecraftCommand
+interface MinecraftCommand : DiskordelCommand
 {
     /**
      * this should register the command with Minecraft
