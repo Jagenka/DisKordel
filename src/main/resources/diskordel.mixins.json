@@ -4,6 +4,7 @@
   "package": "de.jagenka.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "LanguageMixin",
     "PlayerAdvancementTrackerMixin",
     "PlayerManagerMixin",
     "ServerPlayerEntityMixin",
