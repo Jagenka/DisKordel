@@ -1,6 +1,7 @@
 package de.jagenka
 
 import de.jagenka.commands.discord.Registry
+import de.jagenka.commands.discord.UnregisterCommand
 import dev.kord.common.entity.DiscordAttachment
 import dev.kord.common.entity.MessageFlag
 import dev.kord.common.entity.MessageFlags
@@ -11,7 +12,9 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
+import dev.kord.core.event.guild.MemberUpdateEvent
 import dev.kord.core.exception.KordInitializationException
+import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.addFile
@@ -60,6 +63,16 @@ object DiscordHandler
             kord.login {// nicht sicher ob man für jeden link nen eigenen bot braucht mit der API
                 @OptIn(PrivilegedIntent::class)
                 intents += Intent.MessageContent
+            }
+
+            kord.on<MemberUpdateEvent> {
+                if (member.guildId != guildSnowflake) return@on // if name change in different guild, ignore
+
+                if (old?.effectiveName != member.effectiveName)
+                {
+                    MinecraftHandler.logger.info("updating name for ${member.username}...")
+                    UserRegistry.updateDiscordName(member)
+                }
             }
         } ?: throw BotInitializationException("Error initializing bot.")
     }
@@ -171,9 +184,10 @@ object DiscordHandler
         return null
     }
 
-    fun handleNotAMember(id: Snowflake)
+    suspend fun handleNotAMember(id: Snowflake)
     {
         MinecraftHandler.logger.error("User with Snowflake $id is not a member of the configured guild!")
+        UnregisterCommand.unregisterUser(id)
     }
 
     /**

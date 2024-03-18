@@ -151,6 +151,18 @@ object UserRegistry
     }
     // endregion
 
+    fun updateDiscordName(snowflake: Snowflake)
+    {
+        registeredUsers.find { it.discord.id == snowflake } ?: return // if not in registry, ignore this one
+        findDiscordMember(snowflake) { /* noting to do */ }
+    }
+
+    fun updateDiscordName(member: Member)
+    {
+        registeredUsers.find { it.discord.id == member.id } ?: return // if not in registry, ignore this one
+        discordMembers[DiscordUser(member.id)] = member
+    }
+
     // region registration
     fun register(snowflake: Snowflake, minecraftName: String, callback: (success: Boolean) -> Unit = {})
     {
@@ -435,12 +447,18 @@ object UserRegistry
         return if (found) getGameProfile(minecraftName) else null
     }
 
-    private fun findDiscordMember(snowflake: Snowflake, callback: (mamber: Member) -> Unit)
+    private fun findDiscordMember(snowflake: Snowflake, successCallback: (member: Member) -> Unit)
     {
         Main.scope.launch {
             val member = DiscordHandler.getMemberOrSendError(snowflake)
-            discordMembers[DiscordUser(snowflake)] = member ?: return@launch
-            callback.invoke(member)
+            if (member == null)
+            {
+                discordMembers.remove(DiscordUser(snowflake))
+            } else
+            {
+                discordMembers[DiscordUser(snowflake)] = member
+                successCallback.invoke(member)
+            }
         }
     }
 
