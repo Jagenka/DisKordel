@@ -3,10 +3,7 @@ package de.jagenka.commands.discord
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import com.mojang.brigadier.tree.CommandNode
-import de.jagenka.DiscordHandler
-import de.jagenka.Main
-import de.jagenka.MinecraftHandler
-import de.jagenka.Util
+import de.jagenka.*
 import de.jagenka.Util.unwrap
 import de.jagenka.commands.DiskordelCommand
 import de.jagenka.commands.DiskordelSlashCommand
@@ -56,7 +53,6 @@ object Registry
         PerfCommand,
         ListCommand,
         UsersCommand,
-        UpdateNamesCommand,
         RegisterCommand,
         UnregisterCommand,
         StatsCommand,
@@ -162,9 +158,17 @@ object Registry
             if (message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return@messageHandling
 
             // if commandHandling fails, it must be a chat message, which is to be relayed to Minecraft
+            val member = message.getAuthorAsMemberOrNull()
+            if (member != null)
+            {
+                Main.scope.launch {
+                    UserRegistry.updateDiscordName(member)
+                }
+            }
+
             DiscordHandler.relayChatMessage(
                 authorId = message.author?.id,
-                authorName = message.getAuthorAsMemberOrNull()?.effectiveName ?: message.author?.effectiveName ?: "unknown user",
+                authorName = member?.effectiveName ?: message.author?.effectiveName ?: "unknown user",
                 content = messageWithPrettyMentions(message),
                 referencedMessage = message.referencedMessage,
                 attachments = message.attachments.map { it.toRawType() },

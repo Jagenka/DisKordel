@@ -39,7 +39,7 @@ object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
     /**
      * @return response string
      */
-    private suspend fun unregisterUser(userId: Snowflake): String
+    suspend fun unregisterUser(userId: Snowflake): String
     {
         val member = DiscordHandler.getMemberOrSendError(userId) ?: return ""
 
