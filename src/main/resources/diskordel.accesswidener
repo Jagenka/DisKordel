@@ -2,4 +2,7 @@ accessWidener	v1	named
 
 accessible field net/minecraft/stat/Stat formatter Lnet/minecraft/stat/StatFormatter;
 
+accessible field net/minecraft/text/TranslatableTextContent key Ljava/lang/String;
+accessible field net/minecraft/text/TranslatableTextContent args [Ljava/lang/Object;
+
 accessible method net/minecraft/server/ServerConfigEntry getKey ()Ljava/lang/Object;

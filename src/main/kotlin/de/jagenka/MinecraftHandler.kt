@@ -2,6 +2,7 @@ package de.jagenka
 
 import de.jagenka.Util.unwrap
 import de.jagenka.config.Config
+import de.jagenka.config.CustomTranslatableTextContent
 import dev.kord.core.entity.Message
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
@@ -12,7 +13,9 @@ import net.minecraft.network.message.MessageType
 import net.minecraft.network.message.SignedMessage
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.MutableText
 import net.minecraft.text.Text
+import net.minecraft.text.TranslatableTextContent
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
@@ -56,7 +59,7 @@ object MinecraftHandler
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             val player = handler.player
             Main.scope.launch {
-                val text = Text.translatable("multiplayer.player.joined", player.displayName)
+                val text = customTranslatable("multiplayer.player.joined", player.displayName)
                 val string = text.string
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
@@ -67,7 +70,7 @@ object MinecraftHandler
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             val player = handler.player
             Main.scope.launch {
-                val text = Text.translatable("multiplayer.player.left", player.displayName)
+                val text = customTranslatable("multiplayer.player.left", player.displayName)
                 val string = text.string
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
@@ -77,7 +80,7 @@ object MinecraftHandler
         // death messages
         ServerLivingEntityEvents.ALLOW_DEATH.register { entity, _, _ ->
             if (!entity.isPlayer) return@register true
-            val text = entity.damageTracker.deathMessage
+            val text = customTranslatable(entity.damageTracker.deathMessage)
             Main.scope.launch {
                 val string = text.string
                 val name = string.split(" ").firstOrNull()
@@ -94,7 +97,7 @@ object MinecraftHandler
     {
         val display = advancement.value.display.unwrap() ?: return
         if (!display.shouldAnnounceToChat()) return
-        val text = display.frame.getChatAnnouncementText(advancement, player)
+        val text = customTranslatable(display.frame.getChatAnnouncementText(advancement, player)) // TODO: this does not work in German
         Main.scope.launch {
             val string = text.string
             val name = string.split(" ").firstOrNull()
@@ -204,5 +207,26 @@ object MinecraftHandler
     fun ServerPlayerEntity.sendPrivateMessage(text: String)
     {
         this.sendMessage(Text.of(text))
+    }
+
+    fun customTranslatable(key: String, vararg args: Any?): MutableText
+    {
+        return MutableText.of(CustomTranslatableTextContent(key, args))
+    }
+
+    fun customTranslatable(text: MutableText): MutableText
+    {
+        return MutableText.of(customTranslatable(text as Text).content)
+    }
+
+    fun customTranslatable(text: Text): Text
+    {
+        if (text.content is TranslatableTextContent)
+        {
+            val textContent = text.content as TranslatableTextContent
+            println(textContent.args.toList())
+            return customTranslatable(textContent.key, textContent.args.copyOf())
+        }
+        return text
     }
 }
