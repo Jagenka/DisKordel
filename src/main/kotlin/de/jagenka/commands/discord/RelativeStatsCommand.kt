@@ -43,7 +43,7 @@ object RelativeStatsCommand : DiskordelTextCommand
                                         statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                         id = it.getArgument("stat_identifier", String::class.java),
                                         queryType = StatUtil.StatQueryType.STAT_PER_TIME,
-                                        limit = it.getArgument("topN", Int::class.java)
+                                        topN = it.getArgument("topN", Int::class.java)
                                     ),
                                     silent = true
                                 )
@@ -72,7 +72,7 @@ object RelativeStatsCommand : DiskordelTextCommand
                                             id = it.getArgument("stat_identifier", String::class.java),
                                             queryType = StatUtil.StatQueryType.STAT_PER_TIME,
                                             nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name },
-                                            limit = it.getArgument("topN", Int::class.java)
+                                            topN = it.getArgument("topN", Int::class.java)
                                         ),
                                         silent = true
                                     )

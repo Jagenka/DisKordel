@@ -44,6 +44,8 @@ object DiscordHandler
 
     private val guildEmojiRegex = Regex("<a?(:[a-zA-Z0-9_]+:)[0-9]+>")
 
+    const val MESSAGE_LENGTH_LIMIT: Int = 2000
+
     suspend fun init(token: String, guildSnowflake: Snowflake, channelSnowflake: Snowflake)
     {
         try
@@ -84,9 +86,9 @@ object DiscordHandler
 
             var toSend = text
 
-            if (text.length > 2000)
+            if (text.length > MESSAGE_LENGTH_LIMIT)
             {
-                toSend = text.substring(0, 1997) + "..." // trim to 2000 characters as per discord api limit
+                toSend = text.substring(0, MESSAGE_LENGTH_LIMIT - 3) + "..." // trim to 2000 characters as per discord api limit
             }
 
             channel.createMessage {
@@ -103,9 +105,9 @@ object DiscordHandler
         val content = ("$formatId\n" + this.preventCodeBlockEscape())
         var toSend = content
 
-        if (content.length > 1993)
+        if (content.length > MESSAGE_LENGTH_LIMIT - 7)
         {
-            toSend = content.substring(0, 1990) + "..."
+            toSend = content.substring(0, MESSAGE_LENGTH_LIMIT - 10) + "..."
         }
 
         return "```$toSend\n```"
@@ -118,9 +120,9 @@ object DiscordHandler
         val content = ("$formatId\n" + text.preventCodeBlockEscape())
         var toSend = content
 
-        if (content.length > 1993)
+        if (content.length > MESSAGE_LENGTH_LIMIT - 7)
         {
-            toSend = content.substring(0, 1990) + "..."
+            toSend = content.substring(0, MESSAGE_LENGTH_LIMIT - 10) + "..."
         }
 
         sendMessage(text = "```$toSend\n```", silent = silent)

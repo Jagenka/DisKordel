@@ -32,7 +32,7 @@ object PlaytimeCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashC
             id = "play_time",
             queryType = StatUtil.StatQueryType.DEFAULT,
             nameFilter = if (!input.isNullOrBlank()) UserRegistry.findMinecraftProfiles(input).map { it.name } else emptyList(),
-            limit = limit,
+            topN = limit,
         )
     }
 

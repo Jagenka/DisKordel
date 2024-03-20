@@ -56,8 +56,11 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                 }
                 string("stat", "Which specific stat to query, using Minecraft's internal ids.")
                 { required = true }
-                integer("limit", "How many entries to display.")
-                { required = false }
+                integer("top_n", "How many entries to display starting from 1st.")
+                {
+                    required = false
+                    minValue = 1
+                }
                 string("part_of_name", "Part of a player's name.")
                 { required = false }
                 boolean("ascending", "If the result should be sorted ascending, rather than descending.")
@@ -116,16 +119,16 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                     val relation = StatUtil.StatQueryType.valueOf(interaction.command.strings["relation"]!!)
                     val statType = StatTypeArgument.parse(interaction.command.strings["category"]!!) as? StatType<Any> ?: return // should never happen
                     val stat = interaction.command.strings["stat"]!!
-                    val limit = interaction.command.integers["limit"]
+                    val topN = interaction.command.integers["top_n"]
                     val partOfName = interaction.command.strings["part_of_name"]
                     val ascending = interaction.command.booleans["ascending"]
-                    val nameFilter = if (partOfName != null) UserRegistry.findMinecraftProfiles(partOfName).map { it.name } else emptyList()
+                    val nameFilter = if (partOfName != null) UserRegistry.findMinecraftProfiles(partOfName) else emptyList()
                     val reply = StatUtil.getStatReply(
                         statType = statType,
                         id = stat,
                         queryType = relation,
                         nameFilter = nameFilter,
-                        limit = limit?.toInt(),
+                        topN = topN?.toInt(),
                         ascending = ascending,
                     )
                     response.respond { content = reply.asCodeBlock() }
@@ -199,7 +202,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                                         statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                         id = it.getArgument("stat_identifier", String::class.java),
                                         queryType = StatUtil.StatQueryType.DEFAULT,
-                                        limit = it.getArgument("topN", Int::class.java)
+                                        topN = it.getArgument("topN", Int::class.java)
                                     ),
                                     silent = true
                                 )
@@ -228,7 +231,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                                             id = it.getArgument("stat_identifier", String::class.java),
                                             queryType = StatUtil.StatQueryType.DEFAULT,
                                             nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name },
-                                            limit = it.getArgument("topN", Int::class.java)
+                                            topN = it.getArgument("topN", Int::class.java)
                                         ),
                                         silent = true
                                     )

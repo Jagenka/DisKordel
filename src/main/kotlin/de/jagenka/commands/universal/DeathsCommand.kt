@@ -32,7 +32,7 @@ object DeathsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCom
             id = "deaths",
             queryType = StatUtil.StatQueryType.DEFAULT,
             nameFilter = if (!input.isNullOrBlank()) UserRegistry.findMinecraftProfiles(input).map { it.name } else emptyList(),
-            limit = limit,
+            topN = limit,
             ascending = true
         )
     }
