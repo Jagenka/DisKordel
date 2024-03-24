@@ -31,7 +31,7 @@ object DeathsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCom
             statType = Stats.CUSTOM as StatType<Any>,
             id = "deaths",
             queryType = StatUtil.StatQueryType.DEFAULT,
-            nameFilter = if (!input.isNullOrBlank()) UserRegistry.findMinecraftProfiles(input).map { it.name } else emptyList(),
+            nameFilter = if (!input.isNullOrBlank()) UserRegistry.findMinecraftProfiles(input) else emptyList(),
             topN = limit,
             ascending = true
         )

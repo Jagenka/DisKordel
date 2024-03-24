@@ -29,7 +29,8 @@ object PlaytimePerStatCommand : DiskordelTextCommand
                             text = StatUtil.getStatReply(
                                 statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                 id = it.getArgument("stat_identifier", String::class.java),
-                                queryType = StatUtil.StatQueryType.TIME_PER_STAT
+                                queryType = StatUtil.StatQueryType.TIME_PER_STAT,
+                                topN = null
                             ),
                             silent = true
                         )
@@ -57,7 +58,8 @@ object PlaytimePerStatCommand : DiskordelTextCommand
                                     statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                     id = it.getArgument("stat_identifier", String::class.java),
                                     queryType = StatUtil.StatQueryType.TIME_PER_STAT,
-                                    nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name }
+                                    nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)),
+                                    topN = null
                                 ),
                                 silent = true
                             )
@@ -71,7 +73,7 @@ object PlaytimePerStatCommand : DiskordelTextCommand
                                             statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                             id = it.getArgument("stat_identifier", String::class.java),
                                             queryType = StatUtil.StatQueryType.TIME_PER_STAT,
-                                            nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name },
+                                            nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)),
                                             topN = it.getArgument("topN", Int::class.java)
                                         ),
                                         silent = true

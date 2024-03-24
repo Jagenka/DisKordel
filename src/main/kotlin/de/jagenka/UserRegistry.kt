@@ -98,7 +98,7 @@ object UserRegistry
         return minecraftProfiles.find { it.name.equals(name, ignoreCase = true) }
     }
 
-    fun getGameProfile(uuid: UUID): GameProfile?
+    fun getGameProfile(uuid: UUID?): GameProfile?
     {
         return minecraftProfiles.find { it.id == uuid }
     }
@@ -447,14 +447,16 @@ object UserRegistry
         return if (found) getGameProfile(minecraftName) else null
     }
 
+    fun removeDiscordMember(snowflake: Snowflake)
+    {
+        discordMembers.remove(DiscordUser(snowflake))
+    }
+
     private fun findDiscordMember(snowflake: Snowflake, successCallback: (member: Member) -> Unit)
     {
         Main.scope.launch {
             val member = DiscordHandler.getMemberOrSendError(snowflake)
-            if (member == null)
-            {
-                discordMembers.remove(DiscordUser(snowflake))
-            } else
+            if (member != null)
             {
                 discordMembers[DiscordUser(snowflake)] = member
                 successCallback.invoke(member)

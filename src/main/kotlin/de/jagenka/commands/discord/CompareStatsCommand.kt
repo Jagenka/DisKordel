@@ -29,14 +29,13 @@ object CompareStatsCommand : DiskordelTextCommand
             return
         }
 
-        val playerNames = listOf(player1, player2)
-
         DiscordHandler.sendCodeBlock(
             text = StatUtil.getStatReply(
                 statType = type,
                 id = id,
                 queryType = StatUtil.StatQueryType.COMPARE,
-                nameFilter = playerNames
+                nameFilter = UserRegistry.findMinecraftProfiles(player1).union(UserRegistry.findMinecraftProfiles(player2)),
+                topN = 2
             ),
             silent = true
         )

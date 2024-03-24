@@ -203,7 +203,31 @@ object StatUtil
                     {
                         val trimmedLines = mutableListOf<String>()
 
-                        // TODO: trim, so only the first and last few entries are shown, as well as around the invoker
+                        val topTrim = 3
+                        val middleTopTrim = indexOfInvoker - 1
+                        val middleBotTrim = indexOfInvoker + 2
+                        val botTrim = allLines.size - 3
+
+
+                        if (topTrim + 2 < middleTopTrim)
+                        {
+                            trimmedLines.addAll(allLines.subList(0, topTrim))
+                            trimmedLines.addAll(listOf(".", "."))
+                            trimmedLines.addAll(allLines.subList(middleTopTrim, indexOfInvoker + 1))
+                        } else
+                        {
+                            trimmedLines.addAll(allLines.subList(0, indexOfInvoker + 1))
+                        }
+
+                        if (middleBotTrim + 2 < botTrim)
+                        {
+                            trimmedLines.addAll(allLines.subList(indexOfInvoker + 1, middleBotTrim))
+                            trimmedLines.addAll(listOf(".", "."))
+                            trimmedLines.addAll(allLines.subList(botTrim, allLines.size))
+                        } else
+                        {
+                            trimmedLines.addAll(allLines.subList(indexOfInvoker + 1, allLines.size))
+                        }
 
                         trimmedLines
                     } else allLines

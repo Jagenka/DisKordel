@@ -130,6 +130,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                         nameFilter = nameFilter,
                         topN = topN?.toInt(),
                         ascending = ascending,
+                        invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
                     )
                     response.respond { content = reply.asCodeBlock() }
                 }
@@ -146,12 +147,15 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                     val player2 =
                         if (player2Input != null) UserRegistry.findMostLikelyMinecraftName(player2Input)
                         else UserRegistry.findUser(interaction.user.id)?.minecraft?.name
-                    val players = listOfNotNull(player1, player2)
+                    if (player2 == null)
+                    {
+                        response.respond { content = "error finding player2" }
+                        return
+                    }
+                    val players = UserRegistry.findMinecraftProfiles(player1).union(UserRegistry.findMinecraftProfiles(player2))
                     if (players.isEmpty())
                     {
-                        response.respond {
-                            content = "no players found."
-                        }
+                        response.respond { content = "no players found." }
                         return
                     }
                     val reply = StatUtil.getStatReply(
@@ -160,6 +164,8 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                         queryType = relation,
                         nameFilter = players,
                         ascending = ascending,
+                        topN = 2,
+                        invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
                     )
                     response.respond { content = reply.asCodeBlock() }
                 }
@@ -188,7 +194,8 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                             text = StatUtil.getStatReply(
                                 statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                 id = it.getArgument("stat_identifier", String::class.java),
-                                queryType = StatUtil.StatQueryType.DEFAULT
+                                queryType = StatUtil.StatQueryType.DEFAULT,
+                                topN = null,
                             ),
                             silent = true
                         )
@@ -202,7 +209,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                                         statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                         id = it.getArgument("stat_identifier", String::class.java),
                                         queryType = StatUtil.StatQueryType.DEFAULT,
-                                        topN = it.getArgument("topN", Int::class.java)
+                                        topN = it.getArgument("topN", Int::class.java),
                                     ),
                                     silent = true
                                 )
@@ -216,7 +223,8 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                                     statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                     id = it.getArgument("stat_identifier", String::class.java),
                                     queryType = StatUtil.StatQueryType.DEFAULT,
-                                    nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name }
+                                    nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)),
+                                    topN = null,
                                 ),
                                 silent = true
                             )
@@ -230,7 +238,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                                             statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                             id = it.getArgument("stat_identifier", String::class.java),
                                             queryType = StatUtil.StatQueryType.DEFAULT,
-                                            nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)).map { it.name },
+                                            nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)),
                                             topN = it.getArgument("topN", Int::class.java)
                                         ),
                                         silent = true

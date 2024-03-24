@@ -186,10 +186,11 @@ object DiscordHandler
         return null
     }
 
-    suspend fun handleNotAMember(id: Snowflake)
+    private fun handleNotAMember(id: Snowflake)
     {
         MinecraftHandler.logger.error("User with Snowflake $id is not a member of the configured guild!")
         UnregisterCommand.unregisterUser(id)
+        UserRegistry.removeDiscordMember(id)
     }
 
     /**
