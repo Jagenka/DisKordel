@@ -60,6 +60,7 @@ object Registry
         PlaytimePerStatCommand,
         CompareStatsCommand,
         HelpCommand,
+        PingCommand,
 
         // Universal Commands
         WhoisCommand,
