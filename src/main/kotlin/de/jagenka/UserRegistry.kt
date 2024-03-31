@@ -127,10 +127,10 @@ object UserRegistry
 
     fun getMinecraftProfiles() = minecraftProfiles.toSet()
 
-    fun findRegistered(name: String): List<User>
+    fun findRegistered(name: String?): List<User>
     {
         return registeredUsers.filter {
-            it.isLikely(name)
+            it.isLikely(name ?: "")
         }
     }
 

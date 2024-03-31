@@ -147,10 +147,10 @@ object MinecraftHandler
 
     }
 
-    fun getOnlinePlayers(): List<String>
+    fun getOnlinePlayers(): List<ServerPlayerEntity>
     {
         minecraftServer?.let { server ->
-            return server.playerManager.playerList.map { it.name.string }
+            return server.playerManager.playerList
         }
 
         return emptyList()
