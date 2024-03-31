@@ -50,7 +50,7 @@ object ListCommand : DiskordelTextCommand, DiskordelSlashCommand
 
     private fun getResponse(): String
     {
-        val onlinePlayers = MinecraftHandler.getOnlinePlayers()
+        val onlinePlayers = MinecraftHandler.getOnlinePlayers().map { it.name.string }
         return "Currently online:\n" +
                 if (onlinePlayers.isEmpty()) "~nobody~"
                 else
