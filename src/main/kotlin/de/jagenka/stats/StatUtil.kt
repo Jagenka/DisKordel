@@ -212,7 +212,7 @@ object StatUtil
                         if (topTrim + 2 < middleTopTrim)
                         {
                             trimmedLines.addAll(allLines.subList(0, topTrim))
-                            trimmedLines.addAll(listOf(".", "."))
+                            trimmedLines.addAll(listOf("  .", "  ."))
                             trimmedLines.addAll(allLines.subList(middleTopTrim, indexOfInvoker + 1))
                         } else
                         {
