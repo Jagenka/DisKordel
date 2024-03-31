@@ -2,6 +2,8 @@
 
 package de.jagenka.stats
 
+import com.mojang.authlib.GameProfile
+import de.jagenka.DiscordHandler
 import de.jagenka.StatDataException
 import de.jagenka.StatDataExceptionType.*
 import de.jagenka.UserRegistry
@@ -97,13 +99,12 @@ object StatUtil
         statType: StatType<Any>,
         id: String,
         queryType: StatQueryType,
-        nameFilter: Collection<String> = emptyList(),
-        limit: Int? = 10,
-        ascending: Boolean? = false
+        nameFilter: Collection<GameProfile> = emptyList(),
+        topN: Int?,
+        ascending: Boolean? = false,
+        invoker: GameProfile? = null,
     ): String
     {
-        val limitDefault = 10
-
         try
         {
             val untrimmedList = getAllStatInfoSorted(
@@ -127,13 +128,12 @@ object StatUtil
                 ascending = ascending,
             )
                 .filter {
-                    nameFilter.isEmpty() || nameFilter.map { it.lowercase() }.contains(it.second.playerName.lowercase())
+                    nameFilter.isEmpty() || nameFilter.map { it.name.lowercase() }.contains(it.second.playerName.lowercase())
                 }
-            val resultList = untrimmedList.subListUntilOrEnd(limit ?: limitDefault)
 
-            var replyString = resultList.joinToString(
-                separator = System.lineSeparator()
-            ) { (rank, stat, playtime) ->
+            val indexOfInvoker = untrimmedList.indexOfFirst { it.second.playerName == invoker?.name }.takeIf { it != -1 }
+
+            val allLines = untrimmedList.map { (rank, stat, playtime) ->
                 when (queryType)
                 {
                     // max length of player name is 16 character
@@ -195,6 +195,50 @@ object StatUtil
                     }
                 }
             }
+
+            val resultList =
+                if (topN == null)
+                {
+                    if (indexOfInvoker != null && allLines.sumOf { it.length + 1 } > DiscordHandler.MESSAGE_LENGTH_LIMIT)
+                    {
+                        val trimmedLines = mutableListOf<String>()
+
+                        val topTrim = 3
+                        val middleTopTrim = indexOfInvoker - 1
+                        val middleBotTrim = indexOfInvoker + 2
+                        val botTrim = allLines.size - 3
+
+
+                        if (topTrim + 2 < middleTopTrim)
+                        {
+                            trimmedLines.addAll(allLines.subList(0, topTrim))
+                            trimmedLines.addAll(listOf("  .", "  ."))
+                            trimmedLines.addAll(allLines.subList(middleTopTrim, indexOfInvoker + 1))
+                        } else
+                        {
+                            trimmedLines.addAll(allLines.subList(0, indexOfInvoker + 1))
+                        }
+
+                        if (middleBotTrim + 2 < botTrim)
+                        {
+                            trimmedLines.addAll(allLines.subList(indexOfInvoker + 1, middleBotTrim))
+                            trimmedLines.addAll(listOf(".", "."))
+                            trimmedLines.addAll(allLines.subList(botTrim, allLines.size))
+                        } else
+                        {
+                            trimmedLines.addAll(allLines.subList(indexOfInvoker + 1, allLines.size))
+                        }
+
+                        trimmedLines
+                    } else allLines
+                } else
+                {
+                    allLines.subListUntilOrEnd(max(topN, 1))
+                }
+
+            var replyString = resultList.joinToString(
+                separator = System.lineSeparator()
+            )
 
             if (untrimmedList.size > resultList.size)
             {

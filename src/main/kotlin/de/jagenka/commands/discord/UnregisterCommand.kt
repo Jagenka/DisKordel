@@ -30,7 +30,7 @@ object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
     override suspend fun execute(event: ChatInputCommandInteractionCreateEvent)
     {
         val discordId = event.interaction.user.id
-        val response = unregisterUser(discordId)
+        val response = unregisterUserWithResponse(discordId)
         event.interaction.respondEphemeral {
             content = response
         }
@@ -39,7 +39,7 @@ object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
     /**
      * @return response string
      */
-    suspend fun unregisterUser(userId: Snowflake): String
+    suspend fun unregisterUserWithResponse(userId: Snowflake): String
     {
         val member = DiscordHandler.getMemberOrSendError(userId) ?: return ""
 
@@ -64,6 +64,15 @@ object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
         return response
     }
 
+    fun unregisterUser(userId: Snowflake)
+    {
+        UserRegistry.findUser(userId)?.let { oldUser ->
+            MinecraftHandler.runWhitelistRemove(oldUser.minecraft.name)
+        }
+        UserRegistry.unregister(userId)
+        UserRegistry.saveToFile()
+    }
+
     override val shortHelpText: String
         get() = "remove Discord-Minecraft link"
     override val longHelpText: String
@@ -76,7 +85,7 @@ object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
                 .executes {
                     it.source.author?.let { user ->
                         Main.scope.launch {
-                            val response = unregisterUser(user.id)
+                            val response = unregisterUserWithResponse(user.id)
                             DiscordHandler.sendMessage(response, silent = true)
                         }
                     }

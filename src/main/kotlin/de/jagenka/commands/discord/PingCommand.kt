@@ -24,6 +24,12 @@ object PingCommand : DiskordelSlashCommand
         {
             val response = interaction.deferEphemeralResponse()
             val onlinePlayers = MinecraftHandler.getOnlinePlayers()
+            if (onlinePlayers.isEmpty())
+            {
+                response.respond { content = "No players online!" }
+                return
+            }
+
             val responseString = onlinePlayers.joinToString(
                 separator = System.lineSeparator(),
                 prefix = "Server ping to online player(s):${System.lineSeparator()}"
