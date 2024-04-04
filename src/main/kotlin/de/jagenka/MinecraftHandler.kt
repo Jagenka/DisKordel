@@ -3,7 +3,6 @@ package de.jagenka
 import de.jagenka.config.Config
 import dev.kord.core.entity.Message
 import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.network.message.MessageType
@@ -71,27 +70,24 @@ object MinecraftHandler
                 sendSystemMessageAsPlayer(name, string)
             }
         }
-
-        // death messages
-        ServerLivingEntityEvents.ALLOW_DEATH.register { entity, _, _ ->
-            if (!entity.isPlayer) return@register true
-            val text = entity.damageTracker.deathMessage.copy()
-            Main.scope.launch {
-                val string = text.string
-                val name = string.split(" ").firstOrNull()
-                sendSystemMessageAsPlayer(name, string)
-            }
-
-            return@register true
-        }
     }
 
-    // coming from Mixin, as I did not find an inject from Fabric API
+    // coming from AdvancementFrameMixin
     @JvmStatic
     fun handleAdvancementGet(text: Text)
     {
         Main.scope.launch {
             val string = text.string
+            val name = string.split(" ").firstOrNull()
+            sendSystemMessageAsPlayer(name, string)
+        }
+    }
+
+    // coming from PlayerDyingMixin
+    @JvmStatic
+    fun handleDeathMessage(string: String)
+    {
+        Main.scope.launch {
             val name = string.split(" ").firstOrNull()
             sendSystemMessageAsPlayer(name, string)
         }
