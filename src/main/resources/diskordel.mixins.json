@@ -4,7 +4,8 @@
   "package": "de.jagenka.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "PlayerAdvancementTrackerMixin",
+    "AdvancementFrameMixin",
+    "PlayerDyingMixin",
     "PlayerManagerMixin",
     "ServerPlayerEntityMixin",
     "ServerPlayNetworkHandlerMixin",

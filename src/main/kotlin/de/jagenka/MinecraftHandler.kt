@@ -1,13 +1,10 @@
 package de.jagenka
 
-import de.jagenka.Util.unwrap
 import de.jagenka.config.Config
 import dev.kord.core.entity.Message
 import kotlinx.coroutines.launch
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.minecraft.advancement.AdvancementEntry
 import net.minecraft.network.message.MessageType
 import net.minecraft.network.message.SignedMessage
 import net.minecraft.server.MinecraftServer
@@ -73,33 +70,26 @@ object MinecraftHandler
                 sendSystemMessageAsPlayer(name, string)
             }
         }
-
-        // death messages
-        ServerLivingEntityEvents.ALLOW_DEATH.register { entity, _, _ ->
-            if (!entity.isPlayer) return@register true
-            val text = entity.damageTracker.deathMessage
-            Main.scope.launch {
-                val string = text.string
-                val name = string.split(" ").firstOrNull()
-                sendSystemMessageAsPlayer(name, string)
-            }
-
-            return@register true
-        }
     }
 
-    // coming from Mixin, as I did not find an inject from Fabric API
+    // coming from AdvancementFrameMixin
     @JvmStatic
-    fun handleAdvancementGet(advancement: AdvancementEntry, player: ServerPlayerEntity)
+    fun handleAdvancementGet(text: Text)
     {
-        val display = advancement.value.display.unwrap() ?: return
-        if (!display.shouldAnnounceToChat()) return
-        val text = display.frame.getChatAnnouncementText(advancement, player)
         Main.scope.launch {
             val string = text.string
             val name = string.split(" ").firstOrNull()
             sendSystemMessageAsPlayer(name, string)
+        }
+    }
 
+    // coming from PlayerDyingMixin
+    @JvmStatic
+    fun handleDeathMessage(string: String)
+    {
+        Main.scope.launch {
+            val name = string.split(" ").firstOrNull()
+            sendSystemMessageAsPlayer(name, string)
         }
     }
 
