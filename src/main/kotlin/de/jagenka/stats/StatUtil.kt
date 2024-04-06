@@ -193,7 +193,7 @@ object StatUtil
                         result += " (${durationToPrettyString(playtime.value.ticks)} for ${stat.stat.format(stat.value)})"
                         result
                     }
-                }
+                }.trimEnd()
             }
 
             val resultList =
