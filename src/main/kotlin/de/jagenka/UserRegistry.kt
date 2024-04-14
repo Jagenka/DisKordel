@@ -320,7 +320,7 @@ object UserRegistry
         return userNames.joinToString(prefix = header, separator = "\n") { (displayName, username, minecraftName) ->
             " " + displayName.padEnd(displayNameColWidth - 1, ' ') + "|" +
                     " " + username.padEnd(usernameColWidth - 1, ' ') + "|" +
-                    " " + minecraftName.padEnd(minecraftNameColWidth - 1, ' ')
+                    " " + minecraftName
         }
     }
 
