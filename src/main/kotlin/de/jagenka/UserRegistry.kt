@@ -122,7 +122,9 @@ object UserRegistry
 
     suspend fun getAllUsersAsOutput(): String
     {
-        return "Currently registered Users:\n\n" + getAllRegisteredUsers().getPrettyUsersList()
+        val registeredUsers = getAllRegisteredUsers()
+        val usersListString = registeredUsers.getPrettyUsersList()
+        return "There are currently ${registeredUsers.size} users registered:\n\n" + usersListString
     }
 
     fun getMinecraftProfiles() = minecraftProfiles.toSet()
