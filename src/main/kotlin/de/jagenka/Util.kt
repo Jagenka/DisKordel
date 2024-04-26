@@ -21,6 +21,11 @@ object Util
         return "%.${digits}f".format(Locale.US, this)
     }
 
+    fun Double.percent(maxDecimals: Int = 2): String
+    {
+        return (this * 100).trimDecimals(maxDecimals).trimEnd('0').trimEnd('.') + "%"
+    }
+
     fun <T> Optional<T>.unwrap(): T? = orElse(null)
 
     fun ticksToPrettyString(ticks: Int) = durationToPrettyString(ticks.ticks)

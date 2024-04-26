@@ -8,6 +8,7 @@ import de.jagenka.StatDataException
 import de.jagenka.StatDataExceptionType.*
 import de.jagenka.UserRegistry
 import de.jagenka.Util.durationToPrettyString
+import de.jagenka.Util.percent
 import de.jagenka.Util.subListUntilOrEnd
 import de.jagenka.Util.ticks
 import de.jagenka.Util.trimDecimals
@@ -15,6 +16,7 @@ import de.jagenka.stats.StatUtil.StatQueryType.*
 import net.minecraft.stat.StatFormatter
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
+import net.minecraft.stat.Stats.*
 import net.minecraft.util.Identifier
 import java.util.*
 import kotlin.math.max
@@ -133,12 +135,41 @@ object StatUtil
 
             val indexOfInvoker = untrimmedList.indexOfFirst { it.second.playerName == invoker?.name }.takeIf { it != -1 }
 
+            val someStatData = untrimmedList.firstOrNull()?.second
+
+            val totalStat = untrimmedList.sumOf { it.second.value }
+            val totalPlaytime = untrimmedList.sumOf { it.third.value }
+
+            val totalString =
+                if (someStatData == null) null
+                else
+                {
+                    when (queryType)
+                    {
+                        DEFAULT, COMPARE ->
+                        {
+                            val formattedValue = someStatData.stat.formatter?.format(totalStat)
+                            if (formattedValue != null) "total: $formattedValue" else null
+                        }
+
+                        STAT_PER_TIME ->
+                        {
+                            "average: " + formatRelStat(someStatData, totalStat, totalPlaytime)
+                        }
+
+                        TIME_PER_STAT ->
+                        {
+                            "average: " + formatInverseRelStat(someStatData, totalStat, totalPlaytime)
+                        }
+                    }
+                }
+
             val allLines = untrimmedList.map { (rank, stat, playtime) ->
                 when (queryType)
                 {
                     // max length of player name is 16 character
                     DEFAULT, COMPARE -> "${rank.toString().padStart(2, ' ')}. ${stat.playerName.padEnd(17, ' ')} ${stat.stat.format(stat.value)}"
-                        .padEnd(40) + if (stat.stat.formatter != StatFormatter.TIME) " (in ${durationToPrettyString(playtime.value.ticks)})" else ""
+                        .padEnd(40) + " (${(stat.value.toDouble() / totalStat).percent(3)})"
 
                     STAT_PER_TIME ->
                     {
@@ -236,7 +267,13 @@ object StatUtil
                     allLines.subListUntilOrEnd(max(topN, 1))
                 }
 
+            val statTypeDisplayName = statType.displayName()
+
             var replyString = resultList.joinToString(
+                prefix = (statTypeDisplayName + (if (statTypeDisplayName.isNotEmpty()) ": " else "") +
+                        id.lowercase() +
+                        (if (totalString != null) ", $totalString" else "")).trimStart(',', ' ') +
+                        System.lineSeparator() + System.lineSeparator(),
                 separator = System.lineSeparator()
             )
 
@@ -249,6 +286,69 @@ object StatUtil
         } catch (e: StatDataException)
         {
             return e.type.response
+        }
+    }
+
+    private fun formatRelStat(someStatData: StatData, stat: Int, playtime: Int): String
+    {
+        val relStat = getRelStat(stat, playtime)
+        val result = when (someStatData.stat.formatter)
+        {
+            StatFormatter.TIME ->
+            {
+                "${(relStat / 720.0).trimDecimals(2)}%" // converts tick stats to hours but then to percent ((value*100)/(20*60*60))
+            }
+
+            StatFormatter.DISTANCE ->
+            {
+                "${(relStat / 100_000.0).trimDecimals(3)} km/h" // converts cm stats to km (value/(100*1000))
+            }
+
+            else ->
+            {
+                "${relStat.trimDecimals(3)}/h"
+            }
+        }
+        return result.trimEnd()
+    }
+
+    private fun formatInverseRelStat(someStatData: StatData, stat: Int, playtime: Int): String
+    {
+        val inverseRelStat = getInverseRelStat(stat, playtime) // hours per stat
+        val result = when (someStatData.stat.formatter)
+        {
+            StatFormatter.TIME ->
+            {
+                "${((playtime.toDouble() * 100) / max(1.0, stat.toDouble())).trimDecimals(2)}%"
+            }
+
+            StatFormatter.DISTANCE ->
+            {
+                "${durationToPrettyString((inverseRelStat * 100000).hours)} /km" // *100000 because conversion to km
+            }
+
+            else ->
+            {
+                durationToPrettyString(inverseRelStat.hours)
+            }
+        }
+        return result.trimEnd()
+    }
+
+    fun StatType<Any>.displayName(): String
+    {
+        return when (this)
+        {
+            MINED -> "mined"
+            CRAFTED -> "crafted"
+            USED -> "used"
+            BROKEN -> "broken"
+            PICKED_UP -> "picked up"
+            DROPPED -> "dropped"
+            KILLED -> "killed"
+            KILLED_BY -> "killed by"
+            CUSTOM -> ""
+            else -> this.name.string
         }
     }
 
