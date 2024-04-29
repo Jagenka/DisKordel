@@ -4,9 +4,11 @@ package de.jagenka.stats
 
 import com.mojang.authlib.GameProfile
 import de.jagenka.DiscordHandler
+import de.jagenka.DiscordHandler.asCodeBlock
 import de.jagenka.StatDataException
 import de.jagenka.StatDataExceptionType.*
 import de.jagenka.UserRegistry
+import de.jagenka.Util.code
 import de.jagenka.Util.durationToPrettyString
 import de.jagenka.Util.percent
 import de.jagenka.Util.subListUntilOrEnd
@@ -148,18 +150,18 @@ object StatUtil
                     {
                         DEFAULT, COMPARE ->
                         {
-                            val formattedValue = someStatData.stat.formatter?.format(totalStat)
-                            if (formattedValue != null) "total: $formattedValue" else null
+                            val formattedValue = someStatData.stat.format(totalStat)
+                            if (formattedValue != null) "server total: ${formattedValue.code()}" else null
                         }
 
                         STAT_PER_TIME ->
                         {
-                            "average: " + formatRelStat(someStatData, totalStat, totalPlaytime)
+                            "server average: " + formatRelStat(someStatData, totalStat, totalPlaytime).code()
                         }
 
                         TIME_PER_STAT ->
                         {
-                            "average: " + formatInverseRelStat(someStatData, totalStat, totalPlaytime)
+                            "server average: " + formatInverseRelStat(someStatData, totalStat, totalPlaytime).code()
                         }
                     }
                 }
@@ -169,7 +171,7 @@ object StatUtil
                 {
                     // max length of player name is 16 character
                     DEFAULT, COMPARE -> "${rank.toString().padStart(2, ' ')}. ${stat.playerName.padEnd(17, ' ')} ${stat.stat.format(stat.value)}"
-                        .padEnd(40) + " (${(stat.value.toDouble() / totalStat).percent(3)})"
+                        .padEnd(38) + " (${(stat.value.toDouble() / totalStat).percent(3)})"
 
                     STAT_PER_TIME ->
                     {
@@ -193,7 +195,7 @@ object StatUtil
                                     "${relStat.trimDecimals(3)}/h"
                                 }
                             }
-                        result = result.padEnd(32, ' ') // 17 from above plus 15 (should be enough spacing)
+                        result = result.padEnd(38, ' ')
                         result += " (${stat.stat.format(stat.value)} in ${durationToPrettyString(playtime.value.ticks)})"
                         result
                     }
@@ -220,7 +222,7 @@ object StatUtil
                                     durationToPrettyString(inverseRelStat.hours)
                                 }
                             }
-                        result = result.padEnd(44, ' ')
+                        result = result.padEnd(38, ' ')
                         result += " (${durationToPrettyString(playtime.value.ticks)} for ${stat.stat.format(stat.value)})"
                         result
                     }
@@ -269,13 +271,13 @@ object StatUtil
 
             val statTypeDisplayName = statType.displayName()
 
-            var replyString = resultList.joinToString(
-                prefix = (statTypeDisplayName + (if (statTypeDisplayName.isNotEmpty()) ": " else "") +
-                        id.lowercase() +
-                        (if (totalString != null) ", $totalString" else "")).trimStart(',', ' ') +
-                        System.lineSeparator() + System.lineSeparator(),
-                separator = System.lineSeparator()
-            )
+            val statsString = resultList.joinToString(separator = System.lineSeparator())
+
+            var replyString = "# " + (statTypeDisplayName + (if (statTypeDisplayName.isNotEmpty()) ": " else "") +
+                    id.lowercase().code() +
+                    (if (totalString != null) ", $totalString" else "")).trimStart(',', ' ') +
+                    System.lineSeparator() +
+                    statsString.asCodeBlock()
 
             if (untrimmedList.size > resultList.size)
             {

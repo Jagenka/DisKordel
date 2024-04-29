@@ -29,7 +29,7 @@ object CompareStatsCommand : DiskordelTextCommand
             return
         }
 
-        DiscordHandler.sendCodeBlock(
+        DiscordHandler.sendMessage(
             text = StatUtil.getStatReply(
                 statType = type,
                 id = id,

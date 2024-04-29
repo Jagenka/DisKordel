@@ -25,7 +25,7 @@ object RelativeStatsCommand : DiskordelTextCommand
             .then(MessageCommandSource.argument("statType", StatTypeArgument())
                 .then(MessageCommandSource.argument<String>("stat_identifier", StringArgumentType.word())
                     .executes {
-                        DiscordHandler.sendCodeBlock(
+                        DiscordHandler.sendMessage(
                             text = StatUtil.getStatReply(
                                 statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                 id = it.getArgument("stat_identifier", String::class.java),
@@ -39,7 +39,7 @@ object RelativeStatsCommand : DiskordelTextCommand
                     .then(
                         MessageCommandSource.argument<Int>("topN", IntegerArgumentType.integer(1))
                             .executes {
-                                DiscordHandler.sendCodeBlock(
+                                DiscordHandler.sendMessage(
                                     text = StatUtil.getStatReply(
                                         statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                         id = it.getArgument("stat_identifier", String::class.java),
@@ -53,7 +53,7 @@ object RelativeStatsCommand : DiskordelTextCommand
                     )
                     .then(MessageCommandSource.argument<String>("partOfPlayerName", StringArgumentType.word())
                         .executes {
-                            DiscordHandler.sendCodeBlock(
+                            DiscordHandler.sendMessage(
                                 text = StatUtil.getStatReply(
                                     statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                     id = it.getArgument("stat_identifier", String::class.java),
@@ -68,7 +68,7 @@ object RelativeStatsCommand : DiskordelTextCommand
                         .then(
                             MessageCommandSource.argument<Int>("topN", IntegerArgumentType.integer(1))
                                 .executes {
-                                    DiscordHandler.sendCodeBlock(
+                                    DiscordHandler.sendMessage(
                                         text = StatUtil.getStatReply(
                                             statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                             id = it.getArgument("stat_identifier", String::class.java),

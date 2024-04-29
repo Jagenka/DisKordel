@@ -2,7 +2,6 @@ package de.jagenka.commands.universal
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
-import de.jagenka.DiscordHandler.asCodeBlock
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiskordelSlashCommand
 import de.jagenka.commands.DiskordelTextCommand
@@ -113,7 +112,7 @@ object DeathsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCom
             val name = interaction.command.strings["part_of_name"]
             val limit = interaction.command.integers["limit"]?.toInt()
             val reply = process(name, limit)
-            response.respond { content = reply.asCodeBlock() }
+            response.respond { content = reply }
         }
         return
     }
