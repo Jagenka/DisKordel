@@ -2,7 +2,6 @@ package de.jagenka.commands.discord
 
 import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.DiscordHandler
-import de.jagenka.DiscordHandler.asCodeBlock
 import de.jagenka.Main
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiskordelSlashCommand
@@ -28,7 +27,7 @@ object UsersCommand : DiskordelTextCommand, DiskordelSlashCommand
     override suspend fun execute(event: ChatInputCommandInteractionCreateEvent)
     {
         event.interaction.respondEphemeral {
-            content = UserRegistry.getAllUsersAsOutput().asCodeBlock()
+            content = UserRegistry.getAllUsersAsOutput()
         }
     }
 
@@ -42,7 +41,7 @@ object UsersCommand : DiskordelTextCommand, DiskordelSlashCommand
         val commandNode = dispatcher.register(literal("users")
             .executes {
                 Main.scope.launch {
-                    DiscordHandler.sendCodeBlock(text = UserRegistry.getAllUsersAsOutput(), silent = true)
+                    DiscordHandler.sendMessage(text = UserRegistry.getAllUsersAsOutput(), silent = true)
                 }
                 0
             }
