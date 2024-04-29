@@ -2,10 +2,12 @@ package de.jagenka
 
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.ProfileLookupCallback
+import de.jagenka.DiscordHandler.asCodeBlock
 import de.jagenka.DiscordHandler.kord
 import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.MinecraftHandler.logger
 import de.jagenka.MinecraftHandler.minecraftServer
+import de.jagenka.Util.code
 import de.jagenka.Util.unwrap
 import de.jagenka.config.Config
 import de.jagenka.config.UserEntry
@@ -124,7 +126,7 @@ object UserRegistry
     {
         val registeredUsers = getAllRegisteredUsers()
         val usersListString = registeredUsers.getPrettyUsersList()
-        return "There are currently ${registeredUsers.size} users registered:\n\n" + usersListString
+        return "# There are currently ${registeredUsers.size.toString().code()} users registered:\n" + usersListString.asCodeBlock()
     }
 
     fun getMinecraftProfiles() = minecraftProfiles.toSet()
