@@ -6,7 +6,6 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
-import de.jagenka.DiscordHandler.asCodeBlock
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiskordelSlashCommand
 import de.jagenka.commands.DiskordelTextCommand
@@ -132,7 +131,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                         ascending = ascending,
                         invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
                     )
-                    response.respond { content = reply.asCodeBlock() }
+                    response.respond { content = reply }
                 }
 
                 "compare" ->
@@ -167,7 +166,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                         topN = 2,
                         invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
                     )
-                    response.respond { content = reply.asCodeBlock() }
+                    response.respond { content = reply }
                 }
 
                 else ->
@@ -190,7 +189,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
             .then(argument("statType", StatTypeArgument())
                 .then(argument<String>("stat_identifier", StringArgumentType.word())
                     .executes {
-                        DiscordHandler.sendCodeBlock(
+                        DiscordHandler.sendMessage(
                             text = StatUtil.getStatReply(
                                 statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                 id = it.getArgument("stat_identifier", String::class.java),
@@ -204,7 +203,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                     .then(
                         argument<Int>("topN", IntegerArgumentType.integer(1))
                             .executes {
-                                DiscordHandler.sendCodeBlock(
+                                DiscordHandler.sendMessage(
                                     text = StatUtil.getStatReply(
                                         statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                         id = it.getArgument("stat_identifier", String::class.java),
@@ -218,7 +217,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                     )
                     .then(argument<String>("partOfPlayerName", StringArgumentType.word())
                         .executes {
-                            DiscordHandler.sendCodeBlock(
+                            DiscordHandler.sendMessage(
                                 text = StatUtil.getStatReply(
                                     statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                     id = it.getArgument("stat_identifier", String::class.java),
@@ -233,7 +232,7 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                         .then(
                             argument<Int>("topN", IntegerArgumentType.integer(1))
                                 .executes {
-                                    DiscordHandler.sendCodeBlock(
+                                    DiscordHandler.sendMessage(
                                         text = StatUtil.getStatReply(
                                             statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
                                             id = it.getArgument("stat_identifier", String::class.java),

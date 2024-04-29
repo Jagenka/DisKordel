@@ -51,13 +51,20 @@ object ListCommand : DiskordelTextCommand, DiskordelSlashCommand
     private fun getResponse(): String
     {
         val onlinePlayers = MinecraftHandler.getOnlinePlayers().map { it.name.string }
-        return "Currently online:\n" +
-                if (onlinePlayers.isEmpty()) "~nobody~"
-                else
-                {
-                    onlinePlayers.joinToString(separator = "\n") {
-                        "- $it"
-                    }
-                }
+        val count = onlinePlayers.size
+        val prefix =
+            if (count == 1) "There is currently $count player connected to the Minecraft Server:\n"
+            else "There are currently $count players connected to the Minecraft Server:\n"
+
+        return if (count == 0)
+        {
+            "No players are currently connected to the Minecraft server."
+        } else
+        {
+            onlinePlayers.joinToString("\n", prefix = prefix)
+            {
+                "- $it"
+            }
+        }
     }
 }

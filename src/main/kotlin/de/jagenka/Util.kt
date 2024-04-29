@@ -21,17 +21,23 @@ object Util
         return "%.${digits}f".format(Locale.US, this)
     }
 
+    fun Double.percent(maxDecimals: Int = 2): String
+    {
+        return (this * 100).trimDecimals(maxDecimals).trimEnd('0').trimEnd('.') + "%"
+    }
+
+    fun String.code(): String = "`$this`"
+
     fun <T> Optional<T>.unwrap(): T? = orElse(null)
 
     fun ticksToPrettyString(ticks: Int) = durationToPrettyString(ticks.ticks)
 
     fun durationToPrettyString(duration: Duration): String
     {
-        return duration.toComponents { days, hours, minutes, seconds, _ ->
+        return duration.toComponents { hours, minutes, seconds, _ ->
             var toReturn = ""
-            if (days > 0) toReturn += "${days}d"
-            if (days > 0 || hours > 0) toReturn += " ${hours}h"
-            if (days > 0 || hours > 0 || minutes > 0) toReturn += " ${minutes}min"
+            if (hours > 0) toReturn += " ${hours}h"
+            if (hours > 0 || minutes > 0) toReturn += " ${minutes}min"
             toReturn += " ${seconds}s"
             return@toComponents toReturn
         }.trim()
