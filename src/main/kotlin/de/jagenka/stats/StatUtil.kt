@@ -2,18 +2,12 @@
 
 package de.jagenka.stats
 
-import com.mojang.authlib.GameProfile
-import de.jagenka.DiscordHandler
-import de.jagenka.DiscordHandler.asCodeBlock
 import de.jagenka.StatDataException
 import de.jagenka.StatDataExceptionType.*
 import de.jagenka.UserRegistry
-import de.jagenka.Util.code
 import de.jagenka.Util.durationToPrettyString
-import de.jagenka.Util.subListUntilOrEnd
 import de.jagenka.Util.trimDecimals
 import de.jagenka.stats.StatQueryType.*
-import de.jagenka.stats.StatUtil.StatQueryType.*
 import net.minecraft.stat.StatFormatter
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
@@ -95,144 +89,7 @@ object StatUtil
             }
     }
 
-    /**
-     * @param nameFilter only display for those player names. don't filter if collection is empty
-     */
-    fun getStatReply(
-        statType: StatType<Any>,
-        id: String,
-        queryType: StatQueryType,
-        nameFilter: Collection<GameProfile> = emptyList(),
-        topN: Int?,
-        ascending: Boolean? = false,
-        invoker: GameProfile? = null,
-    ): String
-    {
-        try
-        {
-            val untrimmedList = getAllStatInfoSorted(
-                statType = statType,
-                id = id.lowercase(Locale.US),
-                excludeFilter = { stat, _ ->
-                    when (queryType)
-                    {
-                        TIME_PER_STAT -> stat.stat.formatter == StatFormatter.DISTANCE && stat.value == 0
-                        else -> false
-                    }
-                },
-                valuation = { stat, playtime ->
-                    (if (ascending == true) -1 else 1) *
-                            when (queryType)
-                            {
-                                DEFAULT, COMPARE -> stat.value
-                                STAT_PER_TIME -> getRelStat(stat.value, playtime.value)
-                                TIME_PER_STAT -> getInverseRelStat(stat.value, playtime.value)
-                            }.toDouble()
-                },
-                ascending = ascending,
-            )
-                .filter {
-                    nameFilter.isEmpty() || nameFilter.map { it.name.lowercase() }.contains(it.second.playerName.lowercase())
-                }
-
-            val indexOfInvoker = untrimmedList.indexOfFirst { it.second.playerName == invoker?.name }.takeIf { it != -1 }
-
-            val someStatData = untrimmedList.firstOrNull()?.second
-
-            val totalStat = untrimmedList.sumOf { it.second.value }
-            val totalPlaytime = untrimmedList.sumOf { it.third.value }
-
-            val totalString =
-                if (someStatData == null) null
-                else
-                {
-                    when (queryType)
-                    {
-                        DEFAULT, COMPARE ->
-                        {
-                            val formattedValue = someStatData.stat.format(totalStat)
-                            if (formattedValue != null) "server total: ${formattedValue.code()}" else null
-                        }
-
-                        STAT_PER_TIME ->
-                        {
-                            "server average: " + formatRelStat(someStatData, totalStat, totalPlaytime).code()
-                        }
-
-                        TIME_PER_STAT ->
-                        {
-                            "server average: " + formatInverseRelStat(someStatData, totalStat, totalPlaytime).code()
-                        }
-                    }
-                }
-
-            val allLines = untrimmedList.map { (rank, stat, playtime) ->
-
-            }
-
-            val resultList =
-                if (topN == null)
-                {
-                    if (indexOfInvoker != null && allLines.sumOf { it.length + 1 } > DiscordHandler.MESSAGE_LENGTH_LIMIT)
-                    {
-                        val trimmedLines = mutableListOf<String>()
-
-                        val topTrim = 3
-                        val middleTopTrim = indexOfInvoker - 1
-                        val middleBotTrim = indexOfInvoker + 2
-                        val botTrim = allLines.size - 3
-
-
-                        if (topTrim + 2 < middleTopTrim)
-                        {
-                            trimmedLines.addAll(allLines.subList(0, topTrim))
-                            trimmedLines.addAll(listOf("  .", "  ."))
-                            trimmedLines.addAll(allLines.subList(middleTopTrim, indexOfInvoker + 1))
-                        } else
-                        {
-                            trimmedLines.addAll(allLines.subList(0, indexOfInvoker + 1))
-                        }
-
-                        if (middleBotTrim + 2 < botTrim)
-                        {
-                            trimmedLines.addAll(allLines.subList(indexOfInvoker + 1, middleBotTrim))
-                            trimmedLines.addAll(listOf(".", "."))
-                            trimmedLines.addAll(allLines.subList(botTrim, allLines.size))
-                        } else
-                        {
-                            trimmedLines.addAll(allLines.subList(indexOfInvoker + 1, allLines.size))
-                        }
-
-                        trimmedLines
-                    } else allLines
-                } else
-                {
-                    allLines.subListUntilOrEnd(max(topN, 1))
-                }
-
-            val statTypeDisplayName = statType.displayName()
-
-            val statsString = resultList.joinToString(separator = System.lineSeparator())
-
-            var replyString = "# " + (statTypeDisplayName + (if (statTypeDisplayName.isNotEmpty()) ": " else "") +
-                    id.lowercase().code() +
-                    (if (totalString != null) ", $totalString" else "")).trimStart(',', ' ') +
-                    System.lineSeparator() +
-                    statsString.asCodeBlock()
-
-            if (untrimmedList.size > resultList.size)
-            {
-                replyString += "\n  and ${untrimmedList.size - resultList.size} more."
-            }
-
-            return replyString
-        } catch (e: StatDataException)
-        {
-            return e.type.response
-        }
-    }
-
-    private fun formatRelStat(someStatData: StatData, stat: Int, playtime: Int): String
+    fun formatRelStat(someStatData: StatData, stat: Int, playtime: Int): String
     {
         val relStat = getRelStat(stat, playtime)
         val result = when (someStatData.stat.formatter)
@@ -255,7 +112,7 @@ object StatUtil
         return result.trimEnd()
     }
 
-    private fun formatInverseRelStat(someStatData: StatData, stat: Int, playtime: Int): String
+    fun formatInverseRelStat(someStatData: StatData, stat: Int, playtime: Int): String
     {
         val inverseRelStat = getInverseRelStat(stat, playtime) // hours per stat
         val result = when (someStatData.stat.formatter)
