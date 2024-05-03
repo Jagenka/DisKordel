@@ -56,9 +56,6 @@ object Registry
         RegisterCommand,
         UnregisterCommand,
         StatsCommand,
-        RelativeStatsCommand,
-        PlaytimePerStatCommand,
-        CompareStatsCommand,
         HelpCommand,
         PingCommand,
 

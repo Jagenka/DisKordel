@@ -2,25 +2,19 @@
 
 package de.jagenka.commands.discord
 
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.arguments.IntegerArgumentType
-import com.mojang.brigadier.arguments.StringArgumentType
-import de.jagenka.DiscordHandler
+import de.jagenka.StatDataException
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiskordelSlashCommand
-import de.jagenka.commands.DiskordelTextCommand
-import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
-import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
-import de.jagenka.commands.discord.MessageCommandSource.Companion.redirect
+import de.jagenka.stats.StatQueryType
+import de.jagenka.stats.StatRequest
 import de.jagenka.stats.StatTypeArgument
-import de.jagenka.stats.StatUtil
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.*
 import net.minecraft.stat.StatType
 
-object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
+object StatsCommand : DiskordelSlashCommand
 {
     override val name: String
         get() = "stat"
@@ -115,29 +109,36 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                 "get" ->
                 {
                     val response = interaction.deferEphemeralResponse()
-                    val relation = StatUtil.StatQueryType.valueOf(interaction.command.strings["relation"]!!)
+                    val relation = StatQueryType.valueOf(interaction.command.strings["relation"]!!)
                     val statType = StatTypeArgument.parse(interaction.command.strings["category"]!!) as? StatType<Any> ?: return // should never happen
                     val stat = interaction.command.strings["stat"]!!
                     val topN = interaction.command.integers["top_n"]
                     val partOfName = interaction.command.strings["part_of_name"]
                     val ascending = interaction.command.booleans["ascending"]
-                    val nameFilter = if (partOfName != null) UserRegistry.findMinecraftProfiles(partOfName) else emptyList()
-                    val reply = StatUtil.getStatReply(
-                        statType = statType,
-                        id = stat,
-                        queryType = relation,
-                        nameFilter = nameFilter,
-                        topN = topN?.toInt(),
-                        ascending = ascending,
-                        invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
-                    )
-                    response.respond { content = reply }
+                    val profileFilter = if (partOfName != null) UserRegistry.findMinecraftProfiles(partOfName) else emptyList()
+
+                    try
+                    {
+                        val reply = StatRequest(
+                            statType = statType,
+                            id = stat,
+                            queryType = relation,
+                            ascending = ascending ?: false,
+                            profileFilter = profileFilter,
+                            topN = topN?.toInt(),
+                            invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
+                        ).getReplyString()
+                        response.respond { content = reply }
+                    } catch (exception: StatDataException)
+                    {
+                        response.respond { content = exception.type.response }
+                    }
                 }
 
                 "compare" ->
                 {
                     val response = interaction.deferEphemeralResponse()
-                    val relation = StatUtil.StatQueryType.valueOf(interaction.command.strings["relation"]!!)
+                    val relation = StatQueryType.valueOf(interaction.command.strings["relation"]!!)
                     val statType = StatTypeArgument.parse(interaction.command.strings["category"]!!) as? StatType<Any> ?: return // should never happen
                     val stat = interaction.command.strings["stat"]!!
                     val ascending = interaction.command.booleans["ascending"]
@@ -157,16 +158,23 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
                         response.respond { content = "no players found." }
                         return
                     }
-                    val reply = StatUtil.getStatReply(
-                        statType = statType,
-                        id = stat,
-                        queryType = relation,
-                        nameFilter = players,
-                        ascending = ascending,
-                        topN = 2,
-                        invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
-                    )
-                    response.respond { content = reply }
+
+                    try
+                    {
+                        val reply = StatRequest(
+                            statType = statType,
+                            id = stat,
+                            queryType = relation,
+                            ascending = ascending ?: false,
+                            profileFilter = players,
+                            topN = 2,
+                            invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
+                        ).getReplyString()
+                        response.respond { content = reply }
+                    } catch (exception: StatDataException)
+                    {
+                        response.respond { content = exception.type.response }
+                    }
                 }
 
                 else ->
@@ -176,83 +184,5 @@ object StatsCommand : DiskordelTextCommand, DiskordelSlashCommand
             }
             return
         }
-    }
-
-    override val shortHelpText: String
-        get() = "list players' stats"
-    override val longHelpText: String
-        get() = "query Minecraft stats of all or only some players. see https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md for help."
-
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
-    {
-        val commandNode = dispatcher.register(literal("stat")
-            .then(argument("statType", StatTypeArgument())
-                .then(argument<String>("stat_identifier", StringArgumentType.word())
-                    .executes {
-                        DiscordHandler.sendMessage(
-                            text = StatUtil.getStatReply(
-                                statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
-                                id = it.getArgument("stat_identifier", String::class.java),
-                                queryType = StatUtil.StatQueryType.DEFAULT,
-                                topN = null,
-                            ),
-                            silent = true
-                        )
-                        0
-                    }
-                    .then(
-                        argument<Int>("topN", IntegerArgumentType.integer(1))
-                            .executes {
-                                DiscordHandler.sendMessage(
-                                    text = StatUtil.getStatReply(
-                                        statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
-                                        id = it.getArgument("stat_identifier", String::class.java),
-                                        queryType = StatUtil.StatQueryType.DEFAULT,
-                                        topN = it.getArgument("topN", Int::class.java),
-                                    ),
-                                    silent = true
-                                )
-                                0
-                            }
-                    )
-                    .then(argument<String>("partOfPlayerName", StringArgumentType.word())
-                        .executes {
-                            DiscordHandler.sendMessage(
-                                text = StatUtil.getStatReply(
-                                    statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
-                                    id = it.getArgument("stat_identifier", String::class.java),
-                                    queryType = StatUtil.StatQueryType.DEFAULT,
-                                    nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)),
-                                    topN = null,
-                                ),
-                                silent = true
-                            )
-                            0
-                        }
-                        .then(
-                            argument<Int>("topN", IntegerArgumentType.integer(1))
-                                .executes {
-                                    DiscordHandler.sendMessage(
-                                        text = StatUtil.getStatReply(
-                                            statType = it.getArgument("statType", StatType::class.java) as StatType<Any>,
-                                            id = it.getArgument("stat_identifier", String::class.java),
-                                            queryType = StatUtil.StatQueryType.DEFAULT,
-                                            nameFilter = UserRegistry.findMinecraftProfiles(it.getArgument("partOfPlayerName", String::class.java)),
-                                            topN = it.getArgument("topN", Int::class.java)
-                                        ),
-                                        silent = true
-                                    )
-                                    0
-                                }
-                        )
-                    )
-                )
-            )
-        )
-
-        val alias = dispatcher.register(redirect("stats", commandNode))
-
-        Registry.registerShortHelpText(shortHelpText, commandNode, alias)
-        Registry.registerLongHelpText(longHelpText, commandNode, alias)
     }
 }

@@ -2,14 +2,12 @@ package de.jagenka.commands.universal
 
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
+import de.jagenka.StatDataException
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiskordelSlashCommand
-import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.MinecraftCommand
-import de.jagenka.commands.discord.MessageCommandSource
-import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
-import de.jagenka.commands.discord.Registry
-import de.jagenka.stats.StatUtil
+import de.jagenka.stats.StatQueryType
+import de.jagenka.stats.StatRequest
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.RootInputChatBuilder
@@ -21,46 +19,26 @@ import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.text.Text
 
-object DeathsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
+object DeathsCommand : MinecraftCommand, DiskordelSlashCommand
 {
     @Suppress("UNCHECKED_CAST")
     private fun process(input: String? = "", limit: Int? = 10): String
     {
-        return StatUtil.getStatReply(
-            statType = Stats.CUSTOM as StatType<Any>,
-            id = "deaths",
-            queryType = StatUtil.StatQueryType.DEFAULT,
-            nameFilter = if (!input.isNullOrBlank()) UserRegistry.findMinecraftProfiles(input) else emptyList(),
-            topN = limit,
-            ascending = true
-        )
-    }
-
-    override val shortHelpText: String
-        get() = "get death count for players"
-    override val longHelpText: String
-        get() = "list top 10 deaths, filtered if argument exists. use `!stat custom deaths` if you want to see more."
-
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
-    {
-        val commandNode = dispatcher.register(
-            MessageCommandSource.literal("deaths")
-                .executes {
-                    val output = process()
-                    it.source.sendCodeBlock(output)
-                    0
-                }
-                .then(
-                    argument<String>("partOfName", StringArgumentType.word())
-                    .executes {
-                        val output = process(StringArgumentType.getString(it, "partOfName"))
-                        it.source.sendCodeBlock(output)
-                        0
-                    })
-        )
-
-        Registry.registerShortHelpText(shortHelpText, commandNode)
-        Registry.registerLongHelpText(longHelpText, commandNode)
+        return try
+        {
+            StatRequest(
+                statType = Stats.CUSTOM as StatType<Any>,
+                id = "deaths",
+                queryType = StatQueryType.DEFAULT,
+                ascending = true,
+                profileFilter = if (!input.isNullOrBlank()) UserRegistry.findMinecraftProfiles(input) else emptyList(),
+                topN = limit,
+                invoker = null
+            ).getReplyString()
+        } catch (exception: StatDataException)
+        {
+            exception.type.response
+        }
     }
 
     override fun registerWithMinecraft(dispatcher: CommandDispatcher<ServerCommandSource>)
@@ -77,14 +55,14 @@ object DeathsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCom
                 }
                 .then(
                     CommandManager.argument("partOfName", StringArgumentType.word())
-                    .executes {
-                        val output = process(StringArgumentType.getString(it, "partOfName"))
-                        output.lines().forEach { line ->
-                            if (line.isBlank()) return@forEach
-                            it.source.sendFeedback({ Text.literal(line) }, false)
-                        }
-                        return@executes 0
-                    })
+                        .executes {
+                            val output = process(StringArgumentType.getString(it, "partOfName"))
+                            output.lines().forEach { line ->
+                                if (line.isBlank()) return@forEach
+                                it.source.sendFeedback({ Text.literal(line) }, false)
+                            }
+                            return@executes 0
+                        })
         )
     }
 
