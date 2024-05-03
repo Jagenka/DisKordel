@@ -21,7 +21,7 @@ import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.text.Text
 
-object DeathsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
+object DeathsCommand : MinecraftCommand, DiskordelSlashCommand
 {
     @Suppress("UNCHECKED_CAST")
     private fun process(input: String? = "", limit: Int? = 10): String
@@ -34,33 +34,6 @@ object DeathsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCom
             topN = limit,
             ascending = true
         )
-    }
-
-    override val shortHelpText: String
-        get() = "get death count for players"
-    override val longHelpText: String
-        get() = "list top 10 deaths, filtered if argument exists. use `!stat custom deaths` if you want to see more."
-
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
-    {
-        val commandNode = dispatcher.register(
-            MessageCommandSource.literal("deaths")
-                .executes {
-                    val output = process()
-                    it.source.sendCodeBlock(output)
-                    0
-                }
-                .then(
-                    argument<String>("partOfName", StringArgumentType.word())
-                    .executes {
-                        val output = process(StringArgumentType.getString(it, "partOfName"))
-                        it.source.sendCodeBlock(output)
-                        0
-                    })
-        )
-
-        Registry.registerShortHelpText(shortHelpText, commandNode)
-        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 
     override fun registerWithMinecraft(dispatcher: CommandDispatcher<ServerCommandSource>)

@@ -21,7 +21,7 @@ import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.text.Text
 
-object PlaytimeCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
+object PlaytimeCommand : MinecraftCommand, DiskordelSlashCommand
 {
     @Suppress("UNCHECKED_CAST")
     private fun process(input: String? = "", limit: Int? = 10): String
@@ -33,33 +33,6 @@ object PlaytimeCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashC
             nameFilter = if (!input.isNullOrBlank()) UserRegistry.findMinecraftProfiles(input) else emptyList(),
             topN = limit,
         )
-    }
-
-    override val shortHelpText: String
-        get() = "get playtime for players"
-    override val longHelpText: String
-        get() = "list top 10 time spent on this server, filtered if argument exists. use `!stat custom play_time` if you want to see more."
-
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
-    {
-        val commandNode = dispatcher.register(
-            MessageCommandSource.literal("playtime")
-                .executes {
-                    val output = process()
-                    it.source.sendCodeBlock(output)
-                    0
-                }
-                .then(
-                    argument<String>("partOfName", StringArgumentType.word())
-                    .executes {
-                        val output = process(StringArgumentType.getString(it, "partOfName"))
-                        it.source.sendCodeBlock(output)
-                        0
-                    })
-        )
-
-        Registry.registerShortHelpText(shortHelpText, commandNode)
-        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 
     override fun registerWithMinecraft(dispatcher: CommandDispatcher<ServerCommandSource>)
