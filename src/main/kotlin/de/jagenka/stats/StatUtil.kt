@@ -24,7 +24,7 @@ object StatUtil
     {
         try
         {
-            val identifier = Identifier(id)
+            val identifier = Identifier.of(id)
             val registry = statType.registry
             val key = registry.get(identifier) ?: throw StatDataException(INVALID_ID)
             if (registry.getId(key) != identifier) throw StatDataException(INVALID_ID)
