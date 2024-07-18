@@ -59,7 +59,7 @@ class StatRequest(
         if (statEntries.isEmpty()) throw StatDataException(EMPTY)
         if (playtimeEntries.isEmpty()) throw StatDataException(EMPTY)
 
-        requestResult = statEntries
+        val requestResultUnfinished = statEntries
             // group
             .mapNotNull { statData ->
                 val playerName = statData.playerName
@@ -74,15 +74,12 @@ class StatRequest(
             .filterNot {
                 queryType == TIME_PER_STAT && it.stat.stat.formatter == StatFormatter.DISTANCE && it.stat.value == 0
             }
-            // filter according to partOfName given
-            .filter {
-                nameFilter.isEmpty() || nameFilter.map { it.name.lowercase() }.contains(it.playerName.lowercase())
-            }
+
 
         // enumerate
         var currentRank = 1
         var currentValue: Double? = null
-        requestResult.forEachIndexed { index, row ->
+        requestResultUnfinished.forEachIndexed { index, row ->
             val value = valuation(row.stat, row.playtime)
             if (value != currentValue)
             {
@@ -91,6 +88,11 @@ class StatRequest(
             }
             row.setRank(currentRank)
         }
+
+        // filter according to partOfName given
+        requestResult = requestResultUnfinished.filter {
+            nameFilter.isEmpty() || nameFilter.map { it.name.lowercase() }.contains(it.playerName.lowercase())
+        }.toList()
     }
 
     fun getTrimmedStringsList(): List<String>
