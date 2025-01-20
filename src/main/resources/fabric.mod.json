@@ -28,10 +28,10 @@
   ],
   "accessWidener": "diskordel.accesswidener",
   "depends": {
-    "fabricloader": ">=0.16.7",
-    "fabric": ">=0.106.1+1.21.3",
-    "fabric-language-kotlin": ">=1.12.3+kotlin.2.0.21",
-    "minecraft": "~1.21.3",
+    "fabricloader": ">=0.16.10",
+    "fabric": ">=0.114.3+1.21.4",
+    "fabric-language-kotlin": ">=1.13.0+kotlin.2.1.0",
+    "minecraft": "~1.21.4",
     "java": ">=21"
   }
 }
