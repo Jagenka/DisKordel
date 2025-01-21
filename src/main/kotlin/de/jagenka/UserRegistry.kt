@@ -46,6 +46,7 @@ object UserRegistry
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             Main.scope.launch {
                 saveToCache(handler.player.gameProfile)
+                minecraftProfiles.add(handler.player.gameProfile)
             }
         }
     }
@@ -166,7 +167,7 @@ object UserRegistry
         findDiscordMember(snowflake = snowflake, failureCallback = { callback.invoke(false) }) { member ->
             val gameProfile =
                 getGameProfile(minecraftName)
-                    ?: minecraftServer?.playerManager?.whitelist?.values()?.map { it.key }?.find { it?.name?.equals(minecraftName, ignoreCase = true) == true }
+                    ?: minecraftServer?.playerManager?.whitelist?.values()?.map { it.key }?.find { it?.name?.equals(minecraftName, ignoreCase = true) == true } // may do nothing
                     ?: findMinecraftProfileOrError(minecraftName)
                     ?: GameProfile(
                         diskordelUserCache.find { it.name.equals(minecraftName, ignoreCase = true) }?.uuid ?: Uuids.getOfflinePlayerUuid(minecraftName),
@@ -239,12 +240,6 @@ object UserRegistry
     fun clearRegistered()
     {
         registeredUsers.clear()
-    }
-
-    fun register(userEntry: UserEntry)
-    {
-        val (snowflake, minecraftName) = userEntry
-        register(Snowflake(snowflake), minecraftName)
     }
 
     fun getRegisteredUsersForConfig(): List<UserEntry>
@@ -376,6 +371,7 @@ object UserRegistry
     fun loadUserCache()
     {
         Config.configEntry.userCache.toMutableSet().forEach { userFromConfig ->
+            minecraftProfiles.add(GameProfile(userFromConfig.uuid, userFromConfig.name))
             diskordelUserCache.put(MinecraftUser(userFromConfig.name, userFromConfig.uuid, userFromConfig.skinURL, userFromConfig.lastURLUpdate))
             val name = userFromConfig.name.lowercase()
             precomputeName(name, name)
