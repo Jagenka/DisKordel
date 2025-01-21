@@ -13,6 +13,7 @@ import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
 import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.entity.interaction.ChatInputCommandInteraction
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.RootInputChatBuilder
 import dev.kord.rest.builder.interaction.string
@@ -41,25 +42,23 @@ object RegisterCommand : DiskordelTextCommand, DiskordelSlashCommand
         {
             val minecraftName = interaction.command.strings["minecraft_name"]!!
             val discordId = interaction.user.id
-            val response = registerUser(discordId, minecraftName)
-            interaction.respondEphemeral {
-                content = response
-            }
+            registerUser(discordId, minecraftName, interaction)
+            // response should be handled by registerUser
         }
     }
 
     /**
-     * @return response string
+     *
      */
-    private suspend fun registerUser(userId: Snowflake, minecraftName: String): String
+    private suspend fun registerUser(userId: Snowflake, minecraftName: String, interaction: ChatInputCommandInteraction? = null)
     {
-        val member = DiscordHandler.getMemberOrSendError(userId) ?: return ""
-
-        var response = ""
+        val member = DiscordHandler.getMemberOrSendError(userId) ?: return
 
         val oldUser = UserRegistry.findUser(userId)
 
         UserRegistry.register(userId, minecraftName) { success ->
+            var response = ""
+
             if (success)
             {
                 oldUser?.let {
@@ -77,11 +76,15 @@ object RegisterCommand : DiskordelTextCommand, DiskordelSlashCommand
             {
                 response += "Error registering."
             }
+
+            Main.scope.launch {
+                interaction?.respondEphemeral {
+                    content = response
+                }
+            }
+
+            UserRegistry.saveToFile()
         }
-
-        UserRegistry.saveToFile()
-
-        return response
     }
 
     override val shortHelpText: String
@@ -97,10 +100,7 @@ object RegisterCommand : DiskordelTextCommand, DiskordelSlashCommand
                     argument<String>("minecraftName", StringArgumentType.word())
                         .executes {
                             Main.scope.launch {
-                                it.source.author?.let { author ->
-                                    val response = registerUser(author.id, it.getArgument("minecraftName", String::class.java))
-                                    DiscordHandler.sendMessage(response, silent = true)
-                                } ?: MinecraftHandler.logger.error("non-existent author tried to register")
+                                DiscordHandler.sendMessage("use slash command!", silent = true)
                             }
                             0
                         }
