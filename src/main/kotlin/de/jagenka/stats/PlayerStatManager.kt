@@ -6,8 +6,8 @@ import de.jagenka.UserRegistry
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.server.PlayerManager
 import net.minecraft.stat.ServerStatHandler
-import net.minecraft.util.PathUtil
 import net.minecraft.util.WorldSavePath
+import net.minecraft.util.path.PathUtil
 import java.io.File
 import java.nio.file.Path
 import java.util.*

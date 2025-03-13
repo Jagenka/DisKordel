@@ -8,7 +8,6 @@ import kotlinx.serialization.Serializable
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.net.URI
-import java.net.URL
 import java.util.*
 import javax.imageio.ImageIO
 import kotlin.time.Duration.Companion.hours
@@ -73,7 +72,7 @@ data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String =
                 val profile = sessionService.fetchProfile(uuid, false)?.profile ?: MinecraftHandler.logger.error("no profile found for UUID $uuid").run { return }
                 val texture = sessionService.getTextures(profile).skin ?: return
 
-                val skin = ImageIO.read(URL(texture.url))
+                val skin = ImageIO.read(URI(texture.url).toURL())
                 val layer1 = skin.getSubimage(8, 8, 8, 8)
                 val layer2 = skin.getSubimage(40, 8, 8, 8)
                 val head = BufferedImage(48, 48, BufferedImage.TYPE_INT_ARGB)
