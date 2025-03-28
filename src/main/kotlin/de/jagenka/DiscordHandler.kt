@@ -29,6 +29,7 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.net.URI
 import java.nio.file.Path
 import javax.imageio.ImageIO
 
@@ -222,7 +223,7 @@ object DiscordHandler
         ).getWithStyle(
             Style.EMPTY
                 .withFormatting(Formatting.BLUE)
-                .withHoverEvent(associatedUser?.minecraft?.name?.let { HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of(it)) })
+                .withHoverEvent(associatedUser?.minecraft?.name?.let { HoverEvent.ShowText(Text.of(it)) })
         ).firstOrNull()
 
         val referencedAuthorText = Text.of(
@@ -235,12 +236,11 @@ object DiscordHandler
             Style.EMPTY
                 .withFormatting(Formatting.BLUE)
                 .withHoverEvent(
-                    HoverEvent(
-                        HoverEvent.Action.SHOW_TEXT,
+                    HoverEvent.ShowText(
                         Text.of(referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.name })
                     )
                 )
-                .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, Util.getMessageURL(referencedMessage)))
+                .withClickEvent(ClickEvent.OpenUrl(URI(Util.getMessageURL(referencedMessage))))
         ).firstOrNull()
 
         val messageContent =
@@ -258,7 +258,7 @@ object DiscordHandler
         val messageText = Text.of(messageContent)
             .getWithStyle(
                 Style.EMPTY
-                    .withClickEvent(ClickEvent(ClickEvent.Action.OPEN_URL, linkToMessage))
+                    .withClickEvent(ClickEvent.OpenUrl(URI(linkToMessage)))
             )
             .firstOrNull()
 

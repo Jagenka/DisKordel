@@ -34,3 +34,6 @@ run/
 
 tmp/**
 /logs/latest.log
+
+# custom excludes
+/src/main/java/de/jagenka/mixin/DebugMixin.java

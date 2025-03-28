@@ -27,11 +27,12 @@ object MinecraftHandler
         minecraftServer.playerManager.isWhitelistEnabled = true
 
         Main.scope.launch {
+            // make sure local user cache is filled with available data as much as possible
             UserRegistry.loadUserCache()
-            UserRegistry.loadRegisteredUsersFromFile()
             UserRegistry.loadGameProfilesFromPlayerData()
-            UserRegistry.saveCacheToFile()
-            UserRegistry.prepareNamesForComparison()
+
+            // load registered users with available cache data
+            UserRegistry.loadRegisteredUsersFromFile()
         }
     }
 
