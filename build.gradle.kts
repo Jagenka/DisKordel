@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("fabric-loom")
     val kotlinVersion: String by System.getProperties()
@@ -32,8 +34,8 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
 
     //kord
-    implementation("dev.kord:kord-core:0.13.1")
-    shadow("dev.kord:kord-core:0.13.1")
+    implementation("dev.kord:kord-core:0.15.0")
+    shadow("dev.kord:kord-core:0.15.0")
     implementation("dev.kord.x:emoji:0.5.0")
     shadow("dev.kord.x:emoji:0.5.0")
 
@@ -44,12 +46,6 @@ dependencies {
     //eval command
     implementation("com.github.Redempt:Crunch:2.0.3")
     shadow("com.github.Redempt:Crunch:2.0.3")
-
-    //brigardier
-    //implementation("com.mojang:brigadier:1.0.18")
-    //shadow("com.mojang:brigadier:1.0.18")
-
-    implementation("io.netty:netty-all:4.1.79.Final")
 }
 
 loom {
@@ -70,8 +66,8 @@ tasks {
         options.release.set(21)
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = "21"
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_21)
         }
     }
     jar { from("LICENSE") { rename { "${it}_${base.archivesName}" } } }
