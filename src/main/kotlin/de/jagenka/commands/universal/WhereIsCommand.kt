@@ -57,7 +57,7 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
                 val player = server.playerManager.getPlayer(user.minecraft.uuid)
                     ?: return@let null
 
-                val dimensionName = when (player.serverWorld.registryKey)
+                val dimensionName = when (player.world.registryKey)
                 {
                     World.OVERWORLD -> "Overworld"
                     World.NETHER -> "Nether"
@@ -79,12 +79,13 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
     {
         val commandNode = dispatcher.register(
             MessageCommandSource.literal("whereis")
-                .then(argument<String>("partOfName", StringArgumentType.greedyString())
-                    .executes {
-                        val output = process(StringArgumentType.getString(it, "partOfName"))
-                        it.source.respond(output)
-                        return@executes 0
-                    })
+                .then(
+                    argument<String>("partOfName", StringArgumentType.greedyString())
+                        .executes {
+                            val output = process(StringArgumentType.getString(it, "partOfName"))
+                            it.source.respond(output)
+                            return@executes 0
+                        })
         )
 
         Registry.registerShortHelpText(shortHelpText, commandNode)
@@ -95,15 +96,16 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
     {
         dispatcher.register(
             CommandManager.literal("whereis")
-                .then(CommandManager.argument("partOfName", StringArgumentType.greedyString())
-                    .executes {
-                        val output = process(StringArgumentType.getString(it, "partOfName"))
-                        output.lines().forEach { line ->
-                            if (line.isBlank()) return@forEach
-                            it.source.sendFeedback({ Text.literal(line) }, false)
-                        }
-                        return@executes 0
-                    })
+                .then(
+                    CommandManager.argument("partOfName", StringArgumentType.greedyString())
+                        .executes {
+                            val output = process(StringArgumentType.getString(it, "partOfName"))
+                            output.lines().forEach { line ->
+                                if (line.isBlank()) return@forEach
+                                it.source.sendFeedback({ Text.literal(line) }, false)
+                            }
+                            return@executes 0
+                        })
         )
     }
 }
