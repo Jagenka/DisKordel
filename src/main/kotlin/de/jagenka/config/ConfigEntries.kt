@@ -33,7 +33,7 @@ object MinecraftUserSerializer : KSerializer<MinecraftUser>
 
     override fun serialize(encoder: Encoder, value: MinecraftUser)
     {
-        encoder.encodeString("${value.name} ${value.uuid} ${value.skinURL} ${value.lastURLUpdate}")
+        encoder.encodeString("${value.username} ${value.uuid} ${value.skinURL} ${value.lastURLUpdate}")
     }
 
     override fun deserialize(decoder: Decoder): MinecraftUser

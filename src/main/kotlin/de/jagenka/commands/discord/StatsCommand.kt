@@ -126,7 +126,7 @@ object StatsCommand : DiskordelSlashCommand
                             ascending = ascending ?: false,
                             profileFilter = profileFilter,
                             topN = topN?.toInt(),
-                            invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
+                            invoker = UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid?.let { UserRegistry.getGameProfile(it, true) },
                         ).getReplyString()
                         response.respond { content = reply }
                     } catch (exception: StatDataException)
@@ -146,7 +146,7 @@ object StatsCommand : DiskordelSlashCommand
                     val player2Input = interaction.command.strings["player2"]
                     val player2 =
                         if (player2Input != null) UserRegistry.findMostLikelyMinecraftName(player2Input)
-                        else UserRegistry.findUser(interaction.user.id)?.minecraft?.name
+                        else UserRegistry.findUser(interaction.user.id)?.minecraft?.username
                     if (player2 == null)
                     {
                         response.respond { content = "error finding player2" }
@@ -168,7 +168,7 @@ object StatsCommand : DiskordelSlashCommand
                             ascending = ascending ?: false,
                             profileFilter = players,
                             topN = 2,
-                            invoker = UserRegistry.getGameProfile(UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid),
+                            invoker = UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid?.let { UserRegistry.getGameProfile(it, true) },
                         ).getReplyString()
                         response.respond { content = reply }
                     } catch (exception: StatDataException)

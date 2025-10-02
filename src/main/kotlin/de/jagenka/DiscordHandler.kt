@@ -223,7 +223,7 @@ object DiscordHandler
         ).getWithStyle(
             Style.EMPTY
                 .withFormatting(Formatting.BLUE)
-                .withHoverEvent(associatedUser?.minecraft?.name?.let { HoverEvent.ShowText(Text.of(it)) })
+                .withHoverEvent(associatedUser?.minecraft?.username?.let { HoverEvent.ShowText(Text.of(it)) })
         ).firstOrNull()
 
         val referencedAuthorText = Text.of(
@@ -237,7 +237,7 @@ object DiscordHandler
                 .withFormatting(Formatting.BLUE)
                 .withHoverEvent(
                     HoverEvent.ShowText(
-                        Text.of(referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.name })
+                        Text.of(referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.username })
                     )
                 )
                 .withClickEvent(ClickEvent.OpenUrl(URI(Util.getMessageURL(referencedMessage))))

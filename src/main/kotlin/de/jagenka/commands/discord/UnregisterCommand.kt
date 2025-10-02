@@ -46,8 +46,8 @@ object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
         var response = ""
 
         UserRegistry.findUser(userId)?.let { oldUser ->
-            MinecraftHandler.runWhitelistRemove(oldUser.minecraft.name)
-            response += "`${oldUser.minecraft.name}` is no longer whitelisted.\n"
+            MinecraftHandler.runWhitelistRemove(oldUser.minecraft.username)
+            response += "`${oldUser.minecraft.username}` is no longer whitelisted.\n"
         }
 
         response +=
@@ -67,7 +67,7 @@ object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
     fun unregisterUser(userId: Snowflake)
     {
         UserRegistry.findUser(userId)?.let { oldUser ->
-            MinecraftHandler.runWhitelistRemove(oldUser.minecraft.name)
+            MinecraftHandler.runWhitelistRemove(oldUser.minecraft.username)
         }
         UserRegistry.unregister(userId)
         UserRegistry.saveToFile()

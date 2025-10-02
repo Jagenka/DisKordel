@@ -7,10 +7,12 @@ import dev.kord.core.cache.data.*
 import dev.kord.core.entity.Embed
 import dev.kord.rest.builder.message.EmbedBuilder
 import java.nio.file.Path
+import kotlin.time.ExperimentalTime
 
 /**
  * Complete class for paginated Embeds.
  */
+@OptIn(ExperimentalTime::class)
 class EmbedCatalogue
 {
     val catalogue: Catalogue = Catalogue()

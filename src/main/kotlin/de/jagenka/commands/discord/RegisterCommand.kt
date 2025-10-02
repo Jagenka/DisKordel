@@ -62,11 +62,11 @@ object RegisterCommand : DiskordelTextCommand, DiskordelSlashCommand
             if (success)
             {
                 oldUser?.let {
-                    MinecraftHandler.runWhitelistRemove(oldUser.minecraft.name)
-                    response += "- `${oldUser.minecraft.name}` is no longer whitelisted.\n"
+                    MinecraftHandler.runWhitelistRemove(oldUser.minecraft.username)
+                    response += "- `${oldUser.minecraft.username}` is no longer whitelisted.\n"
                 }
 
-                val realName = UserRegistry.findUser(userId)?.minecraft?.name ?: minecraftName
+                val realName = UserRegistry.findUser(userId)?.minecraft?.username ?: minecraftName
 
                 MinecraftHandler.runWhitelistAdd(realName)
 
