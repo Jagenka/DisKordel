@@ -31,7 +31,7 @@ object UserRegistry
 
     private val discordMembers = mutableMapOf<DiscordUser, Member>()
     private var diskordelUserCache = mutableSetOf<MinecraftUser>()
-    private val minecraftProfiles = mutableSetOf<GameProfile>()
+    private val minecraftProfiles = GameProfileSet()
 
     private val discordUserCache = mutableSetOf<dev.kord.core.entity.User>()
 
