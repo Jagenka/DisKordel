@@ -1,5 +1,6 @@
 package de.jagenka
 
+import de.jagenka.Util.unwrap
 import de.jagenka.config.Config
 import de.jagenka.config.MinecraftUserSerializer
 import dev.kord.common.entity.Snowflake
@@ -17,7 +18,7 @@ data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
     fun isLikely(name: String): Boolean
     {
         val discordMembers = UserRegistry.getDiscordMembers()
-        return this.minecraft.name.contains(name, ignoreCase = true)
+        return this.minecraft.username.contains(name, ignoreCase = true)
                 || discordMembers[this.discord]?.username?.contains(name, ignoreCase = true) ?: false
                 || discordMembers[this.discord]?.effectiveName?.contains(name, ignoreCase = true) ?: false
     }
@@ -39,7 +40,7 @@ data class User(val discord: DiscordUser, val minecraft: MinecraftUser)
 }
 
 @Serializable(with = MinecraftUserSerializer::class)
-data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String = "", var lastURLUpdate: Long = 0)
+data class MinecraftUser(var username: String, var uuid: UUID, var skinURL: String = "", var lastURLUpdate: Long = 0)
 {
     suspend fun getSkinURL(): String
     {
@@ -69,8 +70,9 @@ data class MinecraftUser(var name: String, var uuid: UUID, var skinURL: String =
         if (skinURL.isBlank() || System.currentTimeMillis() > lastURLUpdate + 4.hours.inWholeMilliseconds)
         {
             MinecraftHandler.minecraftServer?.apply {
-                val profile = sessionService.fetchProfile(uuid, false)?.profile ?: MinecraftHandler.logger.error("no profile found for UUID $uuid").run { return }
-                val texture = sessionService.getTextures(profile).skin ?: return
+
+                val profile = apiServices.profileResolver.getProfileById(uuid)?.unwrap() ?: MinecraftHandler.logger.error("no profile found for UUID $uuid").run { return }
+                val texture = apiServices.sessionService.getTextures(profile).skin ?: return
 
                 val skin = ImageIO.read(URI(texture.url).toURL())
                 val layer1 = skin.getSubimage(8, 8, 8, 8)

@@ -57,7 +57,7 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
                 val player = server.playerManager.getPlayer(user.minecraft.uuid)
                     ?: return@let null
 
-                val dimensionName = when (player.world.registryKey)
+                val dimensionName = when (player.entityWorld.registryKey)
                 {
                     World.OVERWORLD -> "Overworld"
                     World.NETHER -> "Nether"
@@ -65,8 +65,8 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
                     else -> return@let null
                 }
 
-                "- ${user.minecraft.name} is at (${player.x.toInt()}, ${player.y.toInt()}, ${player.z.toInt()}) in the $dimensionName."
-            } ?: "- ${user.minecraft.name} is not online."
+                "- ${user.minecraft.username} is at (${player.x.toInt()}, ${player.y.toInt()}, ${player.z.toInt()}) in the $dimensionName."
+            } ?: "- ${user.minecraft.username} is not online."
         }
     }
 

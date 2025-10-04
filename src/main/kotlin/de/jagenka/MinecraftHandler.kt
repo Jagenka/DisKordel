@@ -24,15 +24,15 @@ object MinecraftHandler
     {
         this.minecraftServer = minecraftServer
 
-        minecraftServer.playerManager.isWhitelistEnabled = true
+        minecraftServer.useAllowlist = true
 
         Main.scope.launch {
-            // make sure local user cache is filled with available data as much as possible
-            UserRegistry.loadUserCache()
-            UserRegistry.loadGameProfilesFromPlayerData()
+            // make sure Diskordel user cache is filled with available data as much as possible
+            UserRegistry.loadDiskordelUserCache()
+            // UserRegistry.loadGameProfilesToCacheFromMinecraftServicesWithAvailableFiles() gone, as it may be unnecessary
 
             // load registered users with available cache data
-            UserRegistry.loadRegisteredUsersFromFile()
+            UserRegistry.loadRegisteredUsersFromDiskordelConfig()
         }
     }
 
@@ -97,7 +97,7 @@ object MinecraftHandler
     private suspend fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity)
     {
         val user = UserRegistry.getMinecraftUser(sender.uuid) ?: return
-        DiscordHandler.sendWebhookMessage(username = user.name, avatarURL = user.getSkinURL(), text = message.string)
+        DiscordHandler.sendWebhookMessage(username = user.username, avatarURL = user.getSkinURL(), text = message.string)
     }
 
     private fun handleSayCommand(message: SignedMessage, params: MessageType.Parameters)
@@ -108,7 +108,7 @@ object MinecraftHandler
 
             DiscordHandler.sendWebhookMessage(
                 username = Config.configEntry.discordSettings.serverName,
-                text = if (user != null) "[${user.name}] ${text.string}" else text.string,
+                text = if (user != null) "[${user.username}] ${text.string}" else text.string,
                 escapeMarkdown = false
             )
         }
@@ -124,7 +124,7 @@ object MinecraftHandler
         val user = playerName?.let { UserRegistry.getMinecraftUser(it) }
 
         DiscordHandler.sendWebhookMessage(
-            username = user?.name ?: Config.configEntry.discordSettings.serverName,
+            username = user?.username ?: Config.configEntry.discordSettings.serverName,
             avatarURL = user?.getSkinURL() ?: "",
             text = "> *${
                 if (playerName != null && content.startsWith(playerName, ignoreCase = true)) content.replaceFirst(playerName, "", ignoreCase = true).trim() else content

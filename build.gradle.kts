@@ -34,8 +34,8 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
 
     //kord
-    implementation("dev.kord:kord-core:0.15.0")
-    shadow("dev.kord:kord-core:0.15.0")
+    implementation("dev.kord:kord-core:0.17.0")
+    shadow("dev.kord:kord-core:0.17.0")
     implementation("dev.kord.x:emoji:0.5.0")
     shadow("dev.kord.x:emoji:0.5.0")
 
