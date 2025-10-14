@@ -2,12 +2,9 @@ package de.jagenka.commands.discord
 
 import de.jagenka.StatDataException
 import de.jagenka.UserRegistry
-import de.jagenka.Util.trimDecimals
 import de.jagenka.commands.DiskordelSlashCommand
 import de.jagenka.stats.StatQueryType
 import de.jagenka.stats.StatRequest
-import de.jagenka.stats.StatUtil
-import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.*
@@ -24,24 +21,6 @@ object SpeedCommand : DiskordelSlashCommand
         get() = "speed"
     override val description: String
         get() = "Displays all player's average speed, adding up all _one_cm stats, divided by playtime."
-
-    val distanceStatIds = listOf(
-        "climb_one_cm",
-        "crouch_one_cm",
-        "fall_one_cm",
-        "fly_one_cm",
-        "sprint_one_cm",
-        "swim_one_cm",
-        "walk_one_cm",
-        "walk_on_water_one_cm",
-        "walk_under_water_one_cm",
-        "boat_one_cm",
-        "aviate_one_cm",
-        "horse_one_cm",
-        "minecart_one_cm",
-        "pig_one_cm",
-        "strider_one_cm"
-    )
 
     override suspend fun build(builder: RootInputChatBuilder)
     {
@@ -83,8 +62,45 @@ object SpeedCommand : DiskordelSlashCommand
             {
                 "compare" ->
                 {
-                    interaction.respondEphemeral {
-                        content = "Not yet implemented."
+                    val response = interaction.deferEphemeralResponse()
+
+                    val ascending = interaction.command.booleans["ascending"]
+                    val player1 = UserRegistry.findMostLikelyMinecraftName(interaction.command.strings["player"]!!)
+                    val player2Input = interaction.command.strings["player2"]
+                    val player2 =
+                        if (player2Input != null) UserRegistry.findMostLikelyMinecraftName(player2Input)
+                        else UserRegistry.findUser(interaction.user.id)?.minecraft?.username
+                    if (player2 == null)
+                    {
+                        response.respond { content = "error finding player2" }
+                        return
+                    }
+                    val profileFilter = UserRegistry.findMinecraftProfiles(player1).union(UserRegistry.findMinecraftProfiles(player2))
+                    if (profileFilter.isEmpty())
+                    {
+                        response.respond { content = "no players found." }
+                        return
+                    }
+
+                    try
+                    {
+                        val statRequestResponse = StatRequest(
+                            statType = Stats.CUSTOM as StatType<Any>,
+                            id = "speed",
+                            queryType = StatQueryType.STAT_PER_TIME,
+                            ascending = ascending ?: false,
+                            profileFilter = profileFilter,
+                            topN = 2,
+                            invoker = UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid?.let { UserRegistry.getGameProfile(it, true) },
+                        )
+
+                        response.respond {
+                            content = statRequestResponse.getReplyString()
+                        }
+
+                    } catch (exception: StatDataException)
+                    {
+                        response.respond { content = exception.type.response }
                     }
                 }
 
@@ -101,32 +117,18 @@ object SpeedCommand : DiskordelSlashCommand
 
                     try
                     {
-                        /**
-                         * contains (playerName: String, sumInCm: Int, playtime: Int) entries of all queried players
-                         */
-                        val statEntriesSummed = distanceStatIds.map { statId ->
-                            StatRequest(
-                                statType = Stats.CUSTOM as StatType<Any>,
-                                id = statId,
-                                queryType = StatQueryType.DEFAULT,
-                                ascending = ascending ?: false,
-                                profileFilter = profileFilter,
-                                topN = topN?.toInt(),
-                                invoker = UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid?.let { UserRegistry.getGameProfile(it, true) },
-                            ).requestResult
-                        }
-                            .flatten()
-                            .groupBy { it.playerName }
-                            .map { (playerName, statEntries) ->
-                                val sumInCm = statEntries.sumOf { it.stat.value }
-                                return@map Triple(playerName, sumInCm, statEntries.first().playtime.value)
-                            }
+                        val statRequestResponse = StatRequest(
+                            statType = Stats.CUSTOM as StatType<Any>,
+                            id = "speed",
+                            queryType = StatQueryType.STAT_PER_TIME,
+                            ascending = ascending ?: false,
+                            profileFilter = profileFilter,
+                            topN = topN?.toInt(),
+                            invoker = UserRegistry.findUser(interaction.user.id)?.minecraft?.uuid?.let { UserRegistry.getGameProfile(it, true) },
+                        )
 
-                        response.respond { // TODO: make pretty output
-                            content = statEntriesSummed.joinToString(separator = System.lineSeparator()) { (name, distance, playtime) ->
-                                val relStat = StatUtil.getRelStat(distance, playtime)
-                                "${name}: $relStat cm/h = ${(relStat / 100_000.0).trimDecimals(3)} km/h" // converts cm stats to km (value/(100*1000))
-                            }
+                        response.respond {
+                            content = statRequestResponse.getReplyString()
                         }
 
                     } catch (exception: StatDataException)
