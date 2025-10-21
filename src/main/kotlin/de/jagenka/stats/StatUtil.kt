@@ -3,38 +3,98 @@
 package de.jagenka.stats
 
 import de.jagenka.StatDataException
-import de.jagenka.StatDataExceptionType.*
+import de.jagenka.StatDataExceptionType.EMPTY
+import de.jagenka.StatDataExceptionType.INVALID_ID
 import de.jagenka.UserRegistry
 import de.jagenka.Util.durationToPrettyString
+import de.jagenka.Util.ticksToPrettyString
 import de.jagenka.Util.trimDecimals
-import de.jagenka.stats.StatQueryType.*
-import net.minecraft.stat.StatFormatter
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import net.minecraft.stat.Stats.*
 import net.minecraft.util.Identifier
-import java.util.*
 import kotlin.math.max
 import kotlin.time.Duration.Companion.hours
 
 object StatUtil
 {
+    val distanceStatIds = listOf(
+        "climb_one_cm",
+        "crouch_one_cm",
+        "fall_one_cm",
+        "fly_one_cm",
+        "sprint_one_cm",
+        "swim_one_cm",
+        "walk_one_cm",
+        "walk_on_water_one_cm",
+        "walk_under_water_one_cm",
+        "boat_one_cm",
+        "aviate_one_cm",
+        "horse_one_cm",
+        "minecart_one_cm",
+        "pig_one_cm",
+        "strider_one_cm"
+    )
+
     @Throws(StatDataException::class)
     fun getStatDataList(statType: StatType<Any>, id: String): List<StatData>
     {
-        try
+        if (id == "speed")
         {
-            val identifier = Identifier.of(id)
-            val registry = statType.registry
-            val key = registry.get(identifier) ?: throw StatDataException(INVALID_ID)
-            if (registry.getId(key) != identifier) throw StatDataException(INVALID_ID)
-            val stat = statType.getOrCreateStat(key)
+            return distanceStatIds.map { statId ->
+                try
+                {
+                    val identifier = Identifier.of(statId)
+                    val registry = statType.registry
+                    val key = registry.get(identifier) ?: throw StatDataException(INVALID_ID)
+                    if (registry.getId(key) != identifier) throw StatDataException(INVALID_ID)
+                    val stat = statType.getOrCreateStat(key)
 
-            return UserRegistry.getMinecraftProfiles()
-                .mapNotNull { StatData(identifier, stat, it.name, (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null)) }
-        } catch (_: Exception)
+                    return@map UserRegistry
+                        .getMinecraftProfiles()
+                        .mapNotNull {
+                            StatData(
+                                statId,
+                                it.name,
+                                (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null),
+                                StatDataType.fromFormatter(stat.formatter)
+                            )
+                        }
+                } catch (_: Exception)
+                {
+                    throw StatDataException(EMPTY)
+                }
+            }
+                .flatten()
+                .groupBy { it.playerName }
+                .map { (playerName, statDataList) ->
+                    val newValue = statDataList.sumOf { it.value }
+                    return@map StatData("speed", playerName, newValue, StatDataType.DISTANCE)
+                }
+        } else
         {
-            throw StatDataException(EMPTY)
+            try
+            {
+                val identifier = Identifier.of(id)
+                val registry = statType.registry
+                val key = registry.get(identifier) ?: throw StatDataException(INVALID_ID)
+                if (registry.getId(key) != identifier) throw StatDataException(INVALID_ID)
+                val stat = statType.getOrCreateStat(key)
+
+                return UserRegistry.getMinecraftProfiles()
+                    .mapNotNull {
+                        StatData(
+                            id,
+                            it.name,
+                            (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null),
+                            StatDataType.fromFormatter(stat.formatter),
+                            formatter = stat.formatter
+                        )
+                    }
+            } catch (_: Exception)
+            {
+                throw StatDataException(EMPTY)
+            }
         }
     }
 
@@ -89,17 +149,44 @@ object StatUtil
             }
     }
 
+    fun formatStat(statData: StatData, value: Int = statData.value): String
+    {
+        return when (statData.type)
+        {
+            StatDataType.TIME ->
+            {
+                ticksToPrettyString(value)
+            }
+
+            StatDataType.DISTANCE ->
+            {
+                "${(value.toDouble() / 100_000.0).trimDecimals(3)} km" // converts cm stats to km (value/(100*1000))
+            }
+
+            else ->
+            {
+                if (statData.formatter != null)
+                {
+                    statData.formatter.format(value)
+                } else
+                {
+                    value.toString()
+                }
+            }
+        }
+    }
+
     fun formatRelStat(someStatData: StatData, stat: Int, playtime: Int): String
     {
         val relStat = getRelStat(stat, playtime)
-        val result = when (someStatData.stat.formatter)
+        val result = when (someStatData.type) // TODO move to StatData?
         {
-            StatFormatter.TIME ->
+            StatDataType.TIME ->
             {
                 "${(relStat / 720.0).trimDecimals(2)}%" // converts tick stats to hours but then to percent ((value*100)/(20*60*60))
             }
 
-            StatFormatter.DISTANCE ->
+            StatDataType.DISTANCE ->
             {
                 "${(relStat / 100_000.0).trimDecimals(3)} km/h" // converts cm stats to km (value/(100*1000))
             }
@@ -115,16 +202,16 @@ object StatUtil
     fun formatInverseRelStat(someStatData: StatData, stat: Int, playtime: Int): String
     {
         val inverseRelStat = getInverseRelStat(stat, playtime) // hours per stat
-        val result = when (someStatData.stat.formatter)
+        val result = when (someStatData.type)
         {
-            StatFormatter.TIME ->
+            StatDataType.TIME ->
             {
                 "${((playtime.toDouble() * 100) / max(1.0, stat.toDouble())).trimDecimals(2)}%"
             }
 
-            StatFormatter.DISTANCE ->
+            StatDataType.DISTANCE ->
             {
-                "${durationToPrettyString((inverseRelStat * 100000).hours)} /km" // *100000 because conversion to km
+                "${durationToPrettyString((inverseRelStat * 100000).hours)} /km" // *100,000 because conversion to km
             }
 
             else ->

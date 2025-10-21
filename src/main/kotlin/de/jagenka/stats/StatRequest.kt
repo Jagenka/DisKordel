@@ -10,7 +10,6 @@ import de.jagenka.Util.durationToPrettyString
 import de.jagenka.Util.percent
 import de.jagenka.Util.subListUntilOrEnd
 import de.jagenka.Util.ticks
-import de.jagenka.Util.trimDecimals
 import de.jagenka.stats.StatQueryType.*
 import de.jagenka.stats.StatUtil.displayName
 import de.jagenka.stats.StatUtil.formatInverseRelStat
@@ -18,11 +17,9 @@ import de.jagenka.stats.StatUtil.formatRelStat
 import de.jagenka.stats.StatUtil.getInverseRelStat
 import de.jagenka.stats.StatUtil.getRelStat
 import de.jagenka.stats.StatUtil.getStatDataList
-import net.minecraft.stat.StatFormatter
 import net.minecraft.stat.StatType
 import net.minecraft.stat.Stats
 import kotlin.math.max
-import kotlin.time.Duration.Companion.hours
 
 class StatRequest(
     val statType: StatType<Any>,
@@ -69,18 +66,19 @@ class StatRequest(
                 return@mapNotNull StatRequestResultRow(playerName, statData, playtimeData)
             }
             // sort
-            .sortedByDescending { valuation(it.stat, it.playtime) }
+            .sortedByDescending { valuation(it.statData, it.playtimeData) }
             // filter to avoid dividing by zero
             .filterNot {
-                queryType == TIME_PER_STAT && it.stat.stat.formatter == StatFormatter.DISTANCE && it.stat.value == 0
-            }
+                queryType == TIME_PER_STAT && it.statData.value == 0 ||
+                        queryType == STAT_PER_TIME && it.playtimeData.value == 0
+            } // TODO: test, if this still works as intended
 
 
         // enumerate
         var currentRank = 1
         var currentValue: Double? = null
         requestResultUnfinished.forEachIndexed { index, row ->
-            val value = valuation(row.stat, row.playtime)
+            val value = valuation(row.statData, row.playtimeData)
             if (value != currentValue)
             {
                 currentRank = index + 1
@@ -143,7 +141,7 @@ class StatRequest(
 
     fun getTotalString(): String?
     {
-        val someStatData = requestResult.firstOrNull()?.stat
+        val someStatData = requestResult.firstOrNull()?.statData
 
         return if (someStatData == null) null
         else
@@ -152,8 +150,8 @@ class StatRequest(
             {
                 DEFAULT, COMPARE ->
                 {
-                    val formattedValue = someStatData.stat.format(serverTotalStat)
-                    if (formattedValue != null) "server total: ${formattedValue.code()}" else null
+                    "server total: ${StatUtil.formatStat(someStatData, serverTotalStat).code()}\n" +
+                            "server average: ${StatUtil.formatStat(someStatData, (serverTotalStat.toDouble() / requestResult.size).toInt()).code()}"
                 }
 
                 STAT_PER_TIME ->
@@ -191,7 +189,7 @@ class StatRequest(
     }
 }
 
-data class StatRequestResultRow(val playerName: String, val stat: StatData, val playtime: StatData)
+data class StatRequestResultRow(val playerName: String, val statData: StatData, val playtimeData: StatData)
 {
     var rank: Int? = null
         private set
@@ -206,60 +204,24 @@ data class StatRequestResultRow(val playerName: String, val stat: StatData, val 
         return when (queryType)
         {
             // max length of player name is 16 character
-            DEFAULT, COMPARE -> "${rank.toString().padStart(2, ' ')}. ${stat.playerName.padEnd(17, ' ')} ${stat.stat.format(stat.value)}"
-                .padEnd(38) + " (${(stat.value.toDouble() / totalStat).percent(3)})"
+            DEFAULT, COMPARE -> "${rank.toString().padStart(2, ' ')}. ${statData.playerName.padEnd(17, ' ')} ${StatUtil.formatStat(statData)}"
+                .padEnd(38) + " (${(statData.value.toDouble() / totalStat).percent(3)})"
 
             STAT_PER_TIME ->
             {
-                val relStat = getRelStat(stat.value, playtime.value)
-                var result = "${rank.toString().padStart(2, ' ')}. ${stat.playerName.padEnd(17, ' ')} "
-                result +=
-                    when (stat.stat.formatter)
-                    {
-                        StatFormatter.TIME ->
-                        {
-                            "${(relStat / 720.0).trimDecimals(2)}%" // converts tick stats to hours but then to percent ((value*100)/(20*60*60))
-                        }
-
-                        StatFormatter.DISTANCE ->
-                        {
-                            "${(relStat / 100_000.0).trimDecimals(3)} km/h" // converts cm stats to km (value/(100*1000))
-                        }
-
-                        else ->
-                        {
-                            "${relStat.trimDecimals(3)}/h"
-                        }
-                    }
+                var result = "${rank.toString().padStart(2, ' ')}. ${statData.playerName.padEnd(17, ' ')} "
+                result += formatRelStat(statData, statData.value, playtimeData.value)
                 result = result.padEnd(38, ' ')
-                result += " (${stat.stat.format(stat.value)} in ${durationToPrettyString(playtime.value.ticks)})"
+                result += " (${StatUtil.formatStat(statData)} in ${durationToPrettyString(playtimeData.value.ticks)})"
                 result
             }
 
             TIME_PER_STAT ->
             {
-                val inverseRelStat = getInverseRelStat(stat.value, playtime.value) // hours per stat
-                var result = "${rank.toString().padStart(2, ' ')}. ${stat.playerName.padEnd(17, ' ')} "
-                result +=
-                    when (stat.stat.formatter)
-                    {
-                        StatFormatter.TIME ->
-                        {
-                            "${((playtime.value.toDouble() * 100) / max(1.0, stat.value.toDouble())).trimDecimals(2)}%"
-                        }
-
-                        StatFormatter.DISTANCE ->
-                        {
-                            "${durationToPrettyString((inverseRelStat * 100000).hours)} /km" // *100000 because conversion to km
-                        }
-
-                        else ->
-                        {
-                            durationToPrettyString(inverseRelStat.hours)
-                        }
-                    }
+                var result = "${rank.toString().padStart(2, ' ')}. ${statData.playerName.padEnd(17, ' ')} "
+                result += formatInverseRelStat(statData, statData.value, playtimeData.value)
                 result = result.padEnd(38, ' ')
-                result += " (${durationToPrettyString(playtime.value.ticks)} for ${stat.stat.format(stat.value)})"
+                result += " (${durationToPrettyString(playtimeData.value.ticks)} for ${StatUtil.formatStat(statData)})"
                 result
             }
         }.trimEnd()

@@ -58,6 +58,7 @@ object Registry
         StatsCommand,
         HelpCommand,
         PingCommand,
+        SpeedCommand,
 
         // Universal Commands
         WhoisCommand,
