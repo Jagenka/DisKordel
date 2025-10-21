@@ -149,7 +149,7 @@ object MinecraftHandler
 
     fun runCommand(cmd: String)
     {
-        minecraftServer?.commandManager?.executeWithPrefix(minecraftServer?.commandSource, cmd)
+        minecraftServer?.commandManager?.parseAndExecute(minecraftServer?.commandSource, cmd)
     }
 
     fun runWhitelistAdd(player: String)
