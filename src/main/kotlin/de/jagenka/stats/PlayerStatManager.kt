@@ -71,7 +71,7 @@ object PlayerStatManager
             {
                 if (playerStatFile.exists())
                 {
-                    return ServerStatHandler(server, playerStatFile)
+                    return ServerStatHandler(server, playerStatFile.toPath())
                 }
             } catch (_: Exception)
             {

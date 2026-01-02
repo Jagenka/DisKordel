@@ -28,8 +28,8 @@ dependencies {
     mappings("net.fabricmc:yarn:$yarn_mappings:v2")
     val loader_version: String by project
     modImplementation("net.fabricmc:fabric-loader:$loader_version")
-    val fabric_version: String by project
-    modImplementation("net.fabricmc.fabric-api:fabric-api:$fabric_version")
+    val fabric_api_version: String by project
+    modImplementation("net.fabricmc.fabric-api:fabric-api:$fabric_api_version")
     val fabricKotlinVersion: String by project
     modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
 
