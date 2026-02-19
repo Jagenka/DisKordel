@@ -5,11 +5,11 @@ import dev.kord.core.entity.Message
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.minecraft.network.message.MessageType
-import net.minecraft.network.message.SignedMessage
+import net.minecraft.network.chat.ChatType
+import net.minecraft.network.chat.PlayerChatMessage
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
@@ -24,7 +24,7 @@ object MinecraftHandler
     {
         this.minecraftServer = minecraftServer
 
-        minecraftServer.useAllowlist = true
+        minecraftServer.setUsingWhitelist(true)
 
         Main.scope.launch {
             // make sure Diskordel user cache is filled with available data as much as possible
@@ -41,7 +41,7 @@ object MinecraftHandler
         // register chat message
         ServerMessageEvents.CHAT_MESSAGE.register { message, sender, _ ->
             Main.scope.launch {
-                handleMinecraftChatMessage(message.content, sender)
+                handleMinecraftChatMessage(message.decoratedContent(), sender)
             }
         }
 
@@ -54,7 +54,7 @@ object MinecraftHandler
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
             val player = handler.player
             Main.scope.launch {
-                val text = Text.translatable("multiplayer.player.joined", player.displayName)
+                val text = Component.translatable("multiplayer.player.joined", player.displayName)
                 val string = text.string
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
@@ -65,7 +65,7 @@ object MinecraftHandler
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             val player = handler.player
             Main.scope.launch {
-                val text = Text.translatable("multiplayer.player.left", player.displayName)
+                val text = Component.translatable("multiplayer.player.left", player.displayName)
                 val string = text.string
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
@@ -75,7 +75,7 @@ object MinecraftHandler
 
     // coming from AdvancementFrameMixin
     @JvmStatic
-    fun handleAdvancementGet(text: Text)
+    fun handleAdvancementGet(text: Component)
     {
         Main.scope.launch {
             val string = text.string
@@ -94,17 +94,17 @@ object MinecraftHandler
         }
     }
 
-    private suspend fun handleMinecraftChatMessage(message: Text, sender: ServerPlayerEntity)
+    private suspend fun handleMinecraftChatMessage(message: Component, sender: ServerPlayer)
     {
         val user = UserRegistry.getMinecraftUser(sender.uuid) ?: return
         DiscordHandler.sendWebhookMessage(username = user.username, avatarURL = user.getSkinURL(), text = message.string)
     }
 
-    private fun handleSayCommand(message: SignedMessage, params: MessageType.Parameters)
+    private fun handleSayCommand(message: PlayerChatMessage, params: ChatType.Bound)
     {
         Main.scope.launch {
-            val user = UserRegistry.getMinecraftUser(message.sender)
-            val text = message.content
+            val user = UserRegistry.getMinecraftUser(message.sender())
+            val text = message.decoratedContent()
 
             DiscordHandler.sendWebhookMessage(
                 username = Config.configEntry.discordSettings.serverName,
@@ -138,10 +138,10 @@ object MinecraftHandler
 
     }
 
-    fun getOnlinePlayers(): List<ServerPlayerEntity>
+    fun getOnlinePlayers(): List<ServerPlayer>
     {
         minecraftServer?.let { server ->
-            return server.playerManager.playerList
+            return server.playerList.players
         }
 
         return emptyList()
@@ -149,7 +149,7 @@ object MinecraftHandler
 
     fun runCommand(cmd: String)
     {
-        minecraftServer?.commandManager?.parseAndExecute(minecraftServer?.commandSource, cmd)
+        minecraftServer?.commands?.performPrefixedCommand(minecraftServer?.createCommandSourceStack(), cmd)
     }
 
     fun runWhitelistAdd(player: String)
@@ -168,32 +168,32 @@ object MinecraftHandler
     fun getPerformanceMetrics(): PerformanceMetrics
     {
         minecraftServer?.let { server ->
-            val mspt = server.tickTimes.average() * 1.0E-6 // average is in nanoseconds -> convert to milliseconds
+            val mspt = server.tickTimesNanos.average() * 1.0E-6 // average is in nanoseconds -> convert to milliseconds
             val possibleTickRate = 1000f / mspt.toFloat()
-            val tps = if (server.tickManager.isSprinting) possibleTickRate else min(possibleTickRate, server.tickManager.tickRate)
+            val tps = if (server.tickRateManager().isSprinting) possibleTickRate else min(possibleTickRate, server.tickRateManager().tickrate())
             return PerformanceMetrics(mspt, tps)
         }
 
         return PerformanceMetrics(0.0, 0f)
     }
 
-    fun sendMessageToPlayer(player: ServerPlayerEntity, text: String)
+    fun sendMessageToPlayer(player: ServerPlayer, text: String)
     {
-        player.sendMessage(Text.of(text))
+        player.sendSystemMessage(Component.nullToEmpty(text))
     }
 
     fun sendChatMessage(message: String)
     {
-        sendChatMessage(Text.of(message))
+        sendChatMessage(Component.nullToEmpty(message))
     }
 
-    fun sendChatMessage(text: Text)
+    fun sendChatMessage(text: Component)
     {
-        minecraftServer?.playerManager?.broadcast(text, false)
+        minecraftServer?.playerList?.broadcastSystemMessage(text, false)
     }
 
-    fun ServerPlayerEntity.sendPrivateMessage(text: String)
+    fun ServerPlayer.sendPrivateMessage(text: String)
     {
-        this.sendMessage(Text.of(text))
+        this.sendSystemMessage(Component.nullToEmpty(text))
     }
 }

@@ -24,7 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.minecraft.text.*
-import net.minecraft.util.Formatting
+import net.minecraft.ChatFormatting
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -218,26 +218,26 @@ object DiscordHandler
     {
         val associatedUser = UserRegistry.findUser(authorId)
 
-        val authorText = Text.of(
+        val authorText = Component.nullToEmpty(
             "[$authorName]"
-        ).getWithStyle(
+        ).toFlatList(
             Style.EMPTY
-                .withFormatting(Formatting.BLUE)
-                .withHoverEvent(associatedUser?.minecraft?.username?.let { HoverEvent.ShowText(Text.of(it)) })
+                .applyFormat(ChatFormatting.BLUE)
+                .withHoverEvent(associatedUser?.minecraft?.username?.let { HoverEvent.ShowText(Component.nullToEmpty(it)) })
         ).firstOrNull()
 
-        val referencedAuthorText = Text.of(
+        val referencedAuthorText = Component.nullToEmpty(
             referencedMessage?.getAuthorAsMemberOrNull()?.let {
                 "@${it.effectiveName}"
             } ?: referencedMessage?.data?.author?.username?.let {
                 "@$it"
             } ?: ""
-        ).getWithStyle(
+        ).toFlatList(
             Style.EMPTY
-                .withFormatting(Formatting.BLUE)
+                .applyFormat(ChatFormatting.BLUE)
                 .withHoverEvent(
                     HoverEvent.ShowText(
-                        Text.of(referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.username })
+                        Component.nullToEmpty(referencedMessage?.author?.let { UserRegistry.findUser(it.id)?.minecraft?.username })
                     )
                 )
                 .withClickEvent(ClickEvent.OpenUrl(URI(Util.getMessageURL(referencedMessage))))
@@ -255,13 +255,13 @@ object DiscordHandler
                 "* view attachment in Discord *"
             }
 
-        val messageText = Text.of(messageContent)
-            .getWithStyle(
+        val messageText = Component.nullToEmpty(messageContent)
+            .toFlatList(
                 Style.EMPTY
                     .withClickEvent(ClickEvent.OpenUrl(URI(linkToMessage)))
             )
             .firstOrNull()
 
-        MinecraftHandler.sendChatMessage(Texts.join(listOfNotNull(authorText, referencedAuthorText, messageText), Text.of(" ")))
+        MinecraftHandler.sendChatMessage(ComponentUtils.formatList(listOfNotNull(authorText, referencedAuthorText, messageText), Component.nullToEmpty(" ")))
     }
 }

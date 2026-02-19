@@ -14,10 +14,10 @@ import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.RootInputChatBuilder
 import dev.kord.rest.builder.interaction.string
-import net.minecraft.server.command.CommandManager
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
-import net.minecraft.world.World
+import net.minecraft.commands.Commands
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.network.chat.Component
+import net.minecraft.world.level.Level
 
 object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
 {
@@ -54,14 +54,14 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
 
         return possibleUsers.joinToString("\n") { user ->
             MinecraftHandler.minecraftServer?.let { server ->
-                val player = server.playerManager.getPlayer(user.minecraft.uuid)
+                val player = server.playerList.getPlayer(user.minecraft.uuid)
                     ?: return@let null
 
-                val dimensionName = when (player.entityWorld.registryKey)
+                val dimensionName = when (player.level().dimension())
                 {
-                    World.OVERWORLD -> "Overworld"
-                    World.NETHER -> "Nether"
-                    World.END -> "End"
+                    Level.OVERWORLD -> "Overworld"
+                    Level.NETHER -> "Nether"
+                    Level.END -> "End"
                     else -> return@let null
                 }
 
@@ -92,17 +92,17 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
         Registry.registerLongHelpText(longHelpText, commandNode)
     }
 
-    override fun registerWithMinecraft(dispatcher: CommandDispatcher<ServerCommandSource>)
+    override fun registerWithMinecraft(dispatcher: CommandDispatcher<CommandSourceStack>)
     {
         dispatcher.register(
-            CommandManager.literal("whereis")
+            Commands.literal("whereis")
                 .then(
-                    CommandManager.argument("partOfName", StringArgumentType.greedyString())
+                    Commands.argument("partOfName", StringArgumentType.greedyString())
                         .executes {
                             val output = process(StringArgumentType.getString(it, "partOfName"))
                             output.lines().forEach { line ->
                                 if (line.isBlank()) return@forEach
-                                it.source.sendFeedback({ Text.literal(line) }, false)
+                                it.source.sendSuccess({ Component.literal(line) }, false)
                             }
                             return@executes 0
                         })

@@ -1,8 +1,8 @@
 package de.jagenka.mixin;
 
 import de.jagenka.Util;
-import net.minecraft.stat.Stat;
-import net.minecraft.stat.StatFormatter;
+import net.minecraft.stats.Stat;
+import net.minecraft.stats.StatFormatter;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;

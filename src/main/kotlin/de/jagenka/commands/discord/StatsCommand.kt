@@ -12,7 +12,7 @@ import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.*
-import net.minecraft.stat.StatType
+import net.minecraft.stats.StatType
 
 object StatsCommand : DiskordelSlashCommand
 {

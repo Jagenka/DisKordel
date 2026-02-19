@@ -1,6 +1,6 @@
 package de.jagenka.stats
 
-import net.minecraft.stat.StatFormatter
+import net.minecraft.stats.StatFormatter
 
 data class StatData(val id: String, val playerName: String, val value: Int, val type: StatDataType, val formatter: StatFormatter? = null)
 

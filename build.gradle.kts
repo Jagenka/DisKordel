@@ -1,3 +1,4 @@
+import org.gradle.kotlin.dsl.mappings
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -24,8 +25,7 @@ repositories {
 dependencies {
     val minecraft_version: String by project
     minecraft("com.mojang:minecraft:$minecraft_version")
-    val yarn_mappings: String by project
-    mappings("net.fabricmc:yarn:$yarn_mappings:v2")
+    mappings(loom.officialMojangMappings())
     val loader_version: String by project
     modImplementation("net.fabricmc:fabric-loader:$loader_version")
     val fabric_api_version: String by project

@@ -71,8 +71,8 @@ data class MinecraftUser(var username: String, var uuid: UUID, var skinURL: Stri
         {
             MinecraftHandler.minecraftServer?.apply {
 
-                val profile = apiServices.profileResolver.getProfileById(uuid)?.unwrap() ?: MinecraftHandler.logger.error("no profile found for UUID $uuid").run { return }
-                val texture = apiServices.sessionService.getTextures(profile).skin ?: return
+                val profile = services().profileResolver.fetchById(uuid)?.unwrap() ?: MinecraftHandler.logger.error("no profile found for UUID $uuid").run { return }
+                val texture = services().sessionService.getTextures(profile).skin ?: return
 
                 val skin = ImageIO.read(URI(texture.url).toURL())
                 val layer1 = skin.getSubimage(8, 8, 8, 8)

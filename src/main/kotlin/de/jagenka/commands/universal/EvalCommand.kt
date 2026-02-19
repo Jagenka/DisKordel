@@ -9,9 +9,9 @@ import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.RootInputChatBuilder
 import dev.kord.rest.builder.interaction.number
 import dev.kord.rest.builder.interaction.string
-import net.minecraft.server.command.CommandManager
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.text.Text
+import net.minecraft.commands.Commands
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.network.chat.Component
 import redempt.crunch.Crunch
 import redempt.crunch.exceptions.ExpressionCompilationException
 import redempt.crunch.exceptions.ExpressionEvaluationException
@@ -67,17 +67,17 @@ object EvalCommand : DiskordelSlashCommand, MinecraftCommand
     /**
      * variables are not supported
      */
-    override fun registerWithMinecraft(dispatcher: CommandDispatcher<ServerCommandSource>)
+    override fun registerWithMinecraft(dispatcher: CommandDispatcher<CommandSourceStack>)
     {
         dispatcher.register(
-            CommandManager.literal("evaluate")
+            Commands.literal("evaluate")
                 .then(
-                    CommandManager.argument("expression", StringArgumentType.greedyString()).executes
+                    Commands.argument("expression", StringArgumentType.greedyString()).executes
                     {
                         val output = eval(StringArgumentType.getString(it, "expression"))
                         output.lines().forEach { line ->
                             if (line.isBlank()) return@forEach
-                            it.source.sendFeedback({ Text.literal(line) }, false)
+                            it.source.sendSuccess({ Component.literal(line) }, false)
                         }
                         return@executes 0
                     })

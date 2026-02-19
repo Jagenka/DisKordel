@@ -17,8 +17,8 @@ import de.jagenka.stats.StatUtil.formatRelStat
 import de.jagenka.stats.StatUtil.getInverseRelStat
 import de.jagenka.stats.StatUtil.getRelStat
 import de.jagenka.stats.StatUtil.getStatDataList
-import net.minecraft.stat.StatType
-import net.minecraft.stat.Stats
+import net.minecraft.stats.StatType
+import net.minecraft.stats.Stats
 import kotlin.math.max
 
 class StatRequest(
