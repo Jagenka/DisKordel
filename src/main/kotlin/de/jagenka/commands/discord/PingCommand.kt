@@ -33,7 +33,7 @@ object PingCommand : DiskordelSlashCommand
             val responseString = onlinePlayers.joinToString(
                 separator = System.lineSeparator(),
                 prefix = "Server ping to online player(s):${System.lineSeparator()}"
-            ) { "- ${it.name.string}: ${it.networkHandler.latency} ms" }
+            ) { "- ${it.name.string}: ${it.connection.latency()} ms" }
             response.respond { content = responseString }
             return
         }

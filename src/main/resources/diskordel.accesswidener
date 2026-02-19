@@ -1,5 +1,5 @@
 accessWidener	v1	named
 
-accessible field net/minecraft/stat/Stat formatter Lnet/minecraft/stat/StatFormatter;
+accessible field net/minecraft/stats/Stat formatter Lnet/minecraft/stats/StatFormatter;
 
-accessible method net/minecraft/server/ServerConfigEntry getKey ()Ljava/lang/Object;
+accessible method net/minecraft/server/players/StoredUserEntry getUser ()Ljava/lang/Object;

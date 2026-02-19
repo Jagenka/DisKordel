@@ -16,10 +16,10 @@ import dev.kord.core.entity.effectiveName
 import info.debatty.java.stringsimilarity.Levenshtein
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.minecraft.server.PlayerConfigEntry
-import net.minecraft.server.WhitelistEntry
-import net.minecraft.util.Uuids
-import net.minecraft.util.WorldSavePath
+import net.minecraft.server.players.NameAndId
+import net.minecraft.server.players.UserWhiteListEntry
+import net.minecraft.core.UUIDUtil
+import net.minecraft.world.level.storage.LevelResource
 import java.nio.file.Files
 import java.util.*
 import kotlin.math.max
@@ -93,7 +93,7 @@ object UserRegistry
     {
         if (name != null)
         {
-            minecraftServer?.apiServices?.profileResolver?.getProfileByName(name)?.unwrap()?.let {
+            minecraftServer?.services()?.profileResolver?.fetchByName(name)?.unwrap()?.let {
                 saveToCache(it)
                 return it
             }
@@ -101,7 +101,7 @@ object UserRegistry
 
         if (uuid != null)
         {
-            minecraftServer?.apiServices?.profileResolver?.getProfileById(uuid)?.unwrap()?.let {
+            minecraftServer?.services()?.profileResolver?.fetchById(uuid)?.unwrap()?.let {
                 saveToCache(it)
                 return it
             }
@@ -206,8 +206,8 @@ object UserRegistry
                 getGameProfile(minecraftName, true)
                     ?: GameProfile(
                         diskordelUserCache.find { it.username.equals(minecraftName, ignoreCase = true) }?.uuid
-                            ?: minecraftServer?.apiServices?.profileRepository?.findProfileByName(minecraftName)?.unwrap()?.id
-                            ?: Uuids.getOfflinePlayerUuid(minecraftName),
+                            ?: minecraftServer?.services()?.profileRepository?.findProfileByName(minecraftName)?.unwrap()?.id
+                            ?: UUIDUtil.createOfflinePlayerUUID(minecraftName),
                         minecraftName
                     )
 
@@ -241,7 +241,7 @@ object UserRegistry
     // region config stuffs
     fun loadRegisteredUsersFromDiskordelConfig()
     {
-        if (minecraftServer?.playerManager?.whitelist == null)
+        if (minecraftServer?.playerList?.whiteList == null)
         {
             logger.error("cannot load registered users from diskordel config, as whitelist is not initialized yet")
             exitProcess(69)
@@ -266,9 +266,9 @@ object UserRegistry
                     }
 
                     // not in whitelist, but should be on
-                    if (minecraftServer?.playerManager?.whitelist?.isAllowed(PlayerConfigEntry(profile)) == false)
+                    if (minecraftServer?.playerList?.whiteList?.isWhiteListed(NameAndId(profile)) == false)
                     {
-                        minecraftServer?.playerManager?.whitelist?.add(WhitelistEntry(PlayerConfigEntry(profile)))
+                        minecraftServer?.playerList?.whiteList?.add(UserWhiteListEntry(NameAndId(profile)))
                         logger.info("whitelisted $minecraftName")
                     }
                 } else
@@ -280,12 +280,12 @@ object UserRegistry
         }
 
         // remove all users from whitelist that are not legal in Diskordel config
-        minecraftServer?.playerManager?.whitelist?.values()?.toList()?.forEach {
-            val nameInWhitelist = it.key?.name ?: return@forEach
+        minecraftServer?.playerList?.whiteList?.entries?.toList()?.forEach {
+            val nameInWhitelist = it.user?.name ?: return@forEach
 
             if (nameInWhitelist !in Config.configEntry.registeredUsers.map { userInConfig -> userInConfig.minecraftName })
             {
-                minecraftServer?.playerManager?.whitelist?.remove(it)
+                minecraftServer?.playerList?.whiteList?.remove(it)
             }
         }
     }
@@ -396,7 +396,7 @@ object UserRegistry
     {
         minecraftServer?.let { server ->
             // has to be this complicated, because user cache does not allow getting all profiles...
-            Files.walk(server.getSavePath(WorldSavePath.PLAYERDATA)).toList()
+            Files.walk(server.getWorldPath(LevelResource.PLAYER_DATA_DIR)).toList()
                 .asSequence()
                 .map { it.fileName.toString() }
                 .filter { it.endsWith(".dat") }
@@ -411,7 +411,7 @@ object UserRegistry
                     }
                 }
                 .forEach { uuid ->
-                    saveToCache(minecraftServer?.apiServices?.profileResolver()?.getProfileById(uuid)?.unwrap() ?: return@forEach)
+                    saveToCache(minecraftServer?.services()?.profileResolver()?.fetchById(uuid)?.unwrap() ?: return@forEach)
                 }
         }
     }

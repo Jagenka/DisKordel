@@ -165,7 +165,7 @@ object Registry
                 }
             }
 
-            DiscordHandler.relayChatMessage(
+            DiscordHandler.relayChatMessageToMinecraft(
                 authorId = message.author?.id,
                 authorName = member?.effectiveName ?: message.author?.effectiveName ?: "unknown user",
                 content = messageWithPrettyMentions(message),
@@ -188,7 +188,7 @@ object Registry
             {
                 val authorName = new.author.value?.globalName?.value ?: new.author.value?.username ?: "unknown user"
 
-                DiscordHandler.relayChatMessage(
+                DiscordHandler.relayChatMessageToMinecraft(
                     authorId = new.author.value?.id,
                     authorName = authorName,
                     content = new.content.value ?: "* empty message *",

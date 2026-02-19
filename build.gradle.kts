@@ -1,3 +1,4 @@
+import org.gradle.kotlin.dsl.mappings
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -5,7 +6,7 @@ plugins {
     val kotlinVersion: String by System.getProperties()
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.serialization") version kotlinVersion
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "9.3.0"
 }
 base {
     val archivesBaseName: String by project
@@ -24,12 +25,11 @@ repositories {
 dependencies {
     val minecraft_version: String by project
     minecraft("com.mojang:minecraft:$minecraft_version")
-    val yarn_mappings: String by project
-    mappings("net.fabricmc:yarn:$yarn_mappings:v2")
+    mappings(loom.officialMojangMappings())
     val loader_version: String by project
     modImplementation("net.fabricmc:fabric-loader:$loader_version")
-    val fabric_version: String by project
-    modImplementation("net.fabricmc.fabric-api:fabric-api:$fabric_version")
+    val fabric_api_version: String by project
+    modImplementation("net.fabricmc.fabric-api:fabric-api:$fabric_api_version")
     val fabricKotlinVersion: String by project
     modImplementation("net.fabricmc:fabric-language-kotlin:$fabricKotlinVersion")
 

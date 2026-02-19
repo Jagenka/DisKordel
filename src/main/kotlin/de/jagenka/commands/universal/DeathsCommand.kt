@@ -13,11 +13,11 @@ import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.RootInputChatBuilder
 import dev.kord.rest.builder.interaction.integer
 import dev.kord.rest.builder.interaction.string
-import net.minecraft.server.command.CommandManager
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.stat.StatType
-import net.minecraft.stat.Stats
-import net.minecraft.text.Text
+import net.minecraft.commands.Commands
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.stats.StatType
+import net.minecraft.stats.Stats
+import net.minecraft.network.chat.Component
 
 object DeathsCommand : MinecraftCommand, DiskordelSlashCommand
 {
@@ -41,25 +41,25 @@ object DeathsCommand : MinecraftCommand, DiskordelSlashCommand
         }
     }
 
-    override fun registerWithMinecraft(dispatcher: CommandDispatcher<ServerCommandSource>)
+    override fun registerWithMinecraft(dispatcher: CommandDispatcher<CommandSourceStack>)
     {
         dispatcher.register(
-            CommandManager.literal("deaths")
+            Commands.literal("deaths")
                 .executes {
                     val output = process()
                     output.lines().forEach { line ->
                         if (line.isBlank()) return@forEach
-                        it.source.sendFeedback({ Text.literal(line) }, false)
+                        it.source.sendSuccess({ Component.literal(line) }, false)
                     }
                     0
                 }
                 .then(
-                    CommandManager.argument("partOfName", StringArgumentType.word())
+                    Commands.argument("partOfName", StringArgumentType.word())
                         .executes {
                             val output = process(StringArgumentType.getString(it, "partOfName"))
                             output.lines().forEach { line ->
                                 if (line.isBlank()) return@forEach
-                                it.source.sendFeedback({ Text.literal(line) }, false)
+                                it.source.sendSuccess({ Component.literal(line) }, false)
                             }
                             return@executes 0
                         })

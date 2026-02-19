@@ -3,8 +3,8 @@ package de.jagenka.stats
 import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.exceptions.CommandSyntaxException
-import net.minecraft.stat.StatType
-import net.minecraft.stat.Stats
+import net.minecraft.stats.StatType
+import net.minecraft.stats.Stats
 
 class StatTypeArgument : ArgumentType<StatType<*>>
 {
@@ -14,14 +14,14 @@ class StatTypeArgument : ArgumentType<StatType<*>>
         {
             return when (input)
             {
-                "mined" -> Stats.MINED
-                "crafted" -> Stats.CRAFTED
-                "used" -> Stats.USED
-                "broken" -> Stats.BROKEN
-                "picked_up" -> Stats.PICKED_UP
-                "dropped" -> Stats.DROPPED
-                "killed" -> Stats.KILLED
-                "killed_by" -> Stats.KILLED_BY
+                "mined" -> Stats.BLOCK_MINED
+                "crafted" -> Stats.ITEM_CRAFTED
+                "used" -> Stats.ITEM_USED
+                "broken" -> Stats.ITEM_BROKEN
+                "picked_up" -> Stats.ITEM_PICKED_UP
+                "dropped" -> Stats.ITEM_DROPPED
+                "killed" -> Stats.ENTITY_KILLED
+                "killed_by" -> Stats.ENTITY_KILLED_BY
                 "custom" -> Stats.CUSTOM
                 else -> null
             }

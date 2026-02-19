@@ -9,10 +9,10 @@ import de.jagenka.UserRegistry
 import de.jagenka.Util.durationToPrettyString
 import de.jagenka.Util.ticksToPrettyString
 import de.jagenka.Util.trimDecimals
-import net.minecraft.stat.StatType
-import net.minecraft.stat.Stats
-import net.minecraft.stat.Stats.*
-import net.minecraft.util.Identifier
+import net.minecraft.stats.StatType
+import net.minecraft.stats.Stats
+import net.minecraft.stats.Stats.*
+import net.minecraft.resources.Identifier
 import kotlin.math.max
 import kotlin.time.Duration.Companion.hours
 
@@ -44,11 +44,11 @@ object StatUtil
             return distanceStatIds.map { statId ->
                 try
                 {
-                    val identifier = Identifier.of(statId)
+                    val identifier = Identifier.parse(statId)
                     val registry = statType.registry
-                    val key = registry.get(identifier) ?: throw StatDataException(INVALID_ID)
-                    if (registry.getId(key) != identifier) throw StatDataException(INVALID_ID)
-                    val stat = statType.getOrCreateStat(key)
+                    val key = registry.getValue(identifier) ?: throw StatDataException(INVALID_ID)
+                    if (registry.getKey(key) != identifier) throw StatDataException(INVALID_ID)
+                    val stat = statType.get(key)
 
                     return@map UserRegistry
                         .getMinecraftProfiles()
@@ -56,7 +56,7 @@ object StatUtil
                             StatData(
                                 statId,
                                 it.name,
-                                (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null),
+                                (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getValue(stat) ?: return@mapNotNull null),
                                 StatDataType.fromFormatter(stat.formatter)
                             )
                         }
@@ -75,18 +75,18 @@ object StatUtil
         {
             try
             {
-                val identifier = Identifier.of(id)
+                val identifier = Identifier.parse(id)
                 val registry = statType.registry
-                val key = registry.get(identifier) ?: throw StatDataException(INVALID_ID)
-                if (registry.getId(key) != identifier) throw StatDataException(INVALID_ID)
-                val stat = statType.getOrCreateStat(key)
+                val key = registry.getValue(identifier) ?: throw StatDataException(INVALID_ID)
+                if (registry.getKey(key) != identifier) throw StatDataException(INVALID_ID)
+                val stat = statType.get(key)
 
                 return UserRegistry.getMinecraftProfiles()
                     .mapNotNull {
                         StatData(
                             id,
                             it.name,
-                            (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getStat(stat) ?: return@mapNotNull null),
+                            (PlayerStatManager.getStatHandlerForPlayer(it.name)?.getValue(stat) ?: return@mapNotNull null),
                             StatDataType.fromFormatter(stat.formatter),
                             formatter = stat.formatter
                         )
@@ -226,16 +226,16 @@ object StatUtil
     {
         return when (this)
         {
-            MINED -> "mined"
-            CRAFTED -> "crafted"
-            USED -> "used"
-            BROKEN -> "broken"
-            PICKED_UP -> "picked up"
-            DROPPED -> "dropped"
-            KILLED -> "killed"
-            KILLED_BY -> "killed by"
+            BLOCK_MINED -> "mined"
+            ITEM_CRAFTED -> "crafted"
+            ITEM_USED -> "used"
+            ITEM_BROKEN -> "broken"
+            ITEM_PICKED_UP -> "picked up"
+            ITEM_DROPPED -> "dropped"
+            ENTITY_KILLED -> "killed"
+            ENTITY_KILLED_BY -> "killed by"
             CUSTOM -> ""
-            else -> this.name.string
+            else -> this.displayName.string
         }
     }
 }

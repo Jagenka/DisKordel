@@ -8,8 +8,8 @@ import de.jagenka.stats.StatRequest
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.*
-import net.minecraft.stat.StatType
-import net.minecraft.stat.Stats
+import net.minecraft.stats.StatType
+import net.minecraft.stats.Stats
 
 /**
  * Displays the average speed of all players.

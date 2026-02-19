@@ -1,12 +1,12 @@
 package de.jagenka.commands
 
 import com.mojang.brigadier.CommandDispatcher
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
 
 interface MinecraftCommand : DiskordelCommand
 {
     /**
      * this should register the command with Minecraft
      */
-    fun registerWithMinecraft(dispatcher: CommandDispatcher<ServerCommandSource>)
+    fun registerWithMinecraft(dispatcher: CommandDispatcher<CommandSourceStack>)
 }
