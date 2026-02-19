@@ -16,9 +16,9 @@ import dev.kord.core.entity.effectiveName
 import info.debatty.java.stringsimilarity.Levenshtein
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
+import net.minecraft.core.UUIDUtil
 import net.minecraft.server.players.NameAndId
 import net.minecraft.server.players.UserWhiteListEntry
-import net.minecraft.core.UUIDUtil
 import net.minecraft.world.level.storage.LevelResource
 import java.nio.file.Files
 import java.util.*
@@ -286,6 +286,17 @@ object UserRegistry
             if (nameInWhitelist !in Config.configEntry.registeredUsers.map { userInConfig -> userInConfig.minecraftName })
             {
                 minecraftServer?.playerList?.whiteList?.remove(it)
+            }
+        }
+
+        Config.configEntry.whitelistOverride.forEach { minecraftName ->
+            val profile = getGameProfile(minecraftName, true) ?: return@forEach
+
+            // not in whitelist, but should be on
+            if (minecraftServer?.playerList?.whiteList?.isWhiteListed(NameAndId(profile)) == false)
+            {
+                minecraftServer?.playerList?.whiteList?.add(UserWhiteListEntry(NameAndId(profile)))
+                logger.info("whitelisted $minecraftName")
             }
         }
     }
