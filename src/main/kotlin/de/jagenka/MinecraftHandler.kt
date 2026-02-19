@@ -6,10 +6,10 @@ import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.network.chat.ChatType
+import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.PlayerChatMessage
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.network.chat.Component
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
@@ -149,7 +149,7 @@ object MinecraftHandler
 
     fun runCommand(cmd: String)
     {
-        minecraftServer?.commands?.performPrefixedCommand(minecraftServer?.createCommandSourceStack(), cmd)
+        minecraftServer?.commands?.performPrefixedCommand(minecraftServer?.createCommandSourceStack() ?: return, cmd)
     }
 
     fun runWhitelistAdd(player: String)

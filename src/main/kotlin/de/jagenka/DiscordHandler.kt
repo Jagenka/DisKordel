@@ -23,8 +23,8 @@ import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import net.minecraft.text.*
 import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.*
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -207,7 +207,7 @@ object DiscordHandler
     /**
      * this is called, if a message is not a command, so if it is a chat message
      */
-    suspend fun relayChatMessage(
+    suspend fun relayChatMessageToMinecraft(
         authorId: Snowflake?,
         authorName: String,
         content: String,
