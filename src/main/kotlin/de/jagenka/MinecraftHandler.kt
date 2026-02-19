@@ -24,7 +24,7 @@ object MinecraftHandler
     {
         this.minecraftServer = minecraftServer
 
-        minecraftServer.setUsingWhitelist(true)
+        minecraftServer.isUsingWhitelist = true
 
         Main.scope.launch {
             // make sure Diskordel user cache is filled with available data as much as possible

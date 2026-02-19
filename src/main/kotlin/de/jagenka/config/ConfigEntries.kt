@@ -48,7 +48,7 @@ object MinecraftUserSerializer : KSerializer<MinecraftUser>
 }
 
 /**
- * @param discordCommandCache map of internal id to Discord id
+ *
  */
 @Serializable
 class BaseConfigEntry(
@@ -56,4 +56,5 @@ class BaseConfigEntry(
     var registeredUsers: MutableList<UserEntry> = mutableListOf(),
     var userCache: MutableSet<MinecraftUser> = mutableSetOf(),
     var appCommandVersion: String = "0",
+    var whitelistOverride: MutableSet<String> = mutableSetOf(),
 )

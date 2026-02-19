@@ -114,3 +114,13 @@ data class MinecraftUser(var username: String, var uuid: UUID, var skinURL: Stri
 }
 
 data class DiscordUser(val id: Snowflake)
+{
+    /**
+     * checks if DiscordUser is admin - currently only allows Guild Owner to be admin
+     */
+    suspend fun isAdmin(): Boolean
+    {
+        val member = DiscordHandler.guild.getMemberOrNull(id) ?: return false
+        return member.isOwner()
+    }
+}
