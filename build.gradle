@@ -5,7 +5,7 @@ plugins {
     id 'maven-publish'
     id "org.jetbrains.kotlin.jvm" version "2.4.20"
     id 'org.jetbrains.kotlin.plugin.serialization' version '2.4.20'
-    id "com.gradleup.shadow" version "9.3.0"
+    id "com.gradleup.shadow" version "9.6.1"
 }
 
 version = project.mod_version
@@ -78,6 +78,10 @@ tasks.withType(KotlinCompile).configureEach {
     kotlinOptions {
         jvmTarget = 25
     }
+}
+
+tasks.named('shadowJar') {
+    zip64 = true
 }
 
 java {
