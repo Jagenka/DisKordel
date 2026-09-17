@@ -60,7 +60,8 @@ data class MinecraftUser(var username: String, var uuid: UUID, var skinURL: Stri
         }
 
         // fallback, if above parsing does not work
-        updateSkin()
+        // FALLBACK REMOVED
+        // updateSkin()
         return this.skinURL
 
     }
