@@ -4,7 +4,7 @@ plugins {
     id "net.fabricmc.fabric-loom" version "${loom_version}"
     id 'maven-publish'
     id "org.jetbrains.kotlin.jvm" version "2.4.20"
-    id 'org.jetbrains.kotlin.plugin.serialization' version '2.3.0'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '2.4.20'
     id "com.gradleup.shadow" version "9.3.0"
 }
 
@@ -16,7 +16,12 @@ base {
 }
 
 repositories {
-    maven { url 'https://redempt.dev' }
+    maven {
+        url 'https://redempt.dev'
+    }
+    maven {
+        url "https://snapshots.kord.dev/"
+    }
 }
 
 loom {
