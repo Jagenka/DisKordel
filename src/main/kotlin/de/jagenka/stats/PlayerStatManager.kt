@@ -3,13 +3,11 @@ package de.jagenka.stats
 import de.jagenka.MinecraftHandler
 import de.jagenka.MinecraftHandler.logger
 import de.jagenka.UserRegistry
-import net.minecraft.world.entity.player.Player
 import net.minecraft.server.players.PlayerList
 import net.minecraft.stats.ServerStatsCounter
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.storage.LevelResource
-import net.minecraft.util.FileUtil
 import java.io.File
-import java.nio.file.Path
 import java.util.*
 
 object PlayerStatManager
@@ -58,15 +56,7 @@ object PlayerStatManager
         MinecraftHandler.minecraftServer?.let { server ->
             val statsSavePath: File = server.getWorldPath(LevelResource.PLAYER_STATS_DIR).toFile()
             val playerStatFile = File(statsSavePath, "${uuid}.json")
-            if (playerName.isNotBlank())
-            {
-                val legacyPlayerStatFile = File(statsSavePath, "${playerName}.json")
-                val legacyPath: Path = legacyPlayerStatFile.toPath()
-                if (!playerStatFile.exists() && FileUtil.isPathNormalized(legacyPath) && FileUtil.isPathPortable(legacyPath) && legacyPath.startsWith(statsSavePath.path) && legacyPlayerStatFile.isFile)
-                {
-                    legacyPlayerStatFile.renameTo(playerStatFile) //backwards compat to rename to UUID
-                }
-            }
+            // removed legacyPlayerStatFile handling, UUID should suffice
             try
             {
                 if (playerStatFile.exists())
