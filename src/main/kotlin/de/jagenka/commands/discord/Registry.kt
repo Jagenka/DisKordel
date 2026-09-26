@@ -9,23 +9,18 @@ import de.jagenka.commands.DiskordelCommand
 import de.jagenka.commands.DiskordelSlashCommand
 import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.universal.*
-import de.jagenka.config.Config
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.entity.Message
-import dev.kord.core.entity.application.GuildApplicationCommand
 import dev.kord.core.entity.effectiveName
 import dev.kord.core.entity.toRawType
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.core.on
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import net.fabricmc.loader.api.FabricLoader
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URI
 
 object Registry
 {
@@ -73,42 +68,10 @@ object Registry
     fun setup(kord: Kord)
     {
         Main.scope.launch {
-            try
-            {
-                val url = URI(linkToAppCommandVersionFile).toURL()
-                val conn: HttpURLConnection = url.openConnection() as HttpURLConnection
-                conn.connectTimeout = 5000 // timing out in five seconds
-                val version = BufferedReader(InputStreamReader(conn.inputStream)).readLines()
-                    .find { it.startsWith("version: ") }?.removePrefix("version: ")
-
-                if (version != Config.configEntry.appCommandVersion)
-                {
-                    reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
-                    Config.configEntry.appCommandVersion = version ?: "0"
-                    Config.store()
-                }
-
-                return@launch
-
-            } catch (_: Exception)
-            {
-            }
-
-            if (Config.configEntry.appCommandVersion == "0")
-            {
-                reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
-                return@launch
-            }
-
-            val appCommands = mutableListOf<GuildApplicationCommand>()
-            kord.getGuildApplicationCommands(DiscordHandler.guild.id).collect { appCommands.add(it) }
-            if (commands.filterIsInstance<DiskordelSlashCommand>().size != appCommands.size)
-            {
-                reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
-            }
+            reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
         }
 
-        registerCommands()
+        makeNoteOfCommandsLocally()
 
         kord.on<MessageCreateEvent> messageHandling@{
             // return if message is from ourselves
@@ -221,7 +184,7 @@ object Registry
         return messageContent
     }
 
-    private fun registerCommands()
+    private fun makeNoteOfCommandsLocally()
     {
         // sort commands into types
         commands.forEach { cmd ->
@@ -299,17 +262,16 @@ object Registry
     {
         MinecraftHandler.logger.info("Start re-registering Discord Application Commands...")
 
-        // delete all commands
-        kord.getGuildApplicationCommands(guildId).collect {
-            it.delete()
-        }
+        val slashCommands = commands.filterIsInstance<DiskordelSlashCommand>()
+        MinecraftHandler.logger.info("Registering ${slashCommands.size} commands...")
 
-        // register all commands
-        commands.filterIsInstance<DiskordelSlashCommand>().forEach { cmd ->
-            kord.createGuildChatInputCommand(guildId, cmd.name, cmd.description) {
-                cmd.build(this)
+        kord.createGuildApplicationCommands(guildId) {
+            slashCommands.forEach { cmd ->
+                input(cmd.name, cmd.description) {
+                    cmd.build(this)
+                }
             }
-        }
+        }.toList() // this is here so that the flow terminates, result could be used later on if needed
 
         MinecraftHandler.logger.info("Discord Application Commands re-registered!")
     }
