@@ -32,8 +32,14 @@ bin/
 
 run/
 
-tmp/**
-/logs/latest.log
+# java
+
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
+
 
 # custom excludes
 /src/main/java/de/jagenka/mixin/DebugMixin.java
+
