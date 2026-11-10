@@ -4,12 +4,10 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import com.mojang.brigadier.tree.CommandNode
 import de.jagenka.*
-import de.jagenka.Util.unwrap
 import de.jagenka.commands.DiskordelCommand
 import de.jagenka.commands.DiskordelSlashCommand
 import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.universal.*
-import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.effectiveName
@@ -18,16 +16,12 @@ import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.core.on
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import net.fabricmc.loader.api.FabricLoader
 
 object Registry
 {
-    private val linkToAppCommandVersionFile = "https://raw.githubusercontent.com/Jagenka/DisKordel/v${
-        FabricLoader.getInstance().getModContainer("diskordel").unwrap()?.metadata?.version?.toString()
-    }/applicationCommandsVersion.yaml"
-
     private const val messageCommandPrefix: String = "!"
     private const val interactsWithBots: Boolean = true
     private val commandDispatcher = CommandDispatcher<MessageCommandSource>()
@@ -68,7 +62,17 @@ object Registry
     fun setup(kord: Kord)
     {
         Main.scope.launch {
-            reRegisterApplicationCommands(kord, DiscordHandler.guild.id)
+            try
+            {
+                ApplicationCommandSync.syncGuildCommands(kord, DiscordHandler.guild.id, commands.filterIsInstance<DiskordelSlashCommand>())
+            } catch (e: Exception)
+            {
+                if (e is CancellationException)
+                {
+                    ensureActive()
+                }
+                MinecraftHandler.logger.error("Could not sync Discord Application Commands: ${e.message}")
+            }
         }
 
         makeNoteOfCommandsLocally()
@@ -256,23 +260,5 @@ object Registry
         return commandDispatcher.getSmartUsage(parseResults.context.rootNode, source)
             .filter { it.key.name.equals(command, ignoreCase = true) }
             .map { "`!" + it.value + "`" + (longHelpTexts[command]?.let { ": $it" } ?: "") }
-    }
-
-    private suspend fun reRegisterApplicationCommands(kord: Kord, guildId: Snowflake)
-    {
-        MinecraftHandler.logger.info("Start re-registering Discord Application Commands...")
-
-        val slashCommands = commands.filterIsInstance<DiskordelSlashCommand>()
-        MinecraftHandler.logger.info("Registering ${slashCommands.size} commands...")
-
-        kord.createGuildApplicationCommands(guildId) {
-            slashCommands.forEach { cmd ->
-                input(cmd.name, cmd.description) {
-                    cmd.build(this)
-                }
-            }
-        }.toList() // this is here so that the flow terminates, result could be used later on if needed
-
-        MinecraftHandler.logger.info("Discord Application Commands re-registered!")
     }
 }
