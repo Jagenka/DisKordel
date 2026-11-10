@@ -29,6 +29,7 @@ object Registry
         HelpCommand,
         PingCommand,
         SpeedCommand,
+        RecentPlaytimeCommand,
 
         // Universal Commands
         WhoisCommand,

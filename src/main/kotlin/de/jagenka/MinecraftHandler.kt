@@ -1,7 +1,10 @@
 package de.jagenka
 
 import de.jagenka.config.Config
+import de.jagenka.stats.PlaytimeHistory
 import dev.kord.core.entity.Message
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
@@ -12,6 +15,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import org.slf4j.LoggerFactory
 import kotlin.math.min
+import kotlin.time.Duration.Companion.hours
 
 object MinecraftHandler
 {
@@ -33,6 +37,19 @@ object MinecraftHandler
 
             // load registered users with available cache data
             UserRegistry.loadRegisteredUsersFromDiskordelConfig()
+
+            PlaytimeHistory.load()
+            PlaytimeHistory.snapshotNow()
+        }
+
+        // keeps today's playtime snapshot fresh for players who stay connected across a day change, without
+        // needing to hook every tick for it - join/disconnect/server-stop already cover the common cases
+        Main.scope.launch {
+            while (isActive)
+            {
+                delay(1.hours)
+                PlaytimeHistory.snapshotNow()
+            }
         }
     }
 
@@ -59,6 +76,7 @@ object MinecraftHandler
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
             }
+            PlaytimeHistory.snapshotNow()
         }
 
         // disconnect messages
@@ -70,6 +88,7 @@ object MinecraftHandler
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
             }
+            PlaytimeHistory.snapshotNow()
         }
     }
 

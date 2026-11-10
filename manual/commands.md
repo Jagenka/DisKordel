@@ -44,8 +44,11 @@ See [Queryable Stats](./queryable_stats.md) for the full list of stat categories
   divided by playtime).
 - `/speed compare <player> [player2] [ascending]`: Compare average speed between two players. If `player2` is
   omitted, it defaults to you.
-- `/playtime [part_of_name] [limit]`: List how long players have played.
+- `/playtime [part_of_name] [limit]`: List how long players have played, in total.
   *Also in-game as `/playtime [partOfName]`, always capped at 10 entries (no `limit` option in-game).*
+- `/recent [days] [part_of_name] [limit] [ascending]`: List players by how much they've played in the last `days`
+  days (defaults to 7). Minecraft itself only tracks a lifetime total, so this works by diffing daily snapshots of
+  that total - the trade-off is day-level granularity, not a precise rolling 24-hour window.
 - `/deaths [part_of_name] [limit]`: List how often players have died.
   *Also in-game as `/deaths [partOfName]`, always capped at 10 entries (no `limit` option in-game).*
 
