@@ -1,7 +1,10 @@
 package de.jagenka
 
 import de.jagenka.config.Config
+import de.jagenka.stats.PlaytimeHistory
 import dev.kord.core.entity.Message
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
@@ -12,6 +15,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import org.slf4j.LoggerFactory
 import kotlin.math.min
+import kotlin.time.toKotlinDuration
 
 object MinecraftHandler
 {
@@ -33,6 +37,21 @@ object MinecraftHandler
 
             // load registered users with available cache data
             UserRegistry.loadRegisteredUsersFromDiskordelConfig()
+
+            PlaytimeHistory.load()
+            PlaytimeHistory.snapshotNow()
+        }
+
+        // join/disconnect/server start-stop already snapshot playtime on their own, but a player who just stays
+        // connected wouldn't otherwise get any new snapshot at all - this just keeps a reasonably dense trail of
+        // data points for them too, so any requested lookback window has something nearby to diff against.
+        // skipped while no-one is online, since nothing could have changed in the meantime anyway.
+        Main.scope.launch {
+            while (isActive)
+            {
+                delay(PlaytimeHistory.POLL_INTERVAL.toKotlinDuration())
+                if (getOnlinePlayers().isNotEmpty()) PlaytimeHistory.snapshotNow()
+            }
         }
     }
 
@@ -59,6 +78,7 @@ object MinecraftHandler
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
             }
+            PlaytimeHistory.snapshotNow()
         }
 
         // disconnect messages
@@ -70,6 +90,7 @@ object MinecraftHandler
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
             }
+            PlaytimeHistory.snapshotNow()
         }
     }
 

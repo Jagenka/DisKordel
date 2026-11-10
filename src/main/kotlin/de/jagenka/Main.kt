@@ -7,6 +7,7 @@ import de.jagenka.commands.MinecraftCommand
 import de.jagenka.commands.discord.Registry
 import de.jagenka.config.Config
 import de.jagenka.config.Config.configEntry
+import de.jagenka.stats.PlaytimeHistory
 import dev.kord.common.entity.Snowflake
 import kotlinx.coroutines.*
 import net.fabricmc.api.ModInitializer
@@ -39,6 +40,8 @@ object Main : ModInitializer
 
         //register onServerStopping
         ServerLifecycleEvents.SERVER_STOPPING.register { server ->
+            PlaytimeHistory.snapshotNow()
+
             stoppingTask = scope.launch {
                 DiscordHandler.sendWebhookMessage(
                     username = configEntry.discordSettings.serverName,
