@@ -55,6 +55,5 @@ class BaseConfigEntry(
     var discordSettings: DiscordSettingsEntry = DiscordSettingsEntry(),
     var registeredUsers: MutableList<UserEntry> = mutableListOf(),
     var userCache: MutableSet<MinecraftUser> = mutableSetOf(),
-    var appCommandVersion: String = "0",
     var whitelistOverride: MutableSet<String> = mutableSetOf(),
 )

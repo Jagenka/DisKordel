@@ -1,45 +1,32 @@
 package de.jagenka.commands.discord
 
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.arguments.StringArgumentType
-import de.jagenka.DiscordHandler
-import de.jagenka.commands.DiskordelTextCommand
-import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
-import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
-import de.jagenka.commands.discord.MessageCommandSource.Companion.redirect
+import de.jagenka.commands.DiskordelSlashCommand
+import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import dev.kord.rest.builder.interaction.RootInputChatBuilder
 
-object HelpCommand : DiskordelTextCommand
+/**
+ * Rather than duplicating command documentation here (and risking it drifting out of sync with the manual on
+ * GitHub, like the old in-Discord help text eventually did), this just points to the manual.
+ */
+object HelpCommand : DiskordelSlashCommand
 {
-    override val shortHelpText: String
-        get() = "help with commands"
-    override val longHelpText: String
-        get() = "get command overview, or help for specific command."
+    override val name: String
+        get() = "help"
+    override val description: String
+        get() = "Get a link to the command documentation."
 
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
+    override suspend fun build(builder: RootInputChatBuilder)
     {
-        val commandNode = dispatcher.register(
-            literal("help")
-                .executes {
-                    DiscordHandler.sendMessage(
-                        text = Registry.getShortHelpTexts(it.source).joinToString(separator = System.lineSeparator()),
-                        silent = true
-                    )
-                    0
-                }
-                .then(argument("command", StringArgumentType.string())
-                    .executes {
-                        DiscordHandler.sendMessage(
-                            text = Registry.getHelpTextsForCommand(it.source, StringArgumentType.getString(it, "command")).joinToString(separator = System.lineSeparator()),
-                            silent = true
-                        )
-                        0
-                    }
-                )
-        )
+        // nothing needed
+    }
 
-        val redirect = dispatcher.register(redirect("?", commandNode))
-
-        Registry.registerShortHelpText(shortHelpText, commandNode, redirect)
-        Registry.registerLongHelpText(longHelpText, commandNode, redirect)
+    override suspend fun execute(event: ChatInputCommandInteractionCreateEvent)
+    {
+        event.interaction.respondEphemeral {
+            content = "See the manual on GitHub for a full overview of commands:\n" +
+                    "- https://github.com/Jagenka/DisKordel/blob/master/manual/commands.md\n" +
+                    "- https://github.com/Jagenka/DisKordel/blob/master/manual/queryable_stats.md (for `/stat` and `/speed`)"
+        }
     }
 }

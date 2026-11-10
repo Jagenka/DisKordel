@@ -6,10 +6,7 @@ import de.jagenka.DiscordHandler.asCodeBlock
 import de.jagenka.UserRegistry
 import de.jagenka.UserRegistry.getPrettyUsersList
 import de.jagenka.commands.DiskordelSlashCommand
-import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.MinecraftCommand
-import de.jagenka.commands.discord.MessageCommandSource
-import de.jagenka.commands.discord.Registry
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.RootInputChatBuilder
@@ -20,7 +17,7 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.Component
 
 
-object WhoisCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
+object WhoisCommand : MinecraftCommand, DiskordelSlashCommand
 {
     override val name: String
         get() = "who"
@@ -54,29 +51,6 @@ object WhoisCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashComm
         if (possibleUsers.isEmpty()) return "No-one found!"
 
         return runBlocking { "Could be:\n\n" + possibleUsers.getPrettyUsersList() }
-    }
-
-    override val shortHelpText: String
-        get() = "identify players by name"
-    override val longHelpText: String
-        get() = "get all known names to a given part of name (Discord shown name, Discord username and Minecraft name)."
-
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
-    {
-        val commandNode = dispatcher.register(
-            MessageCommandSource.literal("whois")
-                .then(
-                    MessageCommandSource.argument<String>("partOfName", StringArgumentType.word())
-                        .executes
-                        {
-                            val output = generateOutput(StringArgumentType.getString(it, "partOfName"))
-                            it.source.sendCodeBlock(output)
-                            return@executes 0
-                        })
-        )
-
-        Registry.registerShortHelpText(shortHelpText, commandNode)
-        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 
     override fun registerWithMinecraft(dispatcher: CommandDispatcher<CommandSourceStack>)

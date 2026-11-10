@@ -5,11 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiskordelSlashCommand
-import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.MinecraftCommand
-import de.jagenka.commands.discord.MessageCommandSource
-import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
-import de.jagenka.commands.discord.Registry
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.RootInputChatBuilder
@@ -19,7 +15,7 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.Component
 import net.minecraft.world.level.Level
 
-object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCommand
+object WhereIsCommand : MinecraftCommand, DiskordelSlashCommand
 {
     override val name: String
         get() = "where"
@@ -68,28 +64,6 @@ object WhereIsCommand : DiskordelTextCommand, MinecraftCommand, DiskordelSlashCo
                 "- ${user.minecraft.username} is at (${player.x.toInt()}, ${player.y.toInt()}, ${player.z.toInt()}) in the $dimensionName."
             } ?: "- ${user.minecraft.username} is not online."
         }
-    }
-
-    override val shortHelpText: String
-        get() = "get player position"
-    override val longHelpText: String
-        get() = "get coordinates for players."
-
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
-    {
-        val commandNode = dispatcher.register(
-            MessageCommandSource.literal("whereis")
-                .then(
-                    argument<String>("partOfName", StringArgumentType.greedyString())
-                        .executes {
-                            val output = process(StringArgumentType.getString(it, "partOfName"))
-                            it.source.respond(output)
-                            return@executes 0
-                        })
-        )
-
-        Registry.registerShortHelpText(shortHelpText, commandNode)
-        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 
     override fun registerWithMinecraft(dispatcher: CommandDispatcher<CommandSourceStack>)

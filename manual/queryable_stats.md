@@ -1,37 +1,36 @@
-# `stat` command
+# `/stat` command
 
-With the `stat` commands, you can query players' personal stats, like they are displayed for them only in the pause menu.
+With the `/stat` command, you can query players' personal stats, like they are displayed for them only in the pause menu.
 This is possible, as the stat data is stored in the world folder on the server-side.
 
-## command usage:
+`/speed` (see [Available Commands](./commands.md)) is built on the same mechanism, for a synthetic "speed" stat
+rather than one you pick yourself — it always uses the "stat per playtime" relation described below and doesn't
+expose `relation` as an argument.
 
-### slash command:
+## command usage
 
 - `/stat help`: Shows a link to this page.
-- `/stat get <relation> <category> <stat> [<part_of_name>] [<limit>] [<ascending>]`: Query stats.
-  - `relation` is for relating to played time.
-  - Identifiers are listed below.
-  - Playtime (and depending on relation, also playtime) is shown in round brackets.
-  - `ascending` is useful, if a lower value is considered better, for example with deaths.
-- `/stat compare <relation> <category> <stat> <player> [<player2>] [<ascending>]`: Compare your own or someone else's stats to another player.
-  - If no `player2` is provided, this command tries to compare to the invoker's stat.
+- `/stat get <relation> <category> <stat> [top_n] [part_of_name] [ascending]`: List players and their stat.
+  - Categories and stat identifiers are listed below.
+  - `top_n` caps the number of entries shown; omit it to list every matching player (trimmed around your own entry
+    if the full list wouldn't fit in a Discord message).
+  - `part_of_name` filters to players matching that part of a name; omit it to list everyone.
+  - `ascending` is useful if a lower value is considered better, for example with deaths.
+- `/stat compare <relation> <category> <stat> <player> [player2] [ascending]`: Compare your own or someone else's
+  stat to another player's.
+  - If `player2` is omitted, this command compares to the invoker's own stat instead.
 
-### text command:
+`relation` controls how the stat relates to time played, and is one of:
 
-- `!stat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
-  - Stat types and identifiers are listed below.
-  - Player name is optional - lists all players when empty.
-  - `topN` refers to the maximum number of entries shown.
-  - Playtime is shown in round brackets.
-- `!rstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
-  - Same as above, just relates stat to time played in world (`play_time`). (stat per playtime)
-  - Playtime and stat for each player are shown in round brackets
-- `!pstat <statType> <stat_identifier> [<partOfPlayerName>] [<topN>]`
-  - Same as above, but inverse. (playtime per stat)
-  - Playtime and stat for each player are shown in round brackets
-- `!cstat <statType> <stat_identifier> <player1> [<player2>]`
-  - Compare your own or someone else's stats to another player.
-  - Playtime and stat for each player are shown in round brackets.
+- **default (no relation)**: the raw stat value.
+- **stat per playtime**: the stat divided by playtime — e.g. blocks mined per hour played.
+- **playtime per stat**: playtime divided by the stat — e.g. hours played per block mined.
+
+Each entry shows additional context in round brackets, depending on `relation`:
+
+- **default (no relation)**: that player's share of the stat across all players, as a percentage.
+- **stat per playtime** / **playtime per stat**: the two raw numbers (the stat value and playtime) the shown
+  ratio was computed from.
 
 ## stat types / categories:
 
