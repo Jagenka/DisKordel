@@ -20,7 +20,7 @@ private const val PLAY_TIME_STAT_ID = "play_time"
 private class PlaytimeHistoryEntry(
     /**
      * date (ISO-8601, e.g. "2026-11-10") -> player name -> that player's *total* playtime (in ticks) as of the
-     * last snapshot taken that day.
+     * *first* snapshot taken of them that day - this is a baseline, frozen once set, not a running "latest value".
      *
      * Minecraft only ever stores a running total per player, never a history, so this is the only piece of state
      * this feature needs to add: a daily snapshot of that total, to later diff against. A day is only ever written
@@ -42,7 +42,10 @@ private class PlaytimeHistoryEntry(
  *
  * [snapshotNow] is cheap (one stat file read per known player, no different from what `/playtime` already does on
  * every invocation) and is meant to be called often - on join, on disconnect, periodically, and on server
- * start/stop - so that a day's final snapshot is never more than about an hour stale.
+ * start/stop - so that each day's *baseline* (its first-seen value, see [PlaytimeHistoryEntry]) is captured as
+ * close to the actual start of that day as possible. The periodic call matters most here: a player who stays
+ * connected across midnight would otherwise not get a baseline for the new day until their next join/disconnect,
+ * which might be much later.
  */
 object PlaytimeHistory
 {
@@ -89,15 +92,18 @@ object PlaytimeHistory
     }
 
     /**
-     * records every known player's *current* total playtime under today's date, overwriting today's previous
-     * snapshot if there was one. safe and cheap to call as often as needed.
+     * records every known player's *current* total playtime as today's baseline - but only the first time this is
+     * called for a given player on a given day. Later calls on the same day leave an already-recorded player
+     * alone, since the whole point is a fixed point to diff against, not a constantly moving "latest value" (which
+     * would converge to zero difference from itself by the time anyone queries it). Safe and cheap to call as
+     * often as needed - redundant calls are just no-ops for players already recorded today.
      */
     fun snapshotNow()
     {
         val currentTotals = currentPlayTimeByPlayerName() ?: return
 
         val todaysSnapshot = entry.snapshotsByDate.getOrPut(LocalDate.now().toString()) { mutableMapOf() }
-        currentTotals.forEach { (playerName, ticks) -> todaysSnapshot[playerName] = ticks }
+        currentTotals.forEach { (playerName, ticks) -> todaysSnapshot.getOrPut(playerName) { ticks } }
 
         store()
     }
