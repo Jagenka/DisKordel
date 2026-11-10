@@ -10,7 +10,8 @@ import net.minecraft.stats.StatType
 import net.minecraft.stats.Stats
 import java.nio.file.Files
 import java.nio.file.Path
-import java.time.LocalDate
+import java.time.Duration
+import java.time.Instant
 
 @Suppress("UNCHECKED_CAST")
 private val PLAY_TIME_STAT_TYPE = Stats.CUSTOM as StatType<Any>
@@ -19,15 +20,16 @@ private const val PLAY_TIME_STAT_ID = "play_time"
 @Serializable
 private class PlaytimeHistoryEntry(
     /**
-     * date (ISO-8601, e.g. "2026-11-10") -> player name -> that player's *total* playtime (in ticks) as of the
-     * *first* snapshot taken of them that day - this is a baseline, frozen once set, not a running "latest value".
+     * snapshot instant (ISO-8601, e.g. "2026-11-10T15:30:00.123Z") -> player name -> that player's *total*
+     * playtime (in ticks) at that instant.
      *
      * Minecraft only ever stores a running total per player, never a history, so this is the only piece of state
-     * this feature needs to add: a daily snapshot of that total, to later diff against. A day is only ever written
-     * for players who were actually seen that day, so a gap between two of a player's snapshots always means
-     * "nothing changed", never "unknown" - the diff between any two of their snapshots is always exact.
+     * this feature needs to add: enough timestamped snapshots of that total to diff against later. Every call to
+     * [PlaytimeHistory.snapshotNow] just adds a new entry here - there's no day-keyed "first one wins" bookkeeping;
+     * at query time, whichever existing entry is the best fit for the requested window gets picked (see
+     * [PlaytimeHistory.recentPlaytimeTicks]).
      */
-    var snapshotsByDate: MutableMap<String, MutableMap<String, Int>> = mutableMapOf()
+    var snapshots: MutableMap<String, MutableMap<String, Int>> = mutableMapOf()
 )
 
 /**
@@ -36,16 +38,17 @@ private class PlaytimeHistoryEntry(
  * single running total per player.
  *
  * Rather than re-implementing playtime tracking (e.g. by hooking the tick that increments the vanilla stat, or by
- * timing join/leave ourselves), this just takes a daily snapshot of the *existing* total and diffs against it later.
- * That keeps this feature a thin, low-maintenance layer on top of the same stat the rest of the mod already reads
- * (see [StatUtil.getStatDataList]), rather than a second, parallel playtime tracker that could drift from it.
+ * timing join/leave ourselves), this just takes timestamped snapshots of the *existing* total and diffs against
+ * them later. That keeps this feature a thin, low-maintenance layer on top of the same stat the rest of the mod
+ * already reads (see [StatUtil.getStatDataList]), rather than a second, parallel playtime tracker that could drift
+ * from it.
  *
  * [snapshotNow] is cheap (one stat file read per known player, no different from what `/playtime` already does on
- * every invocation) and is meant to be called often - on join, on disconnect, periodically, and on server
- * start/stop - so that each day's *baseline* (its first-seen value, see [PlaytimeHistoryEntry]) is captured as
- * close to the actual start of that day as possible. The periodic call matters most here: a player who stays
- * connected across midnight would otherwise not get a baseline for the new day until their next join/disconnect,
- * which might be much later.
+ * every invocation), and is called on every join, disconnect, and server start/stop, plus on a timer (see
+ * [POLL_INTERVAL]) while anyone is online. None of this is about calendar days specifically - it's just about
+ * keeping a reasonably dense trail of snapshots, so that whatever `days` someone queries for later, there's a
+ * snapshot close to that window's boundary to diff against. A server that restarts multiple times a day, or one
+ * that's only up for a few hours, works the same way: every snapshot is its own independent data point.
  */
 object PlaytimeHistory
 {
@@ -53,7 +56,14 @@ object PlaytimeHistory
      * how long history is kept around for. only needs to comfortably exceed the largest `days` anyone will
      * reasonably query for; old entries beyond this are dropped on every [store] to keep the file small.
      */
-    private const val RETENTION_DAYS = 90L
+    private val RETENTION: Duration = Duration.ofDays(90)
+
+    /**
+     * how often [snapshotNow] is called on a timer while the server is running (see [MinecraftHandler]). this
+     * bounds how far a window boundary can fall from the nearest snapshot taken while someone was actually online
+     * to cause a change - see [recentPlaytimeTicks].
+     */
+    val POLL_INTERVAL: Duration = Duration.ofHours(1)
 
     private val serializer = Json { prettyPrint = true }
     private lateinit var pathToFile: Path
@@ -87,49 +97,47 @@ object PlaytimeHistory
 
     private fun pruneOldEntries()
     {
-        val cutoff = LocalDate.now().minusDays(RETENTION_DAYS)
-        entry.snapshotsByDate.keys.removeAll { LocalDate.parse(it) < cutoff }
+        val cutoff = Instant.now().minus(RETENTION)
+        entry.snapshots.keys.removeAll { Instant.parse(it) < cutoff }
     }
 
     /**
-     * records every known player's *current* total playtime as today's baseline - but only the first time this is
-     * called for a given player on a given day. Later calls on the same day leave an already-recorded player
-     * alone, since the whole point is a fixed point to diff against, not a constantly moving "latest value" (which
-     * would converge to zero difference from itself by the time anyone queries it). Safe and cheap to call as
-     * often as needed - redundant calls are just no-ops for players already recorded today.
+     * records every known player's *current* total playtime under this exact instant, as a new entry - safe and
+     * cheap to call as often as needed. Callers on a timer (as opposed to a join/disconnect/server start/stop
+     * event, each meaningful on its own) should skip calling this while no-one is online, since nothing could have
+     * changed since the last snapshot anyway.
      */
     fun snapshotNow()
     {
         val currentTotals = currentPlayTimeByPlayerName() ?: return
 
-        val todaysSnapshot = entry.snapshotsByDate.getOrPut(LocalDate.now().toString()) { mutableMapOf() }
-        currentTotals.forEach { (playerName, ticks) -> todaysSnapshot.getOrPut(playerName) { ticks } }
+        entry.snapshots[Instant.now().toString()] = currentTotals.toMutableMap()
 
         store()
     }
 
     /**
-     * @return ticks [playerName] has played in the last [days] days (today inclusive), or `null` if this player is
-     * not known at all (never seen, so there is no current total to diff against)
+     * @return ticks [playerName] has played in the last [days] days - i.e. since `now - days*24h`, not since the
+     * start of some calendar day - or `null` if this player isn't known at all (never seen, so there is no
+     * current total to diff against)
      */
     fun recentPlaytimeTicks(playerName: String, days: Int): Int?
     {
         val currentTotal = currentPlayTimeByPlayerName()?.get(playerName) ?: return null
 
-        // the point in time "days" ago that the window starts at; we need the total as it stood right before that,
-        // i.e. the latest snapshot at or before that date
-        val windowStart = LocalDate.now().minusDays(days.toLong())
+        val windowStart = Instant.now().minus(Duration.ofDays(days.toLong()))
 
-        val knownSnapshots = entry.snapshotsByDate.entries
-            .mapNotNull { (date, snapshot) -> snapshot[playerName]?.let { LocalDate.parse(date) to it } }
+        val knownSnapshots = entry.snapshots.entries
+            .mapNotNull { (instant, snapshot) -> snapshot[playerName]?.let { Instant.parse(instant) to it } }
 
         // no history at all for this player yet - we can't prove any of their total falls within the window
         if (knownSnapshots.isEmpty()) return 0
 
+        // the closest snapshot at or before the window's start is the correct baseline to diff against. if our
+        // history doesn't reach back that far yet (e.g. this feature only just started tracking), fall back to
+        // the oldest snapshot we do have instead - this underestimates rather than overestimates, since nothing
+        // before our very first snapshot can be proven to fall inside the window
         val baseline = knownSnapshots.filter { it.first <= windowStart }.maxByOrNull { it.first }?.second
-            // history doesn't reach as far back as the window start (e.g. this feature just started tracking) -
-            // fall back to the oldest snapshot we do have. this underestimates rather than overestimates: anything
-            // before our very first snapshot is treated as outside the window, since we have no proof otherwise
             ?: knownSnapshots.minByOrNull { it.first }!!.second
 
         return (currentTotal - baseline).coerceAtLeast(0)

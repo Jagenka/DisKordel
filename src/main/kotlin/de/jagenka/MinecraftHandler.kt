@@ -15,7 +15,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import org.slf4j.LoggerFactory
 import kotlin.math.min
-import kotlin.time.Duration.Companion.hours
+import kotlin.time.toKotlinDuration
 
 object MinecraftHandler
 {
@@ -42,13 +42,15 @@ object MinecraftHandler
             PlaytimeHistory.snapshotNow()
         }
 
-        // keeps today's playtime snapshot fresh for players who stay connected across a day change, without
-        // needing to hook every tick for it - join/disconnect/server-stop already cover the common cases
+        // join/disconnect/server start-stop already snapshot playtime on their own, but a player who just stays
+        // connected wouldn't otherwise get any new snapshot at all - this just keeps a reasonably dense trail of
+        // data points for them too, so any requested lookback window has something nearby to diff against.
+        // skipped while no-one is online, since nothing could have changed in the meantime anyway.
         Main.scope.launch {
             while (isActive)
             {
-                delay(1.hours)
-                PlaytimeHistory.snapshotNow()
+                delay(PlaytimeHistory.POLL_INTERVAL.toKotlinDuration())
+                if (getOnlinePlayers().isNotEmpty()) PlaytimeHistory.snapshotNow()
             }
         }
     }
