@@ -40,6 +40,9 @@ object Main : ModInitializer
 
         //register onServerStopping
         ServerLifecycleEvents.SERVER_STOPPING.register { server ->
+            // intentionally synchronous, unlike every other call site: this is a one-off cost right as the server
+            // is already shutting down (not a per-player, repeated one like join/disconnect), and launching it
+            // instead would risk the process exiting (see onServerStopped below) before it got to run at all
             PlaytimeHistory.snapshotNow()
 
             stoppingTask = scope.launch {

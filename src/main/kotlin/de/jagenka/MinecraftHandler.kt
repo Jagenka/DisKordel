@@ -78,7 +78,9 @@ object MinecraftHandler
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
             }
-            PlaytimeHistory.snapshotNow()
+            // this reads a stat file per known player, which isn't free - must not block the server thread that
+            // JOIN itself fires on, hence launching it rather than calling it directly (see PlaytimeHistory's docs)
+            Main.scope.launch { PlaytimeHistory.snapshotNow() }
         }
 
         // disconnect messages
@@ -90,7 +92,7 @@ object MinecraftHandler
                 val name = string.split(" ").firstOrNull()
                 sendSystemMessageAsPlayer(name, string)
             }
-            PlaytimeHistory.snapshotNow()
+            Main.scope.launch { PlaytimeHistory.snapshotNow() }
         }
     }
 
