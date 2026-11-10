@@ -70,6 +70,31 @@ object ApplicationCommandSync
     }
 
     /**
+     * removes any global application commands this bot has registered.
+     *
+     * DisKordel only ever registers guild commands, so a global command showing up here is always a leftover
+     * (e.g. from manual testing against the wrong scope, or an older version of the mod that still used global
+     * commands) rather than something we want. Left alone, it keeps showing up in command autocomplete in every
+     * guild the bot is in and errors out when used, since nothing handles it. This is checked on every startup,
+     * but does nothing (no request at all) once it's clean, so a correctly set up bot never pays for it.
+     */
+    suspend fun purgeStaleGlobalCommands(kord: Kord)
+    {
+        val staleGlobalCommands = kord.rest.interaction.getGlobalApplicationCommands(kord.resources.applicationId)
+
+        if (staleGlobalCommands.isEmpty()) return
+
+        MinecraftHandler.logger.warn(
+            "Found ${staleGlobalCommands.size} stale global Discord Application Command(s) " +
+                    "(${staleGlobalCommands.joinToString { it.name }}) that DisKordel never registers as such. Removing them..."
+        )
+
+        kord.rest.interaction.createGlobalApplicationCommands(kord.resources.applicationId, emptyList())
+
+        MinecraftHandler.logger.info("Stale global Discord Application Commands removed.")
+    }
+
+    /**
      * a command that is new (`+`), no longer wanted (`-`) or has changed (`~`)
      */
     private data class CommandChange(private val symbol: Char, val name: String, val wanted: JsonElement?, val registered: JsonElement?)

@@ -65,6 +65,7 @@ object Registry
             try
             {
                 ApplicationCommandSync.syncGuildCommands(kord, DiscordHandler.guild.id, commands.filterIsInstance<DiskordelSlashCommand>())
+                ApplicationCommandSync.purgeStaleGlobalCommands(kord)
             } catch (e: Exception)
             {
                 if (e is CancellationException)
