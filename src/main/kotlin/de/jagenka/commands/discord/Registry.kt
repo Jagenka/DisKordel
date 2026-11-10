@@ -1,12 +1,8 @@
 package de.jagenka.commands.discord
 
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.exceptions.CommandSyntaxException
-import com.mojang.brigadier.tree.CommandNode
 import de.jagenka.*
 import de.jagenka.commands.DiskordelCommand
 import de.jagenka.commands.DiskordelSlashCommand
-import de.jagenka.commands.DiskordelTextCommand
 import de.jagenka.commands.universal.*
 import dev.kord.core.Kord
 import dev.kord.core.entity.Message
@@ -22,21 +18,6 @@ import kotlinx.coroutines.launch
 
 object Registry
 {
-    private const val messageCommandPrefix: String = "!"
-    private const val interactsWithBots: Boolean = true
-    private val commandDispatcher = CommandDispatcher<MessageCommandSource>()
-
-    /**
-     * this stores short help texts. if two texts are equal, it is assumed, that the corresponding commands do the same thing. (important for cleaning up help overview)
-     */
-    private val shortHelpTexts = mutableMapOf<CommandNode<MessageCommandSource>, String>()
-
-    /**
-     * this stores long help texts. if two texts are equal, it is assumed, that the corresponding commands do the same thing.
-     * mapping is command literal to help text
-     */
-    private val longHelpTexts = mutableMapOf<String, String>()
-
     val commands = listOf<DiskordelCommand>(
         // Discord-only Commands
         PerfCommand,
@@ -76,7 +57,7 @@ object Registry
             }
         }
 
-        makeNoteOfCommandsLocally()
+        indexSlashCommandsByName()
 
         kord.on<MessageCreateEvent> messageHandling@{
             // return if message is from ourselves
@@ -88,43 +69,9 @@ object Registry
             // return if message is from an interaction, as we catch that in the message update event
             if (message.interaction != null) return@messageHandling
 
-            let commandHandling@{
-                if (interactsWithBots)
-                {
-                    // return if author is self or undefined
-                    if (message.author?.id == kord.selfId) return@commandHandling
-                } else
-                {
-                    // return if author is a bot or undefined
-                    if (message.author?.isBot != false) return@commandHandling
-                }
-
-                if (!message.content.startsWith(messageCommandPrefix)) return@commandHandling
-
-                val command = message.content.removePrefix(messageCommandPrefix)
-
-                try
-                {
-                    commandDispatcher.execute(command, MessageCommandSource(event = this))
-                    return@messageHandling
-                } catch (e: CommandSyntaxException)
-                {
-                    DiscordHandler.sendMessage(
-                        text = "DisKordel no longer uses text commands. Use / commands instead!",
-                        silent = true,
-                    )
-//                    DiscordHandler.sendMessage(
-//                        text = "Error: ${e.message}\n" +
-//                                "see `${messageCommandPrefix}help`", silent = true
-//                    )
-
-                    return@messageHandling
-                }
-            }
-
             if (message.webhookId == Util.getOrCreateWebhook("diskordel_chat_messages").id) return@messageHandling
 
-            // if commandHandling fails, it must be a chat message, which is to be relayed to Minecraft
+            // every message that reaches here is a chat message, to be relayed to Minecraft
             val member = message.getAuthorAsMemberOrNull()
             if (member != null)
             {
@@ -189,20 +136,11 @@ object Registry
         return messageContent
     }
 
-    private fun makeNoteOfCommandsLocally()
+    private fun indexSlashCommandsByName()
     {
-        // sort commands into types
-        commands.forEach { cmd ->
-            if (cmd is DiskordelTextCommand)
-            {
-                // cmd.registerWithDiscord(commandDispatcher)
-            }
-
-            if (cmd is DiskordelSlashCommand)
-            {
-                if (slashCommandMap.containsKey(cmd.name)) error("${cmd.name} is already a registered slash command.")
-                slashCommandMap[cmd.name] = cmd
-            }
+        commands.filterIsInstance<DiskordelSlashCommand>().forEach { cmd ->
+            if (slashCommandMap.containsKey(cmd.name)) error("${cmd.name} is already a registered slash command.")
+            slashCommandMap[cmd.name] = cmd
         }
     }
 
@@ -213,53 +151,5 @@ object Registry
             val cmd = slashCommandMap[interaction.invokedCommandName]
             cmd?.execute(this)
         }
-    }
-
-    fun registerShortHelpText(text: String, vararg nodes: CommandNode<MessageCommandSource>)
-    {
-        nodes.forEach { shortHelpTexts[it] = text }
-    }
-
-    fun registerLongHelpText(text: String, vararg nodes: CommandNode<MessageCommandSource>)
-    {
-        nodes.forEach { longHelpTexts[it.name] = text }
-    }
-
-    fun getShortHelpTexts(source: MessageCommandSource): List<String>
-    {
-        val noHelpTexts = mutableListOf<String>()
-
-        val helpTexts = commandDispatcher.getSmartUsage(commandDispatcher.root, source).toList()
-            .groupBy { shortHelpTexts[it.first] }
-            .mapNotNull {
-                val shortHelpText = it.key
-                return@mapNotNull if (shortHelpText != null)
-                {
-                    val smartUsageString = it.value.first().second
-                    val trimmedUsageString = if (smartUsageString.contains(' ')) smartUsageString.replaceBefore(' ', "") else ""
-                    val postfix = "$trimmedUsageString`: $shortHelpText"
-                    it.value.joinToString(separator = "|", postfix = postfix) { it.second.replaceAfter(' ', "").trim() }
-                } else
-                {
-                    noHelpTexts.addAll(it.value.map { it.second + "`" })
-                    null
-                }
-            }.toMutableList()
-
-        helpTexts.addAll(noHelpTexts)
-
-        return helpTexts.sorted().map { "`$messageCommandPrefix$it" }
-    }
-
-    fun getHelpTextsForCommand(source: MessageCommandSource, command: String): List<String>
-    {
-        val parseResults = commandDispatcher.parse(command, source)
-        if (parseResults.context.nodes.isEmpty())
-        {
-            throw CommandSyntaxException.BUILT_IN_EXCEPTIONS.dispatcherUnknownArgument().create()
-        }
-        return commandDispatcher.getSmartUsage(parseResults.context.rootNode, source)
-            .filter { it.key.name.equals(command, ignoreCase = true) }
-            .map { "`!" + it.value + "`" + (longHelpTexts[command]?.let { ": $it" } ?: "") }
     }
 }

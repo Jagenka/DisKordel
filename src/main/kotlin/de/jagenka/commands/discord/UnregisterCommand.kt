@@ -1,21 +1,16 @@
 package de.jagenka.commands.discord
 
-import com.mojang.brigadier.CommandDispatcher
 import de.jagenka.DiscordHandler
 import de.jagenka.DiscordHandler.prettyName
-import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiskordelSlashCommand
-import de.jagenka.commands.DiskordelTextCommand
-import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.RootInputChatBuilder
-import kotlinx.coroutines.launch
 
-object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
+object UnregisterCommand : DiskordelSlashCommand
 {
     override val name: String
         get() = "unregister"
@@ -71,29 +66,5 @@ object UnregisterCommand : DiskordelTextCommand, DiskordelSlashCommand
         }
         UserRegistry.unregister(userId)
         UserRegistry.saveToFile()
-    }
-
-    override val shortHelpText: String
-        get() = "remove Discord-Minecraft link"
-    override val longHelpText: String
-        get() = "remove link between your Discord account and the saved Minecraft name. this will also remove you from the whitelist."
-
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
-    {
-        val commandNode = dispatcher.register(
-            literal("unregister")
-                .executes {
-                    it.source.author?.let { user ->
-                        Main.scope.launch {
-                            val response = unregisterUserWithResponse(user.id)
-                            DiscordHandler.sendMessage(response, silent = true)
-                        }
-                    }
-                    0
-                }
-        )
-
-        Registry.registerShortHelpText(shortHelpText, commandNode)
-        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 }

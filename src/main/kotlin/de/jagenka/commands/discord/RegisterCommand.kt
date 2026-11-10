@@ -1,16 +1,11 @@
 package de.jagenka.commands.discord
 
-import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.arguments.StringArgumentType
 import de.jagenka.DiscordHandler
 import de.jagenka.DiscordHandler.prettyName
 import de.jagenka.Main
 import de.jagenka.MinecraftHandler
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiskordelSlashCommand
-import de.jagenka.commands.DiskordelTextCommand
-import de.jagenka.commands.discord.MessageCommandSource.Companion.argument
-import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.entity.interaction.ChatInputCommandInteraction
@@ -19,7 +14,7 @@ import dev.kord.rest.builder.interaction.RootInputChatBuilder
 import dev.kord.rest.builder.interaction.string
 import kotlinx.coroutines.launch
 
-object RegisterCommand : DiskordelTextCommand, DiskordelSlashCommand
+object RegisterCommand : DiskordelSlashCommand
 {
     override val name: String
         get() = "register"
@@ -85,29 +80,5 @@ object RegisterCommand : DiskordelTextCommand, DiskordelSlashCommand
 
             UserRegistry.saveToFile()
         }
-    }
-
-    override val shortHelpText: String
-        get() = "whitelist yourself"
-    override val longHelpText: String
-        get() = "link your Discord account to a Minecraft name. this will also whitelist you."
-
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
-    {
-        val commandNode = dispatcher.register(
-            literal("register")
-                .then(
-                    argument<String>("minecraftName", StringArgumentType.word())
-                        .executes {
-                            Main.scope.launch {
-                                DiscordHandler.sendMessage("use slash command!", silent = true)
-                            }
-                            0
-                        }
-                )
-        )
-
-        Registry.registerShortHelpText(shortHelpText, commandNode)
-        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 }

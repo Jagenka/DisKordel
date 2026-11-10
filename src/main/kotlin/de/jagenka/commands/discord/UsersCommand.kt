@@ -1,18 +1,12 @@
 package de.jagenka.commands.discord
 
-import com.mojang.brigadier.CommandDispatcher
-import de.jagenka.DiscordHandler
-import de.jagenka.Main
 import de.jagenka.UserRegistry
 import de.jagenka.commands.DiskordelSlashCommand
-import de.jagenka.commands.DiskordelTextCommand
-import de.jagenka.commands.discord.MessageCommandSource.Companion.literal
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.RootInputChatBuilder
-import kotlinx.coroutines.launch
 
-object UsersCommand : DiskordelTextCommand, DiskordelSlashCommand
+object UsersCommand : DiskordelSlashCommand
 {
     override val name: String
         get() = "users"
@@ -29,25 +23,5 @@ object UsersCommand : DiskordelTextCommand, DiskordelSlashCommand
         event.interaction.respondEphemeral {
             content = UserRegistry.getAllUsersAsOutput()
         }
-    }
-
-    override val shortHelpText: String
-        get() = "list all registered users"
-    override val longHelpText: String
-        get() = "list all registered users."
-
-    override fun registerWithDiscord(dispatcher: CommandDispatcher<MessageCommandSource>)
-    {
-        val commandNode = dispatcher.register(literal("users")
-            .executes {
-                Main.scope.launch {
-                    DiscordHandler.sendMessage(text = UserRegistry.getAllUsersAsOutput(), silent = true)
-                }
-                0
-            }
-        )
-
-        Registry.registerShortHelpText(shortHelpText, commandNode)
-        Registry.registerLongHelpText(longHelpText, commandNode)
     }
 }

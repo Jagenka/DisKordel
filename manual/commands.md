@@ -1,8 +1,11 @@
 # Available Commands
 
 All commands below are Discord **slash commands**, registered in the one server (guild) configured in your config
-file — they won't show up anywhere else. (DisKordel used to also support `!`-prefixed text commands; those have been
-removed, and using one will just tell you to use the slash command instead.)
+file — they won't show up anywhere else. (DisKordel used to also support `!`-prefixed text commands; those have
+been removed entirely, so a message like `!list` is now just relayed to Minecraft as regular chat, like any other
+message.)
+
+Need a reminder of what's available without leaving Discord? `/help` links back to this page.
 
 A few commands are *universal*: they also exist as regular Minecraft commands, usable in-game by anyone with
 permission to use commands. Where the in-game name differs from the Discord one, both are listed.
