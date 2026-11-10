@@ -39,8 +39,11 @@ dependencies {
     implementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
 
     //kord
-    implementation "dev.kord:kord-core:0.18.1"
-	include "dev.kord:kord-core:0.18.1"
+    // using a snapshot because 0.18.1 (the latest release) crashes on gateway GUILD_CREATE events for guilds with a
+    // channel that has an explicit `null` application_id (channel.application_id became nullable in Discord's API,
+    // see https://github.com/kordlib/kord/pull/1072). switch back to a release once 0.19.0 ships.
+    implementation "dev.kord:kord-core:0.19.0-SNAPSHOT"
+	include "dev.kord:kord-core:0.19.0-SNAPSHOT"
     implementation "dev.kord.x:emoji:0.5.0"
 	include "dev.kord.x:emoji:0.5.0"
 
